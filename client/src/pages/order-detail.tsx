@@ -465,7 +465,7 @@ export default function OrderDetail() {
               </div>
 
               {/* Additional Options */}
-              {(order.printPaper || order.printCanvas || order.engravedPlaque || order.leds || order.shadowboxFitting || order.additionalLabor || order.dryMount) && (
+              {(order.printPaper || order.printCanvas || order.canvasStretching || order.engravedPlaque || order.leds || order.shadowboxFitting || order.additionalLabor || order.dryMount) && (
                 <>
                   <Separator />
                   <div>
@@ -483,6 +483,9 @@ export default function OrderDetail() {
                           Print (Canvas)
                           {order.printCanvasWrapStyle && `: ${order.printCanvasWrapStyle}`}
                         </Badge>
+                      )}
+                      {order.canvasStretching && (
+                        <Badge variant="outline">Canvas Stretching (Customer Supplied)</Badge>
                       )}
                       {order.engravedPlaque && (
                         <Badge variant="outline">
