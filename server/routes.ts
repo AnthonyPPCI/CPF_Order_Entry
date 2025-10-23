@@ -19,6 +19,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get single order by ID
   app.get("/api/orders/:id", async (req, res) => {
     try {
+      // Try to fetch from multi-item orders first
+      const multiOrder = await storage.getMultiItemOrderById(req.params.id);
+      if (multiOrder) {
+        return res.json(multiOrder);
+      }
+      
+      // Fall back to single-item orders
       const order = await storage.getOrderById(req.params.id);
       if (!order) {
         return res.status(404).json({ error: "Order not found" });

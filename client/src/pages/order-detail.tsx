@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
-import { type Order } from "@shared/schema";
+import { type Order, type OrderHeader, type OrderItem } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Printer, Mail, Mic, Square } from "lucide-react";
@@ -9,15 +9,26 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import cpfLogo from "@assets/cpf-logo.webp";
 
+// Type for multi-item order response
+type MultiItemOrderResponse = {
+  header: OrderHeader;
+  items: OrderItem[];
+};
+
 export default function OrderDetail() {
   const [, params] = useRoute("/order/:id");
   const orderId = params?.id;
   const { toast } = useToast();
 
-  const { data: order, isLoading } = useQuery<Order>({
+  const { data: orderData, isLoading } = useQuery<Order | MultiItemOrderResponse>({
     queryKey: ["/api/orders", orderId],
     enabled: !!orderId,
   });
+
+  // Check if this is a multi-item order
+  const isMultiItemOrder = orderData && "header" in orderData;
+  const order = isMultiItemOrder ? null : (orderData as Order);
+  const multiOrder = isMultiItemOrder ? (orderData as MultiItemOrderResponse) : null;
 
   if (isLoading) {
     return (
@@ -37,7 +48,7 @@ export default function OrderDetail() {
     );
   }
 
-  if (!order) {
+  if (!order && !multiOrder) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4 md:px-8 py-8">
@@ -51,6 +62,136 @@ export default function OrderDetail() {
               </div>
             </CardContent>
           </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // If it's a multi-item order, show simplified view for now
+  if (multiOrder) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-8">
+          <div className="space-y-6">
+            {/* Navigation */}
+            <div className="flex items-center">
+              <Link href="/orders" asChild>
+                <Button variant="ghost" data-testid="button-back">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Orders
+                </Button>
+              </Link>
+            </div>
+
+            {/* Multi-Item Order Display */}
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>Multi-Item Order</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Order #{multiOrder.header.id?.slice(0, 8).toUpperCase()}
+                    </p>
+                  </div>
+                  <Badge variant="secondary">{multiOrder.items.length} Items</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Customer Information */}
+                <div>
+                  <h3 className="font-semibold mb-2">Customer Information</h3>
+                  <div className="text-sm space-y-1">
+                    <p className="font-medium">{multiOrder.header.customerName}</p>
+                    {multiOrder.header.address1 && <p className="text-muted-foreground">{multiOrder.header.address1}</p>}
+                    {multiOrder.header.cityStateZip && <p className="text-muted-foreground">{multiOrder.header.cityStateZip}</p>}
+                    {multiOrder.header.phone && <p className="text-muted-foreground">{multiOrder.header.phone}</p>}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Order Items */}
+                <div>
+                  <h3 className="font-semibold mb-3">Order Items</h3>
+                  <div className="space-y-4">
+                    {multiOrder.items.map((item, index) => (
+                      <Card key={item.id || index} className="border-muted">
+                        <CardHeader>
+                          <div className="flex justify-between items-start">
+                            <CardTitle className="text-base">Item #{item.itemNumber || index + 1}</CardTitle>
+                            {item.itemTotal && (
+                              <Badge variant="outline">${item.itemTotal}</Badge>
+                            )}
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            {item.frameSku && (
+                              <div>
+                                <span className="text-muted-foreground">Frame SKU:</span>{" "}
+                                <code className="font-mono text-xs">{item.frameSku}</code>
+                              </div>
+                            )}
+                            {item.width && item.height && (
+                              <div>
+                                <span className="text-muted-foreground">Size:</span>{" "}
+                                <span className="font-mono">{item.width} × {item.height}"</span>
+                              </div>
+                            )}
+                            {item.quantity && (
+                              <div>
+                                <span className="text-muted-foreground">Quantity:</span> {item.quantity}
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Order Totals */}
+                <div>
+                  <h3 className="font-semibold mb-3">Order Summary</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Shipping:</span>
+                      <span className="font-medium">${multiOrder.header.shipping}</span>
+                    </div>
+                    {multiOrder.header.salesTax && multiOrder.header.salesTax !== "0.00" && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Sales Tax:</span>
+                        <span className="font-medium">${multiOrder.header.salesTax}</span>
+                      </div>
+                    )}
+                    {multiOrder.header.discount && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Discount:</span>
+                        <span className="font-medium">{multiOrder.header.discount}</span>
+                      </div>
+                    )}
+                    {multiOrder.header.deposit && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Deposit Paid:</span>
+                        <span className="font-medium">{multiOrder.header.deposit}</span>
+                      </div>
+                    )}
+                    <Separator />
+                    <div className="flex justify-between text-lg">
+                      <span className="font-bold">Total:</span>
+                      <span className="font-bold">${multiOrder.header.total}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Balance Due:</span>
+                      <span className="font-semibold">${multiOrder.header.balance}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );

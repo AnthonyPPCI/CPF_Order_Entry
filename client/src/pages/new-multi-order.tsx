@@ -90,11 +90,12 @@ export default function NewMultiOrder() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/multi-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       toast({
         title: "Success",
         description: "Multi-item order created successfully",
       });
-      navigate(`/multi-order/${data.id}`);
+      navigate(`/order/${data.id}`);
     },
     onError: (error: any) => {
       toast({
