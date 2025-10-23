@@ -193,15 +193,20 @@ Preferred communication style: Simple, everyday language.
 - Real-time pricing preview shows itemized breakdown as form fields are edited
 
 **Stacker Frames (Deep Shadowbox) Feature:**
-- Implemented custom-depth shadowbox system using multiple layered frame components
+- Implemented custom-depth shadowbox system using multiple layered frame components with selectable topper pieces
 - Added "Stacker Frame (Deep Shadowbox)" checkbox in Frame Configuration section
 - Shadow depth input accepts fractions (e.g., "6 1/2") or decimals (e.g., "6.5")
 - Dynamic programming algorithm calculates optimal (minimum-cost) layer combination to meet/exceed desired depth
-- Three frame layer options: F9532 (2.25" depth, $11.81/ft), F9533 (1.25" depth, $8.36/ft), F9531 (0.5" depth, $8.50/ft)
+- Frame layer options (corrected depths): F9532 (2.5" depth, $11.81/ft), F9533 (1.5" depth, $8.36/ft), F9531 (0.75" depth, $8.50/ft)
+- Topper piece selection (radio buttons): F9731 (1.0" depth, default) and F9531 (0.75" depth)
+- Topper depth is subtracted from target depth before calculating layer combinations
+- Topper cost is added to final stacker frame price
 - Separate stacker markup multiplier (2.5×) applies instead of normal markup (2.75×)
 - Assembly charge ($29.17) added to all stacker frame orders
-- Pricing formula: (frame layers + assembly charge) × stackerMarkup (2.5×) × quantity
-- Control panel includes editable stacker frame configuration (SKUs, depths, pricing, assembly charge, markup)
+- Pricing formula: (topper + frame layers + assembly charge) × stackerMarkup (2.5×) × quantity
+- BOM (Bill of Materials) generation for production: displays "SKU_widthxheight_(qty)" format using interior dimensions
+- BOM shows topper piece and all frame layers needed for assembly
+- Control panel includes editable stacker frame configuration (SKUs, depths, pricing, assembly charge, markup, topper pieces)
 - Order summary displays "Stacker Frame (X\" deep)" instead of regular frame SKU when stacker frame is enabled
-- Algorithm optimizes for cost: For 3.4" depth, uses 1× F9532 + 1× F9533 = 3.5" (~$20/ft) instead of greedy approach using 1× F9532 + 3× F9531 = 3.75" (~$37/ft)
-- Verified pricing accuracy: 34×40" with 9" depth = $1,529.49 frame cost (4× F9532 layers optimal)
+- Algorithm optimizes for cost: For 3.5" depth with F9731 topper (1.0"), target depth becomes 2.5", uses 1× F9532 layer
+- Verified pricing accuracy: 16×20" with 6" depth and F9731 topper = $589.23 total (BOM: 1× F9731 topper, 2× F9532 layers, 1× F9533 layer)
