@@ -1126,7 +1126,13 @@ export default function NewOrder() {
                   <Separator />
 
                   <div className="space-y-2 text-sm">
-                    {form.watch("frameSku") && parseFloat(calculatedPricing.breakdown.frameCost) > 0 && (
+                    {form.watch("stackerFrame") && form.watch("shadowDepth") && parseFloat(calculatedPricing.breakdown.frameCost) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Stacker Frame ({form.watch("shadowDepth")}\" deep)</span>
+                        <span className="font-mono" data-testid="text-frame-cost">${calculatedPricing.breakdown.frameCost}</span>
+                      </div>
+                    )}
+                    {!form.watch("stackerFrame") && form.watch("frameSku") && parseFloat(calculatedPricing.breakdown.frameCost) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Frame ({form.watch("frameSku")})</span>
                         <span className="font-mono" data-testid="text-frame-cost">${calculatedPricing.breakdown.frameCost}</span>
