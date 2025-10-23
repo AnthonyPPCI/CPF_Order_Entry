@@ -1,5 +1,5 @@
 import { type Order, type InsertOrder } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { randomUUID, createHash } from "crypto";
 
 // Extended insert type that includes calculated pricing fields
 type InsertOrderWithPricing = InsertOrder & {
@@ -131,8 +131,7 @@ class PricingConfigStorage {
 
   verifyPassword(password: string): boolean {
     // Simple SHA-256 hash comparison
-    const crypto = require('crypto');
-    const hash = crypto.createHash('sha256').update(password).digest('hex');
+    const hash = createHash('sha256').update(password).digest('hex');
     return hash === this.config.passwordHash;
   }
 }
