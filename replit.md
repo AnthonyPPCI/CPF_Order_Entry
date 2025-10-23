@@ -16,10 +16,11 @@ Preferred communication style: Simple, everyday language.
 
 **UI Component System**: Radix UI primitives wrapped with shadcn/ui components following the "new-york" style variant. This provides accessible, customizable components with consistent styling through Tailwind CSS.
 
-**Routing**: Wouter for client-side routing with three main routes:
-- `/` - New order creation form
+**Routing**: Wouter for client-side routing with four main routes:
+- `/` - New order creation form with real-time pricing preview
 - `/orders` - Order list view with search functionality
 - `/order/:id` - Individual order detail view
+- `/control-panel` - Password-protected pricing configuration management
 
 **State Management**: TanStack Query (React Query) for server state management with infinite stale time and disabled refetching, treating the backend as the single source of truth.
 
@@ -39,14 +40,20 @@ Preferred communication style: Simple, everyday language.
 - `POST /api/orders` - Create new order with server-side pricing calculation
 - `PUT /api/orders/:id` - Update existing order
 - `DELETE /api/orders/:id` - Delete order
+- `POST /api/pricing` - Calculate pricing preview without creating order (debounced from frontend)
+- `POST /api/control-panel/verify` - Verify control panel password
+- `GET /api/control-panel/config` - Retrieve pricing configuration
+- `POST /api/control-panel/config` - Update pricing configuration (password required)
 
 **Business Logic**: Server-side pricing calculation engine (`server/pricing.ts`) that computes costs based on:
-- Frame perimeter ($0.50 per inch base rate)
-- Material upgrades (acrylic type, backing type)
+- Exact Google Sheets formulas using real moulding/supply data from Excel file (2,216 mouldings, 1,781 supplies)
+- Frame cost = Join Cost × Join Feet (calculated from united inches and moulding width)
+- Dynamic markup multiplier (default 2.75×, configurable via control panel)
+- Material upgrades with per-square-inch pricing (acrylic: $0.009-$0.027/sq in, backing: $2-$3 flat)
 - Add-on services (printing, dry mounting, engraving, LEDs, etc.)
-- Mat configurations and additional openings
-- Quantity discounts
-- Regional shipping rates (standard vs. HI/AK/PR)
+- Mat configurations (up to 3 mats) and additional openings ($2.50 each)
+- Tiered shipping rates based on united inches (configurable: $9-$250)
+- Remote destination surcharge (+$99 for HI/AK/PR when under 75 united inches)
 - Sales tax calculation (7% for NJ addresses)
 
 **Data Validation**: Shared Zod schemas between frontend and backend ensure consistent validation. Schema defined in `shared/schema.ts` and used for both TypeScript types and runtime validation.
@@ -71,11 +78,30 @@ Preferred communication style: Simple, everyday language.
 
 **In-Memory Storage**: `MemStorage` class provides development/testing storage without database dependency. Implements `IStorage` interface for easy swapping between storage backends.
 
+**Pricing Data Storage**: Excel-based pricing data loaded at server startup from `attached_assets/ANNIE CPF Order Entry Sheet (1)_1761234370780.xlsx` containing:
+- 2,216 moulding SKUs with join costs and dimensions
+- 1,781 supply items with pricing
+- Loaded into in-memory maps for fast lookup during pricing calculations
+
+**Pricing Configuration Storage**: `PricingConfigStorage` class maintains dynamic pricing configuration in memory:
+- Markup multiplier (default: 2.75×)
+- Chop-only join feet (default: 18 feet)
+- Shipping rate tiers based on united inches
+- Acrylic pricing per square inch (Standard/Non-Glare/Museum Quality)
+- Backing pricing (None/White Foam/Black Foam/Acid Free)
+- Password protection with SHA-256 hashing (password: 2026DOG)
+
 ### Authentication and Authorization
 
-**Current Implementation**: No authentication system implemented. Application assumes trusted internal users on secure network.
+**Current Implementation**: No global authentication system. Application assumes trusted internal users on secure network.
 
-**Session Management**: Express session infrastructure present (`connect-pg-simple` for PostgreSQL session storage) but not actively used.
+**Control Panel Security**: Password-protected pricing configuration management using SHA-256 hashing:
+- Password: "2026DOG" (hash stored in memory)
+- Required for all configuration updates
+- Password verification via `/api/control-panel/verify` endpoint
+- No session management - password required per operation
+
+**Session Management**: Express session infrastructure present (`connect-pg-simple` for PostgreSQL session storage) but not actively used for order management.
 
 ### External Dependencies
 
@@ -99,10 +125,24 @@ Preferred communication style: Simple, everyday language.
 
 1. **Shared Schema Pattern**: Business logic schemas defined once in `shared/schema.ts` and used by both client (for form validation) and server (for API validation), eliminating duplication and ensuring consistency.
 
-2. **Server-Side Pricing**: All pricing calculations performed server-side to maintain business logic integrity and prevent client manipulation.
+2. **Server-Side Pricing**: All pricing calculations performed server-side to maintain business logic integrity and prevent client manipulation. Frontend receives pricing via debounced API calls (500ms delay) for real-time preview.
 
-3. **Monorepo Structure**: Frontend (`client/`), backend (`server/`), and shared code (`shared/`) in single repository with unified TypeScript configuration.
+3. **Excel-Based Pricing Data**: Pricing data loaded from Excel file at server startup into in-memory storage for fast lookup, matching the original Google Sheets workflow exactly.
 
-4. **Component Library Strategy**: Using shadcn/ui pattern of copying components into project rather than npm dependency, allowing full customization while maintaining consistency.
+4. **Dynamic Pricing Configuration**: Business levers (markup, shipping rates, material pricing) stored in configurable in-memory storage accessible via password-protected control panel, allowing staff to adjust pricing without code changes.
 
-5. **No Build Step for Development**: Vite serves TypeScript directly during development with middleware mode integration into Express server.
+5. **Monorepo Structure**: Frontend (`client/`), backend (`server/`), and shared code (`shared/`) in single repository with unified TypeScript configuration.
+
+6. **Component Library Strategy**: Using shadcn/ui pattern of copying components into project rather than npm dependency, allowing full customization while maintaining consistency.
+
+7. **No Build Step for Development**: Vite serves TypeScript directly during development with middleware mode integration into Express server.
+
+## Recent Changes (October 23, 2025)
+
+**Pricing System Enhancement:**
+- Implemented exact Google Sheets formulas using real moulding/supply data from Excel file
+- Added real-time pricing preview with debounced API calls (500ms) in order creation form
+- Built password-protected control panel for editing pricing configuration
+- Added dynamic pricing levers: markup multiplier, shipping rates, acrylic/backing prices
+- Validated pricing accuracy: SKU 8694 (20×60") calculates to $105.74 with 2.75× markup, $115.35 with 3.00× markup
+- Configuration changes take effect immediately across all pricing calculations
