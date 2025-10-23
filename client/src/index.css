@@ -354,6 +354,12 @@
   }
 }
 
+/* Remove asterisks from all form labels */
+label[data-invalid]::after,
+label::after {
+  content: none !important;
+}
+
 /* Print Styles */
 @media print {
   @page {
