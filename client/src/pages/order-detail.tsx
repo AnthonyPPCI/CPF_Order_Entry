@@ -203,7 +203,7 @@ export default function OrderDetail() {
               {/* Company Header */}
               <div className="flex justify-between items-start">
                 <div>
-                  <img src={cpfLogo} alt="CustomPictureFrames.com" className="h-12 w-auto mb-3" />
+                  <img src={cpfLogo} alt="CustomPictureFrames.com" className="h-12 w-auto mb-3 dark:invert dark:brightness-0 dark:contrast-200" />
                   <div className="text-sm text-muted-foreground space-y-0.5">
                     <p>6 Shirley Ave</p>
                     <p>Somerset, NJ 08873</p>
