@@ -40,6 +40,21 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const order: Order = {
       ...insertOrder,
+      address2: insertOrder.address2 || null,
+      phone: insertOrder.phone || null,
+      email: insertOrder.email || null,
+      description: insertOrder.description || null,
+      specialRequests: insertOrder.specialRequests || null,
+      chopOnly: insertOrder.chopOnly || false,
+      printPaper: insertOrder.printPaper || false,
+      dryMount: insertOrder.dryMount || false,
+      printCanvas: insertOrder.printCanvas || false,
+      engravedPlaque: insertOrder.engravedPlaque || false,
+      leds: insertOrder.leds || false,
+      shadowboxFitting: insertOrder.shadowboxFitting || false,
+      additionalLabor: insertOrder.additionalLabor || false,
+      width: insertOrder.width.toString(),
+      height: insertOrder.height.toString(),
       id,
       orderDate: new Date(),
     };

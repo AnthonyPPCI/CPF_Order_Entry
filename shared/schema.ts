@@ -91,3 +91,29 @@ export const insertOrderSchema = createInsertSchema(orders, {
 
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Order = typeof orders.$inferSelect;
+
+// Moulding lookup table for frame pricing
+export const moulding = pgTable("moulding", {
+  sku: varchar("sku").primaryKey(),
+  width: decimal("width").notNull(),
+  joinCost: decimal("join_cost").notNull(),
+});
+
+export type Moulding = typeof moulding.$inferSelect;
+
+// Supply lookup table for materials pricing
+export const supply = pgTable("supply", {
+  sku: varchar("sku").primaryKey(),
+  name: text("name").notNull(),
+  price: decimal("price").notNull(),
+});
+
+export type Supply = typeof supply.$inferSelect;
+
+// Pricing configuration table
+export const pricingConfig = pgTable("pricing_config", {
+  key: varchar("key").primaryKey(),
+  value: decimal("value").notNull(),
+});
+
+export type PricingConfig = typeof pricingConfig.$inferSelect;

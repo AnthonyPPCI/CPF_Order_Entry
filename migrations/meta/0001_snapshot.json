@@ -1,0 +1,404 @@
+{
+  "id": "5b2765f6-7995-472f-bda6-bd759ed0a94e",
+  "prevId": "187e65fb-7889-4bc9-8a40-2b79a7b8fe93",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.moulding": {
+      "name": "moulding",
+      "schema": "",
+      "columns": {
+        "sku": {
+          "name": "sku",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "width": {
+          "name": "width",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "join_cost": {
+          "name": "join_cost",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.orders": {
+      "name": "orders",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "order_date": {
+          "name": "order_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "customer_name": {
+          "name": "customer_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address_1": {
+          "name": "address_1",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address_2": {
+          "name": "address_2",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "city_state_zip": {
+          "name": "city_state_zip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "special_requests": {
+          "name": "special_requests",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "frame_sku": {
+          "name": "frame_sku",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "chop_only": {
+          "name": "chop_only",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "width": {
+          "name": "width",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "height": {
+          "name": "height",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mat_border_all": {
+          "name": "mat_border_all",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mat_border_left": {
+          "name": "mat_border_left",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mat_border_right": {
+          "name": "mat_border_right",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mat_border_top": {
+          "name": "mat_border_top",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mat_border_bottom": {
+          "name": "mat_border_bottom",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mat_1_sku": {
+          "name": "mat_1_sku",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mat_1_reveal": {
+          "name": "mat_1_reveal",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mat_2_sku": {
+          "name": "mat_2_sku",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mat_2_reveal": {
+          "name": "mat_2_reveal",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mat_3_sku": {
+          "name": "mat_3_sku",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extra_mat_openings": {
+          "name": "extra_mat_openings",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "acrylic_type": {
+          "name": "acrylic_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Standard'"
+        },
+        "backing_type": {
+          "name": "backing_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'White Foam'"
+        },
+        "print_paper": {
+          "name": "print_paper",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "print_paper_type": {
+          "name": "print_paper_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dry_mount": {
+          "name": "dry_mount",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "print_canvas": {
+          "name": "print_canvas",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "print_canvas_wrap_style": {
+          "name": "print_canvas_wrap_style",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "engraved_plaque": {
+          "name": "engraved_plaque",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "engraved_plaque_size": {
+          "name": "engraved_plaque_size",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "leds": {
+          "name": "leds",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "shadowbox_fitting": {
+          "name": "shadowbox_fitting",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "additional_labor": {
+          "name": "additional_labor",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "item_total": {
+          "name": "item_total",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "shipping": {
+          "name": "shipping",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sales_tax": {
+          "name": "sales_tax",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "discount_percent": {
+          "name": "discount_percent",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "total": {
+          "name": "total",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deposit": {
+          "name": "deposit",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "balance": {
+          "name": "balance",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pricing_config": {
+      "name": "pricing_config",
+      "schema": "",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.supply": {
+      "name": "supply",
+      "schema": "",
+      "columns": {
+        "sku": {
+          "name": "sku",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price": {
+          "name": "price",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

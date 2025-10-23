@@ -1,0 +1,89 @@
+import XLSX from 'xlsx';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+export interface MouldingData {
+  sku: string;
+  width: number;
+  joinCost: number;
+}
+
+export interface SupplyData {
+  sku: string;
+  name: string;
+  price: number;
+}
+
+export interface PricingData {
+  mouldings: Map<string, MouldingData>;
+  supplies: Map<string, SupplyData>;
+  markup: number;
+  chopOnlyJoinFt: number;
+}
+
+let pricingDataCache: PricingData | null = null;
+
+export function loadPricingData(): PricingData {
+  if (pricingDataCache) {
+    return pricingDataCache;
+  }
+
+  const excelPath = join(__dirname, '..', 'attached_assets', 'ANNIE CPF Order Entry Sheet (1)_1761234370780.xlsx');
+  const workbook = XLSX.readFile(excelPath);
+
+  // Load Moulding Data
+  const mouldingSheet = workbook.Sheets['Moulding'];
+  const mouldingData = XLSX.utils.sheet_to_json(mouldingSheet, { header: 1, defval: '' }) as any[];
+  const mouldings = new Map<string, MouldingData>();
+
+  for (let i = 1; i < mouldingData.length; i++) {
+    const row = mouldingData[i];
+    if (row[0]) {  // Has SKU
+      mouldings.set(String(row[0]), {
+        sku: String(row[0]),
+        width: Number(row[1] || 0),
+        joinCost: Number(row[8] || 0),  // Column I (index 8) is join cost
+      });
+    }
+  }
+
+  // Load Supply Data
+  const supplySheet = workbook.Sheets['Supply'];
+  const supplyData = XLSX.utils.sheet_to_json(supplySheet, { header: 1, defval: '' }) as any[];
+  const supplies = new Map<string, SupplyData>();
+
+  for (let i = 1; i < supplyData.length; i++) {
+    const row = supplyData[i];
+    if (row[0]) {  // Has SKU
+      supplies.set(String(row[0]), {
+        sku: String(row[0]),
+        name: String(row[1] || ''),
+        price: Number(row[3] || 0),  // Column D (index 3) is price
+      });
+    }
+  }
+
+  pricingDataCache = {
+    mouldings,
+    supplies,
+    markup: 2.75,
+    chopOnlyJoinFt: 18,
+  };
+
+  console.log(`Loaded ${mouldings.size} mouldings and ${supplies.size} supplies`);
+  
+  return pricingDataCache;
+}
+
+export function getMoulding(sku: string): MouldingData | undefined {
+  const data = loadPricingData();
+  return data.mouldings.get(sku);
+}
+
+export function getSupply(sku: string): SupplyData | undefined {
+  const data = loadPricingData();
+  return data.supplies.get(sku);
+}
