@@ -9,9 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import cpfLogo from "@assets/cpf-logo.webp";
 
-// Type for multi-item order response
-type MultiItemOrderResponse = {
-  header: OrderHeader;
+// Type for multi-item order response (header fields merged with items array)
+type MultiItemOrderResponse = OrderHeader & {
   items: OrderItem[];
 };
 
@@ -25,8 +24,8 @@ export default function OrderDetail() {
     enabled: !!orderId,
   });
 
-  // Check if this is a multi-item order
-  const isMultiItemOrder = orderData && "header" in orderData;
+  // Check if this is a multi-item order (has items array)
+  const isMultiItemOrder = orderData && "items" in orderData;
   const order = isMultiItemOrder ? null : (orderData as Order);
   const multiOrder = isMultiItemOrder ? (orderData as MultiItemOrderResponse) : null;
 
@@ -90,7 +89,7 @@ export default function OrderDetail() {
                   <div>
                     <CardTitle>Multi-Item Order</CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Order #{multiOrder.header.id?.slice(0, 8).toUpperCase()}
+                      Order #{multiOrder.id?.slice(0, 8).toUpperCase()}
                     </p>
                   </div>
                   <Badge variant="secondary">{multiOrder.items.length} Items</Badge>
@@ -101,10 +100,10 @@ export default function OrderDetail() {
                 <div>
                   <h3 className="font-semibold mb-2">Customer Information</h3>
                   <div className="text-sm space-y-1">
-                    <p className="font-medium">{multiOrder.header.customerName}</p>
-                    {multiOrder.header.address1 && <p className="text-muted-foreground">{multiOrder.header.address1}</p>}
-                    {multiOrder.header.cityStateZip && <p className="text-muted-foreground">{multiOrder.header.cityStateZip}</p>}
-                    {multiOrder.header.phone && <p className="text-muted-foreground">{multiOrder.header.phone}</p>}
+                    <p className="font-medium">{multiOrder.customerName}</p>
+                    {multiOrder.address1 && <p className="text-muted-foreground">{multiOrder.address1}</p>}
+                    {multiOrder.cityStateZip && <p className="text-muted-foreground">{multiOrder.cityStateZip}</p>}
+                    {multiOrder.phone && <p className="text-muted-foreground">{multiOrder.phone}</p>}
                   </div>
                 </div>
 
@@ -158,34 +157,34 @@ export default function OrderDetail() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Shipping:</span>
-                      <span className="font-medium">${multiOrder.header.shipping}</span>
+                      <span className="font-medium">${multiOrder.shipping}</span>
                     </div>
-                    {multiOrder.header.salesTax && multiOrder.header.salesTax !== "0.00" && (
+                    {multiOrder.salesTax && multiOrder.salesTax !== "0.00" && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Sales Tax:</span>
-                        <span className="font-medium">${multiOrder.header.salesTax}</span>
+                        <span className="font-medium">${multiOrder.salesTax}</span>
                       </div>
                     )}
-                    {multiOrder.header.discount && (
+                    {multiOrder.discount && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Discount:</span>
-                        <span className="font-medium">{multiOrder.header.discount}</span>
+                        <span className="font-medium">{multiOrder.discount}</span>
                       </div>
                     )}
-                    {multiOrder.header.deposit && (
+                    {multiOrder.deposit && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Deposit Paid:</span>
-                        <span className="font-medium">{multiOrder.header.deposit}</span>
+                        <span className="font-medium">{multiOrder.deposit}</span>
                       </div>
                     )}
                     <Separator />
                     <div className="flex justify-between text-lg">
                       <span className="font-bold">Total:</span>
-                      <span className="font-bold">${multiOrder.header.total}</span>
+                      <span className="font-bold">${multiOrder.total}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Balance Due:</span>
-                      <span className="font-semibold">${multiOrder.header.balance}</span>
+                      <span className="font-semibold">${multiOrder.balance}</span>
                     </div>
                   </div>
                 </div>
