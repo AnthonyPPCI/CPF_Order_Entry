@@ -59,6 +59,22 @@ export default function NewOrder() {
     salesTax: 0,
     total: 0,
     balance: 0,
+    breakdown: {
+      frameCost: "0.00",
+      mat1Cost: "0.00",
+      mat2Cost: "0.00",
+      mat3Cost: "0.00",
+      acrylicCost: "0.00",
+      backingCost: "0.00",
+      printPaperCost: "0.00",
+      dryMountCost: "0.00",
+      printCanvasCost: "0.00",
+      engravedPlaqueCost: "0.00",
+      ledsCost: "0.00",
+      shadowboxFittingCost: "0.00",
+      additionalLaborCost: "0.00",
+      extraMatOpeningsCost: "0.00",
+    },
   });
 
   const form = useForm<InsertOrder>({
@@ -156,6 +172,7 @@ export default function NewOrder() {
             salesTax: pricing.salesTax ? parseFloat(pricing.salesTax) : 0,
             total: parseFloat(pricing.total),
             balance: parseFloat(pricing.balance),
+            breakdown: pricing.breakdown,
           });
         }
       } catch (error) {
@@ -442,6 +459,7 @@ export default function NewOrder() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
+                                <SelectItem value="None">None</SelectItem>
                                 <SelectItem value="Standard">Standard</SelectItem>
                                 <SelectItem value="Museum Quality">Museum Quality</SelectItem>
                                 <SelectItem value="Non-Glare">Non-Glare</SelectItem>
@@ -464,6 +482,7 @@ export default function NewOrder() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
+                                <SelectItem value="None">None</SelectItem>
                                 <SelectItem value="White Foam">White Foam</SelectItem>
                                 <SelectItem value="Acid Free">Acid Free</SelectItem>
                                 <SelectItem value="Black Foam">Black Foam</SelectItem>
@@ -1063,82 +1082,88 @@ export default function NewOrder() {
                   <Separator />
 
                   <div className="space-y-2 text-sm">
-                    {form.watch("frameSku") && (
+                    {form.watch("frameSku") && parseFloat(calculatedPricing.breakdown.frameCost) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Frame ({form.watch("frameSku")})</span>
-                        <span className="font-mono" data-testid="text-frame-cost">Included</span>
+                        <span className="font-mono" data-testid="text-frame-cost">${calculatedPricing.breakdown.frameCost}</span>
                       </div>
                     )}
-                    {form.watch("mat1Sku") && (
+                    {form.watch("mat1Sku") && parseFloat(calculatedPricing.breakdown.mat1Cost) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Mat 1 ({form.watch("mat1Sku")})</span>
-                        <span className="font-mono">Included</span>
+                        <span className="font-mono">${calculatedPricing.breakdown.mat1Cost}</span>
                       </div>
                     )}
-                    {form.watch("mat2Sku") && (
+                    {form.watch("mat2Sku") && parseFloat(calculatedPricing.breakdown.mat2Cost) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Mat 2 ({form.watch("mat2Sku")})</span>
-                        <span className="font-mono">Included</span>
+                        <span className="font-mono">${calculatedPricing.breakdown.mat2Cost}</span>
                       </div>
                     )}
-                    {form.watch("mat3Sku") && (
+                    {form.watch("mat3Sku") && parseFloat(calculatedPricing.breakdown.mat3Cost) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Mat 3 ({form.watch("mat3Sku")})</span>
-                        <span className="font-mono">Included</span>
+                        <span className="font-mono">${calculatedPricing.breakdown.mat3Cost}</span>
                       </div>
                     )}
-                    {form.watch("acrylicType") && form.watch("acrylicType") !== "None" && (
+                    {form.watch("acrylicType") && form.watch("acrylicType") !== "None" && parseFloat(calculatedPricing.breakdown.acrylicCost) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">{form.watch("acrylicType")} Acrylic</span>
-                        <span className="font-mono">Included</span>
+                        <span className="font-mono">${calculatedPricing.breakdown.acrylicCost}</span>
                       </div>
                     )}
-                    {form.watch("backingType") && form.watch("backingType") !== "None" && (
+                    {form.watch("backingType") && form.watch("backingType") !== "None" && parseFloat(calculatedPricing.breakdown.backingCost) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">{form.watch("backingType")}</span>
-                        <span className="font-mono">Included</span>
+                        <span className="font-mono">${calculatedPricing.breakdown.backingCost}</span>
                       </div>
                     )}
-                    {form.watch("printPaper") && (
+                    {form.watch("printPaper") && parseFloat(calculatedPricing.breakdown.printPaperCost) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Print (Paper)</span>
-                        <span className="font-mono">Included</span>
+                        <span className="font-mono">${calculatedPricing.breakdown.printPaperCost}</span>
                       </div>
                     )}
-                    {form.watch("dryMount") && (
+                    {form.watch("dryMount") && parseFloat(calculatedPricing.breakdown.dryMountCost) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Dry Mount</span>
-                        <span className="font-mono">Included</span>
+                        <span className="font-mono">${calculatedPricing.breakdown.dryMountCost}</span>
                       </div>
                     )}
-                    {form.watch("printCanvas") && (
+                    {form.watch("printCanvas") && parseFloat(calculatedPricing.breakdown.printCanvasCost) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Print (Canvas - {form.watch("printCanvasWrapStyle") || "Gallery"})</span>
-                        <span className="font-mono">Included</span>
+                        <span className="font-mono">${calculatedPricing.breakdown.printCanvasCost}</span>
                       </div>
                     )}
-                    {form.watch("engravedPlaque") && (
+                    {form.watch("engravedPlaque") && parseFloat(calculatedPricing.breakdown.engravedPlaqueCost) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Engraved Plaque</span>
-                        <span className="font-mono">Included</span>
+                        <span className="font-mono">${calculatedPricing.breakdown.engravedPlaqueCost}</span>
                       </div>
                     )}
-                    {form.watch("leds") && (
+                    {form.watch("leds") && parseFloat(calculatedPricing.breakdown.ledsCost) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">LEDs</span>
-                        <span className="font-mono">Included</span>
+                        <span className="font-mono">${calculatedPricing.breakdown.ledsCost}</span>
                       </div>
                     )}
-                    {form.watch("shadowboxFitting") && (
+                    {form.watch("shadowboxFitting") && parseFloat(calculatedPricing.breakdown.shadowboxFittingCost) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Shadowbox Fitting</span>
-                        <span className="font-mono">Included</span>
+                        <span className="font-mono">${calculatedPricing.breakdown.shadowboxFittingCost}</span>
                       </div>
                     )}
-                    {form.watch("additionalLabor") && (
+                    {form.watch("additionalLabor") && parseFloat(calculatedPricing.breakdown.additionalLaborCost) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Additional Labor</span>
-                        <span className="font-mono">Included</span>
+                        <span className="font-mono">${calculatedPricing.breakdown.additionalLaborCost}</span>
+                      </div>
+                    )}
+                    {form.watch("extraMatOpenings") > 0 && parseFloat(calculatedPricing.breakdown.extraMatOpeningsCost) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Extra Mat Openings ({form.watch("extraMatOpenings")})</span>
+                        <span className="font-mono">${calculatedPricing.breakdown.extraMatOpeningsCost}</span>
                       </div>
                     )}
                   </div>

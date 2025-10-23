@@ -8,6 +8,23 @@ interface PricingResult {
   salesTax: string;
   total: string;
   balance: string;
+  // Itemized component breakdown
+  breakdown: {
+    frameCost: string;
+    mat1Cost: string;
+    mat2Cost: string;
+    mat3Cost: string;
+    acrylicCost: string;
+    backingCost: string;
+    printPaperCost: string;
+    dryMountCost: string;
+    printCanvasCost: string;
+    engravedPlaqueCost: string;
+    ledsCost: string;
+    shadowboxFittingCost: string;
+    additionalLaborCost: string;
+    extraMatOpeningsCost: string;
+  };
 }
 
 // Helper function to parse fractions and decimals (e.g., "16 1/2", "16-1/2", "16.5", "1/2")
@@ -95,69 +112,102 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   // Frame Cost = Join Cost * Join Feet
   const frameCost = joinCost * joinFt;
   
+  // Determine if this is a standalone component order (no frame)
+  const isStandaloneOrder = !order.frameSku || order.frameSku.trim() === "" || order.frameSku === "None";
+  // Standalone component markup multiplier (1.65x makes components more expensive when ordered alone)
+  const standaloneMultiplier = isStandaloneOrder ? 1.65 : 1.0;
+  
+  // Track individual component costs for breakdown
+  let mat1CostBase = 0;
+  let mat2CostBase = 0;
+  let mat3CostBase = 0;
+  let acrylicCostBase = 0;
+  let backingCostBase = 0;
+  let printPaperCostBase = 0;
+  let dryMountCostBase = 0;
+  let printCanvasCostBase = 0;
+  let engravedPlaqueCostBase = 0;
+  let ledsCostBase = 0;
+  let shadowboxFittingCostBase = 0;
+  let additionalLaborCostBase = 0;
+  let extraMatOpeningsCostBase = 0;
+  
   // Calculate add-on costs
   let addOnCosts = 0;
   
   // Acrylic cost (per square inch) - use dynamic config
   const acrylicType = order.acrylicType || 'Standard';
-  const acrylicPrice = config.acrylicPrices.find(p => p.type === acrylicType);
-  const acrylicCost = (acrylicPrice?.pricePerSqIn || 0) * squareInches;
-  addOnCosts += acrylicCost;
+  if (acrylicType !== 'None') {
+    const acrylicPrice = config.acrylicPrices.find(p => p.type === acrylicType);
+    acrylicCostBase = (acrylicPrice?.pricePerSqIn || 0) * squareInches * standaloneMultiplier;
+    addOnCosts += acrylicCostBase;
+  }
   
   // Backing cost - use dynamic config
   const backingType = order.backingType || 'White Foam';
-  const backingPrice = config.backingPrices.find(p => p.type === backingType);
-  const backingCost = backingPrice?.price || 0;
-  addOnCosts += backingCost;
+  if (backingType !== 'None') {
+    const backingPrice = config.backingPrices.find(p => p.type === backingType);
+    backingCostBase = (backingPrice?.price || 0) * standaloneMultiplier;
+    addOnCosts += backingCostBase;
+  }
   
-  // Mat costs (would need to look up from supply table, using defaults for now)
+  // Mat costs - apply standalone multiplier
   if (order.mat1Sku) {
     const mat1 = getSupply(order.mat1Sku);
-    addOnCosts += mat1?.price || 15;
+    mat1CostBase = (mat1?.price || 15) * standaloneMultiplier;
+    addOnCosts += mat1CostBase;
   }
   if (order.mat2Sku) {
     const mat2 = getSupply(order.mat2Sku);
-    addOnCosts += mat2?.price || 15;
+    mat2CostBase = (mat2?.price || 15) * standaloneMultiplier;
+    addOnCosts += mat2CostBase;
   }
   if (order.mat3Sku) {
     const mat3 = getSupply(order.mat3Sku);
-    addOnCosts += mat3?.price || 15;
+    mat3CostBase = (mat3?.price || 15) * standaloneMultiplier;
+    addOnCosts += mat3CostBase;
   }
   
   // Extra mat openings
-  addOnCosts += (order.extraMatOpenings || 0) * 2.5;
+  extraMatOpeningsCostBase = (order.extraMatOpenings || 0) * 2.5;
+  addOnCosts += extraMatOpeningsCostBase;
   
   // Print options (per square inch)
   if (order.printPaper) {
-    addOnCosts += 0.05 * squareInches;
+    printPaperCostBase = 0.05 * squareInches;
+    addOnCosts += printPaperCostBase;
   }
   if (order.dryMount) {
-    addOnCosts += 0.03 * squareInches;
+    dryMountCostBase = 0.03 * squareInches;
+    addOnCosts += dryMountCostBase;
   }
   if (order.printCanvas) {
-    let canvasCost;
     // Rolled canvas is 10% more than paper print ($0.05 × 1.10 = $0.055)
     if (order.printCanvasWrapStyle === "Rolled") {
-      canvasCost = 0.055 * squareInches;
+      printCanvasCostBase = 0.055 * squareInches;
     } else {
       // Gallery and Museum use standard canvas pricing
-      canvasCost = 0.08 * squareInches;
+      printCanvasCostBase = 0.08 * squareInches;
     }
-    addOnCosts += canvasCost;
+    addOnCosts += printCanvasCostBase;
   }
   
   // Fixed-cost options
   if (order.engravedPlaque) {
-    addOnCosts += 30;
+    engravedPlaqueCostBase = 30;
+    addOnCosts += engravedPlaqueCostBase;
   }
   if (order.leds) {
-    addOnCosts += 45;
+    ledsCostBase = 45;
+    addOnCosts += ledsCostBase;
   }
   if (order.shadowboxFitting) {
-    addOnCosts += 17.50;
+    shadowboxFittingCostBase = 17.50;
+    addOnCosts += shadowboxFittingCostBase;
   }
   if (order.additionalLabor) {
-    addOnCosts += 17.50;
+    additionalLaborCostBase = 17.50;
+    addOnCosts += additionalLaborCostBase;
   }
   
   // Calculate Item Total with Markup (use dynamic config)
@@ -205,5 +255,21 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     salesTax: salesTax > 0 ? salesTax.toFixed(2) : "",
     total: total.toFixed(2),
     balance: balance.toFixed(2),
+    breakdown: {
+      frameCost: (frameCost * config.markup * quantity).toFixed(2),
+      mat1Cost: (mat1CostBase * config.markup * quantity).toFixed(2),
+      mat2Cost: (mat2CostBase * config.markup * quantity).toFixed(2),
+      mat3Cost: (mat3CostBase * config.markup * quantity).toFixed(2),
+      acrylicCost: (acrylicCostBase * config.markup * quantity).toFixed(2),
+      backingCost: (backingCostBase * config.markup * quantity).toFixed(2),
+      printPaperCost: (printPaperCostBase * config.markup * quantity).toFixed(2),
+      dryMountCost: (dryMountCostBase * config.markup * quantity).toFixed(2),
+      printCanvasCost: (printCanvasCostBase * config.markup * quantity).toFixed(2),
+      engravedPlaqueCost: (engravedPlaqueCostBase * config.markup * quantity).toFixed(2),
+      ledsCost: (ledsCostBase * config.markup * quantity).toFixed(2),
+      shadowboxFittingCost: (shadowboxFittingCostBase * config.markup * quantity).toFixed(2),
+      additionalLaborCost: (additionalLaborCostBase * config.markup * quantity).toFixed(2),
+      extraMatOpeningsCost: (extraMatOpeningsCostBase * config.markup * quantity).toFixed(2),
+    },
   };
 }
