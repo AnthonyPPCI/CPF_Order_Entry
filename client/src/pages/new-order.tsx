@@ -70,6 +70,7 @@ export default function NewOrder() {
       printPaperCost: "0.00",
       dryMountCost: "0.00",
       printCanvasCost: "0.00",
+      canvasStretchingCost: "0.00",
       engravedPlaqueCost: "0.00",
       ledsCost: "0.00",
       shadowboxFittingCost: "0.00",
@@ -113,6 +114,7 @@ export default function NewOrder() {
       dryMount: false,
       printCanvas: false,
       printCanvasWrapStyle: "",
+      canvasStretching: false,
       engravedPlaque: false,
       engravedPlaqueSize: "",
       engravedPlaqueColor: "",
@@ -847,6 +849,23 @@ export default function NewOrder() {
                                   )}
                                 />
                               )}
+                              
+                              <FormField
+                                control={form.control}
+                                name="canvasStretching"
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        data-testid="checkbox-canvas-stretching"
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="font-normal cursor-pointer">Canvas Stretching (Customer Supplied)</FormLabel>
+                                  </FormItem>
+                                )}
+                              />
                             </div>
                           </div>
                         </AccordionContent>
@@ -1224,6 +1243,12 @@ export default function NewOrder() {
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Print (Canvas - {form.watch("printCanvasWrapStyle") || "Gallery"})</span>
                         <span className="font-mono">${calculatedPricing.breakdown.printCanvasCost}</span>
+                      </div>
+                    )}
+                    {form.watch("canvasStretching") && parseFloat(calculatedPricing.breakdown.canvasStretchingCost) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Canvas Stretching (Customer Supplied)</span>
+                        <span className="font-mono">${calculatedPricing.breakdown.canvasStretchingCost}</span>
                       </div>
                     )}
                     {form.watch("engravedPlaque") && parseFloat(calculatedPricing.breakdown.engravedPlaqueCost) > 0 && (
