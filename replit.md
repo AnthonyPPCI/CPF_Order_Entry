@@ -178,11 +178,11 @@ Preferred communication style: Simple, everyday language.
 
 **Differential Markup for Standalone Components (Critical Pricing Fix):**
 - Added "None" option to Acrylic Type and Backing Type dropdowns for flexible ordering
-- Implemented 1.65× markup multiplier for standalone component orders (when frameSku is empty or "None")
+- Implemented 3.0× markup multiplier for standalone component orders (when frameSku is empty or "None")
 - Standalone multiplier applies to: acrylic, backing, mat 1, mat 2, mat 3
-- Example: 20×44 Standard Acrylic = $35.94 standalone vs $21.78 when ordered with frame
+- Example: 20×44 Standard Acrylic = $65.34 standalone vs $21.78 when ordered with frame
 - Differential pricing ensures standalone components are correctly priced higher than combo pricing
-- Verified test results: Frame+Acrylic combo shows Frame $56.43 + Acrylic $21.78, standalone acrylic shows $35.94
+- Formula: Component Base Cost × Standalone Multiplier (3.0) × Global Markup (2.75) × Quantity
 
 **Itemized Component Pricing Display:**
 - Expanded PricingResult interface to include detailed breakdown object with individual component costs
