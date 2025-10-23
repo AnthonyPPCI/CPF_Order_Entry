@@ -80,6 +80,7 @@ Preferred communication style: Simple, everyday language.
 
 **Pricing Data Storage**: Excel-based pricing data loaded at server startup from `attached_assets/ANNIE CPF Order Entry Sheet (1)_1761234370780.xlsx` containing:
 - 2,216 moulding SKUs with join costs and dimensions
+- Custom moulding F101 added programmatically (exact copy of SKU 8694)
 - 1,781 supply items with pricing
 - Loaded into in-memory maps for fast lookup during pricing calculations
 

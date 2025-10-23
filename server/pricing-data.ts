@@ -81,6 +81,15 @@ export function loadPricingData(): PricingData {
     }
   }
 
+  // Add F101 as a copy of 8694
+  const moulding8694 = mouldings.get('8694');
+  if (moulding8694) {
+    mouldings.set('F101', {
+      ...moulding8694,
+      sku: 'F101',
+    });
+  }
+
   pricingDataCache = {
     mouldings,
     supplies,
