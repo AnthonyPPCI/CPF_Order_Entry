@@ -7,6 +7,7 @@ import { ArrowLeft, Printer, Mail, Mic, Square } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import cpfLogo from "@assets/cpf-logo.webp";
 
 export default function OrderDetail() {
   const [, params] = useRoute("/order/:id");
@@ -202,8 +203,8 @@ export default function OrderDetail() {
               {/* Company Header */}
               <div className="flex justify-between items-start">
                 <div>
-                  <h1 className="text-2xl font-bold">CustomPictureFrames.com</h1>
-                  <div className="text-sm text-muted-foreground mt-2 space-y-0.5">
+                  <img src={cpfLogo} alt="CustomPictureFrames.com" className="h-12 w-auto mb-3" />
+                  <div className="text-sm text-muted-foreground space-y-0.5">
                     <p>6 Shirley Ave</p>
                     <p>Somerset, NJ 08873</p>
                     <p>(800) 916-8770</p>
