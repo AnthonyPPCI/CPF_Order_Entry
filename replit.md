@@ -140,6 +140,11 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 23, 2025)
 
+**UI Improvements:**
+- Consolidated mat borders and mat layers into a single collapsible accordion labeled "Mat Configuration"
+- Accordion saves vertical space while keeping all fields accessible
+- Default state is collapsed; expands to show mat borders (All Sides, Left, Right, Top, Bottom) and mat layers (Mat 1-3 SKUs, reveals, extra openings)
+
 **Delivery Method Selection:**
 - Added "Shipping" vs "Customer Pickup" radio buttons at top of Customer Information section
 - When "Customer Pickup" is selected, shipping charges are set to $0

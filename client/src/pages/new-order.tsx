@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MatCombobox } from "@/components/mat-combobox";
 
 // Helper function to parse fractions and decimals
@@ -414,166 +415,177 @@ export default function NewOrder() {
                     <Separator />
 
                     {/* Mat Configuration */}
-                    <div className="space-y-4">
-                      <h3 className="text-base font-semibold">Mat Borders</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="matBorderAll"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm">All Sides</FormLabel>
-                              <FormControl>
-                                <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-all" />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="matBorderLeft"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm">Left</FormLabel>
-                              <FormControl>
-                                <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-left" />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="matBorderRight"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm">Right</FormLabel>
-                              <FormControl>
-                                <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-right" />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="matBorderTop"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm">Top</FormLabel>
-                              <FormControl>
-                                <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-top" />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="matBorderBottom"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm">Bottom</FormLabel>
-                              <FormControl>
-                                <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-bottom" />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
+                    <Accordion type="single" collapsible className="w-full" data-testid="accordion-mat-configuration">
+                      <AccordionItem value="mat-config">
+                        <AccordionTrigger className="text-base font-semibold hover:no-underline" data-testid="accordion-trigger-mat-config">
+                          Mat Configuration
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-6 pt-4">
+                          {/* Mat Borders */}
+                          <div className="space-y-4">
+                            <h4 className="text-sm font-semibold text-muted-foreground">Mat Borders</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                              <FormField
+                                control={form.control}
+                                name="matBorderAll"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">All Sides</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-all" />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="matBorderLeft"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Left</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-left" />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="matBorderRight"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Right</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-right" />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="matBorderTop"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Top</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-top" />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="matBorderBottom"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Bottom</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-bottom" />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
 
-                    <div className="space-y-4">
-                      <h3 className="text-base font-semibold">Mat Layers</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="mat1Sku"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm">Mat 1 SKU</FormLabel>
-                              <FormControl>
-                                <MatCombobox
-                                  value={field.value || ""}
-                                  onChange={field.onChange}
-                                  placeholder="Select mat 1..."
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="mat1Reveal"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm">Mat 1 Reveal</FormLabel>
-                              <FormControl>
-                                <Input {...field} value={field.value || ""} placeholder="e.g., 0.125" data-testid="input-mat1-reveal" />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="mat2Sku"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm">Mat 2 SKU</FormLabel>
-                              <FormControl>
-                                <MatCombobox
-                                  value={field.value || ""}
-                                  onChange={field.onChange}
-                                  placeholder="Select mat 2..."
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="mat2Reveal"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm">Mat 2 Reveal</FormLabel>
-                              <FormControl>
-                                <Input {...field} value={field.value || ""} placeholder="e.g., 0.125" data-testid="input-mat2-reveal" />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="mat3Sku"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm">Mat 3 SKU</FormLabel>
-                              <FormControl>
-                                <MatCombobox
-                                  value={field.value || ""}
-                                  onChange={field.onChange}
-                                  placeholder="Select mat 3..."
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="extraMatOpenings"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm">Extra Mat Openings (after the first opening)</FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  type="number"
-                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                  data-testid="input-extra-mat-openings"
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
+                          {/* Mat Layers */}
+                          <div className="space-y-4">
+                            <h4 className="text-sm font-semibold text-muted-foreground">Mat Layers</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <FormField
+                                control={form.control}
+                                name="mat1Sku"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Mat 1 SKU</FormLabel>
+                                    <FormControl>
+                                      <MatCombobox
+                                        value={field.value || ""}
+                                        onChange={field.onChange}
+                                        placeholder="Select mat 1..."
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="mat1Reveal"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Mat 1 Reveal</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 0.125" data-testid="input-mat1-reveal" />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="mat2Sku"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Mat 2 SKU</FormLabel>
+                                    <FormControl>
+                                      <MatCombobox
+                                        value={field.value || ""}
+                                        onChange={field.onChange}
+                                        placeholder="Select mat 2..."
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="mat2Reveal"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Mat 2 Reveal</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 0.125" data-testid="input-mat2-reveal" />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="mat3Sku"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Mat 3 SKU</FormLabel>
+                                    <FormControl>
+                                      <MatCombobox
+                                        value={field.value || ""}
+                                        onChange={field.onChange}
+                                        placeholder="Select mat 3..."
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="extraMatOpenings"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Extra Mat Openings (after the first opening)</FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        {...field}
+                                        type="number"
+                                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                        data-testid="input-extra-mat-openings"
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   </CardContent>
                 </Card>
 
