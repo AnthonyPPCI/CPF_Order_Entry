@@ -16,9 +16,38 @@ import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 
+// Helper function to parse fractions and decimals
+function parseFraction(input: string): number {
+  if (!input || input.trim() === "") return 0;
+  
+  const str = input.trim();
+  
+  // Check if it's a mixed fraction like "16 1/2" or "16-1/2"
+  const mixedMatch = str.match(/^(\d+)[\s-]+(\d+)\/(\d+)$/);
+  if (mixedMatch) {
+    const whole = parseInt(mixedMatch[1]);
+    const numerator = parseInt(mixedMatch[2]);
+    const denominator = parseInt(mixedMatch[3]);
+    return whole + (numerator / denominator);
+  }
+  
+  // Check if it's a simple fraction like "1/2"
+  const fractionMatch = str.match(/^(\d+)\/(\d+)$/);
+  if (fractionMatch) {
+    const numerator = parseInt(fractionMatch[1]);
+    const denominator = parseInt(fractionMatch[2]);
+    return numerator / denominator;
+  }
+  
+  // Otherwise parse as decimal
+  return parseFloat(str) || 0;
+}
+
 export default function NewOrder() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [widthText, setWidthText] = useState("12");
+  const [heightText, setHeightText] = useState("16");
   const [calculatedPricing, setCalculatedPricing] = useState({
     itemTotal: 0,
     shipping: 0,
@@ -313,9 +342,14 @@ export default function NewOrder() {
                             <FormLabel>Width (inches) *</FormLabel>
                             <FormControl>
                               <Input
-                                {...field}
-                                type="number"
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                type="text"
+                                placeholder="e.g., 16.5 or 16 1/2"
+                                onChange={(e) => {
+                                  setWidthText(e.target.value);
+                                  const parsed = parseFraction(e.target.value);
+                                  field.onChange(parsed);
+                                }}
+                                value={widthText}
                                 data-testid="input-width"
                               />
                             </FormControl>
@@ -332,9 +366,14 @@ export default function NewOrder() {
                             <FormLabel>Height (inches) *</FormLabel>
                             <FormControl>
                               <Input
-                                {...field}
-                                type="number"
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                type="text"
+                                placeholder="e.g., 20 or 20 1/4"
+                                onChange={(e) => {
+                                  setHeightText(e.target.value);
+                                  const parsed = parseFraction(e.target.value);
+                                  field.onChange(parsed);
+                                }}
+                                value={heightText}
                                 data-testid="input-height"
                               />
                             </FormControl>
@@ -882,12 +921,12 @@ export default function NewOrder() {
                         ${calculatedPricing.total.toFixed(2)}
                       </span>
                     </div>
-                    {form.watch("deposit") && parseFloat(form.watch("deposit")) > 0 && (
+                    {form.watch("deposit") && parseFloat(form.watch("deposit") || "0") > 0 && (
                       <>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Deposit:</span>
                           <span className="font-mono">
-                            ${parseFloat(form.watch("deposit")).toFixed(2)}
+                            ${parseFloat(form.watch("deposit") || "0").toFixed(2)}
                           </span>
                         </div>
                         <div className="flex justify-between">

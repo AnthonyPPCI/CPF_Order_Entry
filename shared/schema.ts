@@ -22,8 +22,8 @@ export const orders = pgTable("orders", {
   // Frame Details
   frameSku: text("frame_sku").notNull(),
   chopOnly: boolean("chop_only").notNull().default(false),
-  width: integer("width").notNull(),
-  height: integer("height").notNull(),
+  width: decimal("width").notNull(),
+  height: decimal("height").notNull(),
   
   // Mat Configuration
   matBorderAll: decimal("mat_border_all"),
