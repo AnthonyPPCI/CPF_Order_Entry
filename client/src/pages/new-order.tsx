@@ -713,9 +713,19 @@ export default function NewOrder() {
                               name="printCanvasWrapStyle"
                               render={({ field }) => (
                                 <FormItem className="ml-6">
-                                  <FormControl>
-                                    <Input {...field} value={field.value || ""} placeholder="Wrap style" data-testid="input-print-canvas-wrap-style" />
-                                  </FormControl>
+                                  <FormLabel className="text-sm">Wrap Style</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                                    <FormControl>
+                                      <SelectTrigger data-testid="select-canvas-wrap-style">
+                                        <SelectValue placeholder="Select wrap style" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="Gallery">Gallery - Wrapped around frame edges</SelectItem>
+                                      <SelectItem value="Museum">Museum - Extra border before wrapping</SelectItem>
+                                      <SelectItem value="Rolled">Rolled - Canvas not stretched (40% off)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </FormItem>
                               )}
                             />

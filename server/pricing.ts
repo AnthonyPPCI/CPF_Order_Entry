@@ -135,7 +135,12 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     addOnCosts += 0.03 * squareInches;
   }
   if (order.printCanvas) {
-    addOnCosts += 0.08 * squareInches;
+    let canvasCost = 0.08 * squareInches;
+    // Apply 40% discount for rolled canvas (multiply by 0.6)
+    if (order.printCanvasWrapStyle === "Rolled") {
+      canvasCost *= 0.6;
+    }
+    addOnCosts += canvasCost;
   }
   
   // Fixed-cost options
