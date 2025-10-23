@@ -103,6 +103,26 @@ function calculateStackerFrames(
     }
   }
 
+  // If there's still remaining depth, add one more of the smallest frame to meet/exceed requirement
+  if (remainingDepth > 0 && stackerFrames.length > 0) {
+    const smallestFrame = stackerFrames[stackerFrames.length - 1]; // Already sorted descending
+    const layerCost = perimeterFeet * smallestFrame.pricePerFt;
+    
+    // Check if we already have this frame type in layers
+    const existingLayer = layers.find(l => l.sku === smallestFrame.sku);
+    if (existingLayer) {
+      existingLayer.quantity += 1;
+      existingLayer.cost += layerCost;
+    } else {
+      layers.push({
+        sku: smallestFrame.sku,
+        depth: smallestFrame.depth,
+        quantity: 1,
+        cost: layerCost,
+      });
+    }
+  }
+
   // Calculate total frame cost
   const frameCost = layers.reduce((sum, layer) => sum + layer.cost, 0);
   const assemblyCharge = config.stackerAssemblyCharge;
