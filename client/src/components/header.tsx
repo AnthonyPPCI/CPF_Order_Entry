@@ -12,12 +12,18 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-3 hover-elevate rounded-md px-3 py-2 -ml-3" data-testid="link-home">
+            <a 
+              href="https://www.custompictureframes.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 hover-elevate rounded-md px-3 py-2 -ml-3" 
+              data-testid="link-home"
+            >
               <img src={cpfLogo} alt="CustomPictureFrames.com" className="h-10 w-auto dark:invert dark:brightness-0 dark:contrast-200" />
               <div className="flex flex-col">
                 <span className="text-xs text-muted-foreground hidden sm:block">6 Shirley Ave, Somerset, NJ 08873</span>
               </div>
-            </Link>
+            </a>
           </div>
 
           <div className="flex items-center gap-2 md:gap-4">

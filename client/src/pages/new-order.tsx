@@ -1227,8 +1227,7 @@ export default function NewOrder() {
 
               <Button
                 variant="outline"
-                className="w-full"
-                size="lg"
+                className="w-full h-12"
                 asChild
                 data-testid="button-square-payment"
               >
@@ -1236,12 +1235,12 @@ export default function NewOrder() {
                   href="https://squareup.com/dashboard" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2"
+                  className="flex items-center justify-center"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M4.01 4.01h15.98v15.98H4.01V4.01zM0 0v24h24V0H0z"/>
+                  <svg className="h-6" viewBox="0 0 102 24" fill="currentColor">
+                    <rect x="0" y="0" width="23" height="23" rx="3.5"/>
+                    <text x="32" y="18" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontSize: '16px', fontWeight: '600' }}>Square</text>
                   </svg>
-                  Open Square Payment Processor
                 </a>
               </Button>
 
