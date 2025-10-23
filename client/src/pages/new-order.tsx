@@ -159,6 +159,29 @@ export default function NewOrder() {
     },
   });
 
+  const createMultiItemOrderMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/multi-orders", data);
+      return await response.json();
+    },
+    onSuccess: (createdOrder: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      toast({
+        title: "Multi-Item Order Created",
+        description: `Your order with ${createdOrder.items?.length || 0} items has been created successfully.`,
+      });
+      // Navigate to the order detail page
+      setLocation(`/order/${createdOrder.id}`);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create multi-item order",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Watch form values for pricing calculation
   const watchedValues = form.watch();
 
@@ -196,7 +219,48 @@ export default function NewOrder() {
   const onSubmit = (data: InsertOrder) => {
     // Remove pricing fields - server will calculate them
     const { itemTotal, shipping, salesTax, total, balance, ...orderData } = data as any;
-    createOrderMutation.mutate(orderData);
+    
+    if (pendingItems.length > 0) {
+      // Multi-item order: combine pending items with current item
+      const allItems = [...pendingItems, orderData];
+      
+      // Extract customer/order-level data from the first item (current form)
+      const { 
+        customerName, address1, address2, cityStateZip, phone, email,
+        deliveryMethod, description, specialRequests, discount, deposit,
+        ...firstItemData
+      } = orderData;
+      
+      const multiItemOrderData = {
+        customerName,
+        address1,
+        address2,
+        cityStateZip,
+        phone,
+        email,
+        deliveryMethod,
+        description,
+        specialRequests,
+        discount,
+        deposit,
+        items: allItems.map((item: any) => {
+          // Remove customer fields from each item, keep only item-specific fields
+          const { 
+            customerName: _, address1: __, address2: ___, cityStateZip: ____, 
+            phone: _____, email: ______, deliveryMethod: _______,
+            description: ________, specialRequests: _________, 
+            discount: __________, deposit: ___________,
+            ...itemData 
+          } = item;
+          return itemData;
+        }),
+      };
+      
+      createMultiItemOrderMutation.mutate(multiItemOrderData);
+    } else {
+      // Single-item order
+      createOrderMutation.mutate(orderData);
+    }
   };
 
   // Handler to add current item to pending items
@@ -1560,11 +1624,11 @@ export default function NewOrder() {
                       type="submit"
                       className="w-full"
                       size="lg"
-                      disabled={createOrderMutation.isPending}
+                      disabled={createOrderMutation.isPending || createMultiItemOrderMutation.isPending}
                       onClick={form.handleSubmit(onSubmit)}
                       data-testid="button-create-order"
                     >
-                      {createOrderMutation.isPending ? "Creating Order..." : 
+                      {(createOrderMutation.isPending || createMultiItemOrderMutation.isPending) ? "Creating Order..." : 
                         pendingItems.length > 0 ? `Submit Order (${pendingItems.length + 1} items)` : "Create Order"}
                     </Button>
                   </div>
