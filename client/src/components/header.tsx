@@ -59,6 +59,17 @@ export function Header() {
             New Order
           </Link>
           <Link
+            href="/new-multi-order"
+            className={`px-4 py-3 text-sm font-medium transition-colors hover-elevate rounded-md ${
+              location === "/new-multi-order"
+                ? "text-foreground"
+                : "text-muted-foreground"
+            }`}
+            data-testid="link-new-multi-order"
+          >
+            Multi-Item Order
+          </Link>
+          <Link
             href="/orders"
             className={`px-4 py-3 text-sm font-medium transition-colors hover-elevate rounded-md ${
               location === "/orders"
