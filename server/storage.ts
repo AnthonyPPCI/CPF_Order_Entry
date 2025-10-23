@@ -81,4 +81,62 @@ export class MemStorage implements IStorage {
   }
 }
 
+// Pricing configuration storage (in-memory)
+interface PricingConfig {
+  markup: number;
+  chopOnlyJoinFt: number;
+  shippingRates: { min: number; max: number; rate: number }[];
+  acrylicPrices: { type: string; pricePerSqIn: number }[];
+  backingPrices: { type: string; price: number }[];
+  passwordHash: string; // SHA-256 hash of the password
+}
+
+class PricingConfigStorage {
+  private config: PricingConfig;
+
+  constructor() {
+    // Default configuration matching Google Sheets
+    this.config = {
+      markup: 2.75,
+      chopOnlyJoinFt: 18,
+      shippingRates: [
+        { min: 1, max: 30, rate: 9 },
+        { min: 31, max: 49, rate: 19 },
+        { min: 50, max: 74, rate: 29 },
+        { min: 75, max: 999, rate: 250 },
+      ],
+      acrylicPrices: [
+        { type: 'Standard', pricePerSqIn: 0.009 },
+        { type: 'Non-Glare', pricePerSqIn: 0.018 },
+        { type: 'Museum Quality', pricePerSqIn: 0.027 },
+      ],
+      backingPrices: [
+        { type: 'None', price: 0 },
+        { type: 'White Foam', price: 2 },
+        { type: 'Black Foam', price: 2.5 },
+        { type: 'Acid Free', price: 3 },
+      ],
+      // SHA-256 hash of "2026DOG"
+      passwordHash: '8a707e0ded3de11960657de67f2e66292900c86c1ecfe7e570167397943cdaf4',
+    };
+  }
+
+  getConfig() {
+    return { ...this.config };
+  }
+
+  updateConfig(updates: Partial<PricingConfig>) {
+    this.config = { ...this.config, ...updates };
+  }
+
+  verifyPassword(password: string): boolean {
+    // Simple SHA-256 hash comparison
+    const crypto = require('crypto');
+    const hash = crypto.createHash('sha256').update(password).digest('hex');
+    return hash === this.config.passwordHash;
+  }
+}
+
+export const pricingConfigStorage = new PricingConfigStorage();
+
 export const storage = new MemStorage();

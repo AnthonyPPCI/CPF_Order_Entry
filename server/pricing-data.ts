@@ -31,7 +31,8 @@ export function loadPricingData(): PricingData {
     return pricingDataCache;
   }
 
-  const excelPath = join(__dirname, '..', 'attached_assets', 'ANNIE CPF Order Entry Sheet (1)_1761234370780.xlsx');
+  const excelPath = join(process.cwd(), 'attached_assets', 'ANNIE CPF Order Entry Sheet (1)_1761234370780.xlsx');
+  console.log('[Pricing] Loading pricing data from:', excelPath);
   const workbook = XLSX.readFile(excelPath);
 
   // Load Moulding Data

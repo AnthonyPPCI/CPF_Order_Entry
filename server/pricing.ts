@@ -1,5 +1,6 @@
 import { type InsertOrder } from "@shared/schema";
 import { getMoulding, getSupply, loadPricingData } from "./pricing-data";
+import { pricingConfigStorage } from "./storage";
 
 interface PricingResult {
   itemTotal: string;
@@ -54,9 +55,10 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   const joinCost = mouldingData?.joinCost || 0;
   
   // Calculate Join Feet (Formula from Google Sheets H14)
+  const config = pricingConfigStorage.getConfig();
   let joinFt: number;
   if (order.chopOnly) {
-    joinFt = pricingData.chopOnlyJoinFt; // 18 feet for chop only
+    joinFt = config.chopOnlyJoinFt; // Default 18 feet for chop only
   } else {
     // MAX(4, ROUNDUP(((unitedInchesX2 + 8 + (mouldingWidth * 4)) / 12), 0))
     joinFt = Math.max(4, Math.ceil((unitedInchesX2 + 8 + (mouldingWidth * 4)) / 12));
@@ -68,25 +70,16 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   // Calculate add-on costs
   let addOnCosts = 0;
   
-  // Acrylic cost (per square inch)
-  const acrylicPrices: Record<string, number> = {
-    'Standard': 0.009,
-    'Non-Glare': 0.018,
-    'Museum Quality': 0.027,
-  };
+  // Acrylic cost (per square inch) - use dynamic config
   const acrylicType = order.acrylicType || 'Standard';
-  const acrylicCost = (acrylicPrices[acrylicType] || 0) * squareInches;
+  const acrylicPrice = config.acrylicPrices.find(p => p.type === acrylicType);
+  const acrylicCost = (acrylicPrice?.pricePerSqIn || 0) * squareInches;
   addOnCosts += acrylicCost;
   
-  // Backing cost (lookup from supply table)
-  const backingPrices: Record<string, number> = {
-    'None': 0,
-    'White Foam': 2,
-    'Black Foam': 2.5,
-    'Acid Free': 3,
-  };
+  // Backing cost - use dynamic config
   const backingType = order.backingType || 'White Foam';
-  const backingCost = backingPrices[backingType] || 0;
+  const backingPrice = config.backingPrices.find(p => p.type === backingType);
+  const backingCost = backingPrice?.price || 0;
   addOnCosts += backingCost;
   
   // Mat costs (would need to look up from supply table, using defaults for now)
@@ -131,25 +124,20 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     addOnCosts += 50;
   }
   
-  // Calculate Item Total with Markup
+  // Calculate Item Total with Markup (use dynamic config)
   // Formula: (Frame Cost + Add-ons) * Markup * Quantity
-  const itemTotal = (frameCost + addOnCosts) * pricingData.markup * quantity;
+  const itemTotal = (frameCost + addOnCosts) * config.markup * quantity;
   
-  // Calculate Shipping (Formula from Google Sheets H18)
-  // Lookup based on united inches: {1:9, 31:19, 50:29, 75:250}
+  // Calculate Shipping - use dynamic config shipping rates
   let shipping: number;
   if (order.chopOnly) {
     shipping = 29;
   } else {
-    if (unitedInches >= 75) {
-      shipping = 250;
-    } else if (unitedInches >= 50) {
-      shipping = 29;
-    } else if (unitedInches >= 31) {
-      shipping = 19;
-    } else {
-      shipping = 9;
-    }
+    // Find appropriate shipping rate based on united inches
+    const shippingRate = config.shippingRates
+      .filter(r => unitedInches >= r.min && unitedInches <= r.max)
+      .shift();
+    shipping = shippingRate?.rate || 9;
     
     // Check for remote destination (HI, AK, PR) to add extra $99
     const cityStateZip = order.cityStateZip || "";

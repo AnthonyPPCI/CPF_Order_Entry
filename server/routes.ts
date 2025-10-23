@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, pricingConfigStorage } from "./storage";
 import { insertOrderSchema } from "@shared/schema";
 import { calculatePricing } from "./pricing";
 import { z } from "zod";
@@ -102,6 +102,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete order" });
+    }
+  });
+
+  // Calculate pricing preview (without saving order)
+  app.post("/api/pricing", async (req, res) => {
+    try {
+      const pricing = calculatePricing(req.body);
+      res.json(pricing);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to calculate pricing" });
+    }
+  });
+
+  // Control Panel APIs
+  app.post("/api/control-panel/verify", async (req, res) => {
+    try {
+      const { password } = req.body;
+      const isValid = pricingConfigStorage.verifyPassword(password);
+      res.json({ valid: isValid });
+    } catch (error) {
+      res.status(500).json({ error: "Verification failed" });
+    }
+  });
+
+  app.get("/api/control-panel/config", async (req, res) => {
+    try {
+      const config = pricingConfigStorage.getConfig();
+      // Don't send the password hash to client
+      const { passwordHash, ...safeConfig } = config;
+      res.json(safeConfig);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch configuration" });
+    }
+  });
+
+  app.post("/api/control-panel/config", async (req, res) => {
+    try {
+      const { password, ...updates } = req.body;
+      
+      // Verify password first
+      if (!pricingConfigStorage.verifyPassword(password)) {
+        return res.status(401).json({ error: "Invalid password" });
+      }
+      
+      // Update configuration
+      pricingConfigStorage.updateConfig(updates);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update configuration" });
     }
   });
 

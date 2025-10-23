@@ -1,7 +1,8 @@
 import { Link, useLocation } from "wouter";
 import { ThemeToggle } from "./theme-toggle";
-import { Phone, Mail } from "lucide-react";
+import { Phone, Mail, Settings } from "lucide-react";
 import cpfLogo from "@assets/cpf-logo.webp";
+import { Button } from "./ui/button";
 
 export function Header() {
   const [location] = useLocation();
@@ -30,6 +31,11 @@ export function Header() {
                 <span>hello@CustomPictureFrames.com</span>
               </a>
             </div>
+            <Link href="/control-panel">
+              <Button variant="ghost" size="icon" data-testid="link-control-panel">
+                <Settings className="h-5 w-5" />
+              </Button>
+            </Link>
             <ThemeToggle />
           </div>
         </div>

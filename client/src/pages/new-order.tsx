@@ -127,59 +127,32 @@ export default function NewOrder() {
   const watchedValues = form.watch();
 
   useEffect(() => {
-    const width = watchedValues.width || 0;
-    const height = watchedValues.height || 0;
-    const quantity = watchedValues.quantity || 1;
-    const discountPercent = watchedValues.discountPercent || 0;
-    const cityStateZip = watchedValues.cityStateZip || "";
+    // Debounce pricing API call
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch('/api/pricing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(watchedValues),
+        });
+        
+        if (response.ok) {
+          const pricing = await response.json();
+          setCalculatedPricing({
+            itemTotal: parseFloat(pricing.itemTotal),
+            shipping: parseFloat(pricing.shipping),
+            salesTax: pricing.salesTax ? parseFloat(pricing.salesTax) : 0,
+            total: parseFloat(pricing.total),
+            balance: parseFloat(pricing.balance),
+          });
+        }
+      } catch (error) {
+        // Silent fail - keep showing last pricing
+        console.error('Pricing calculation error:', error);
+      }
+    }, 500); // 500ms debounce
 
-    // Calculate item total based on frame size (simple formula: (width + height) * 2 * 0.5 per inch)
-    const perimeter = (width + height) * 2;
-    let basePrice = perimeter * 0.5;
-
-    // Add material costs
-    if (watchedValues.acrylicType === "Museum Quality") basePrice += 25;
-    if (watchedValues.backingType === "Acid Free") basePrice += 10;
-    if (watchedValues.printPaper) basePrice += 15;
-    if (watchedValues.dryMount) basePrice += 20;
-    if (watchedValues.printCanvas) basePrice += 35;
-    if (watchedValues.engravedPlaque) basePrice += 30;
-    if (watchedValues.leds) basePrice += 45;
-    if (watchedValues.shadowboxFitting) basePrice += 40;
-    if (watchedValues.additionalLabor) basePrice += 50;
-
-    // Add mat costs
-    if (watchedValues.mat1Sku) basePrice += 15;
-    if (watchedValues.mat2Sku) basePrice += 15;
-    if (watchedValues.mat3Sku) basePrice += 15;
-    basePrice += (watchedValues.extraMatOpenings || 0) * 10;
-
-    const itemTotal = basePrice * quantity;
-
-    // Calculate shipping (flat rate, higher for HI/AK/PR)
-    const isRemoteDestination = /\b(HI|AK|PR|Hawaii|Alaska|Puerto Rico)\b/i.test(cityStateZip);
-    const shipping = isRemoteDestination ? 250 : 25;
-
-    // Calculate sales tax (assume 7% if in NJ)
-    const isTaxable = /\bNJ\b/i.test(cityStateZip);
-    const salesTax = isTaxable ? itemTotal * 0.07 : 0;
-
-    // Calculate total with discount
-    const subtotal = itemTotal + shipping + salesTax;
-    const discountAmount = subtotal * (discountPercent / 100);
-    const total = subtotal - discountAmount;
-
-    const deposit = watchedValues.deposit ? parseFloat(watchedValues.deposit) : 0;
-    const balance = total - deposit;
-
-    setCalculatedPricing({
-      itemTotal,
-      shipping,
-      salesTax,
-      total,
-      balance,
-    });
-
+    return () => clearTimeout(timer);
   }, [watchedValues]);
 
   const onSubmit = (data: InsertOrder) => {

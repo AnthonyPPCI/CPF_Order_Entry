@@ -7,6 +7,7 @@ import { Header } from "@/components/header";
 import NewOrder from "@/pages/new-order";
 import OrderList from "@/pages/order-list";
 import OrderDetail from "@/pages/order-detail";
+import ControlPanel from "@/pages/control-panel";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/" component={NewOrder} />
       <Route path="/orders" component={OrderList} />
       <Route path="/order/:id" component={OrderDetail} />
+      <Route path="/control-panel" component={ControlPanel} />
       <Route component={NotFound} />
     </Switch>
   );
