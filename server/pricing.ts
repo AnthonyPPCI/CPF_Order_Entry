@@ -57,6 +57,7 @@ function parseFraction(input: string | number | null | undefined): number {
 }
 
 // Calculate optimal stacker frame combination for desired shadow depth
+// Uses dynamic programming to find minimum-cost combination that meets/exceeds desired depth
 function calculateStackerFrames(
   desiredDepth: number,
   width: number,
@@ -80,44 +81,60 @@ function calculateStackerFrames(
   const perimeterInches = 2 * (frameWidth + frameHeight);
   const perimeterFeet = perimeterInches / 12;
 
-  // Sort stacker frames by depth (descending) for greedy algorithm
-  const stackerFrames = [...config.stackerFrames].sort((a, b) => b.depth - a.depth);
+  const stackerFrames = config.stackerFrames;
   
-  let remainingDepth = desiredDepth;
-  const layers: { sku: string; depth: number; quantity: number; cost: number }[] = [];
+  // Dynamic programming approach: find minimum cost for each depth level
+  // We need to find combinations that reach at least desiredDepth with minimum cost
+  // Scale depth to avoid floating point issues (multiply by 100 to work with integers)
+  const SCALE = 100;
+  const targetDepth = Math.ceil(desiredDepth * SCALE);
+  const maxDepth = targetDepth + Math.max(...stackerFrames.map(f => f.depth)) * SCALE; // Allow some overshoot
+  
+  // dp[d] = { cost: number, combination: Map<sku, quantity> }
+  const dp: Array<{ cost: number; combination: Map<string, number> }> = new Array(maxDepth + 1).fill(null).map(() => ({
+    cost: Infinity,
+    combination: new Map()
+  }));
+  dp[0] = { cost: 0, combination: new Map() };
 
-  // Greedy algorithm: use largest depth first
-  for (const frame of stackerFrames) {
-    if (remainingDepth <= 0) break;
+  // Fill DP table
+  for (let d = 0; d <= maxDepth; d++) {
+    if (dp[d].cost === Infinity) continue;
     
-    const quantity = Math.floor(remainingDepth / frame.depth);
-    if (quantity > 0) {
+    for (const frame of stackerFrames) {
+      const frameDepthScaled = Math.round(frame.depth * SCALE);
+      const newDepth = d + frameDepthScaled;
+      if (newDepth > maxDepth) continue;
+      
+      const frameCost = perimeterFeet * frame.pricePerFt;
+      const newCost = dp[d].cost + frameCost;
+      
+      if (newCost < dp[newDepth].cost) {
+        const newCombination = new Map(dp[d].combination);
+        newCombination.set(frame.sku, (newCombination.get(frame.sku) || 0) + 1);
+        dp[newDepth] = { cost: newCost, combination: newCombination };
+      }
+    }
+  }
+
+  // Find the minimum cost solution that meets or exceeds targetDepth
+  let bestSolution = { cost: Infinity, combination: new Map<string, number>(), actualDepth: 0 };
+  for (let d = targetDepth; d <= maxDepth; d++) {
+    if (dp[d].cost < bestSolution.cost) {
+      bestSolution = { cost: dp[d].cost, combination: dp[d].combination, actualDepth: d };
+    }
+  }
+
+  // Convert solution to layers format
+  const layers: { sku: string; depth: number; quantity: number; cost: number }[] = [];
+  for (const [sku, quantity] of bestSolution.combination.entries()) {
+    const frame = stackerFrames.find(f => f.sku === sku);
+    if (frame && quantity > 0) {
       const layerCost = perimeterFeet * frame.pricePerFt * quantity;
       layers.push({
         sku: frame.sku,
         depth: frame.depth,
         quantity,
-        cost: layerCost,
-      });
-      remainingDepth -= quantity * frame.depth;
-    }
-  }
-
-  // If there's still remaining depth, add one more of the smallest frame to meet/exceed requirement
-  if (remainingDepth > 0 && stackerFrames.length > 0) {
-    const smallestFrame = stackerFrames[stackerFrames.length - 1]; // Already sorted descending
-    const layerCost = perimeterFeet * smallestFrame.pricePerFt;
-    
-    // Check if we already have this frame type in layers
-    const existingLayer = layers.find(l => l.sku === smallestFrame.sku);
-    if (existingLayer) {
-      existingLayer.quantity += 1;
-      existingLayer.cost += layerCost;
-    } else {
-      layers.push({
-        sku: smallestFrame.sku,
-        depth: smallestFrame.depth,
-        quantity: 1,
         cost: layerCost,
       });
     }
