@@ -263,7 +263,7 @@ export default function NewOrder() {
                         <FormItem>
                           <FormLabel>City, State, Zip *</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="e.g., Old Bridge, NJ 08857" data-testid="input-city-state-zip" />
+                            <Input {...field} placeholder="e.g., Somerset, NJ 08873" data-testid="input-city-state-zip" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
