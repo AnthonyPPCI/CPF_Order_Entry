@@ -154,6 +154,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get moulding data
+  app.get("/api/control-panel/mouldings", async (req, res) => {
+    try {
+      const { loadPricingData } = await import("./pricing-data");
+      const data = loadPricingData();
+      const mouldings = Array.from(data.mouldings.entries()).map(([sku, mouldingData]) => ({
+        sku,
+        joinCost: mouldingData.joinCost,
+        width: mouldingData.width,
+      }));
+      res.json(mouldings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch moulding data" });
+    }
+  });
+
+  // Get supply data
+  app.get("/api/control-panel/supplies", async (req, res) => {
+    try {
+      const { loadPricingData } = await import("./pricing-data");
+      const data = loadPricingData();
+      const supplies = Array.from(data.supplies.entries()).map(([sku, supplyData]) => ({
+        sku,
+        price: supplyData.price,
+      }));
+      res.json(supplies);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch supply data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

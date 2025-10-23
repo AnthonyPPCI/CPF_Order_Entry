@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Settings2, DollarSign, TruckIcon, Package } from "lucide-react";
+import { Lock, Settings2, DollarSign, TruckIcon, Package, Search, Database } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PricingConfig {
   markup: number;
@@ -16,15 +17,38 @@ interface PricingConfig {
   backingPrices: { type: string; price: number }[];
 }
 
+interface Moulding {
+  sku: string;
+  joinCost: number;
+  width: number;
+}
+
+interface Supply {
+  sku: string;
+  price: number;
+}
+
 export default function ControlPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [config, setConfig] = useState<PricingConfig | null>(null);
+  const [mouldingSearch, setMouldingSearch] = useState("");
+  const [supplySearch, setSupplySearch] = useState("");
   const { toast } = useToast();
 
   const { data: fetchedConfig } = useQuery<PricingConfig>({
     queryKey: ["/api/control-panel/config"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: mouldings = [] } = useQuery<Moulding[]>({
+    queryKey: ["/api/control-panel/mouldings"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: supplies = [] } = useQuery<Supply[]>({
+    queryKey: ["/api/control-panel/supplies"],
     enabled: isAuthenticated,
   });
 
@@ -34,6 +58,21 @@ export default function ControlPanel() {
       setConfig(fetchedConfig);
     }
   }, [fetchedConfig, config]);
+
+  // Filter mouldings and supplies based on search
+  const filteredMouldings = useMemo(() => {
+    if (!mouldingSearch) return mouldings.slice(0, 50); // Show first 50 by default
+    return mouldings.filter(m => 
+      m.sku.toLowerCase().includes(mouldingSearch.toLowerCase())
+    ).slice(0, 100);
+  }, [mouldings, mouldingSearch]);
+
+  const filteredSupplies = useMemo(() => {
+    if (!supplySearch) return supplies.slice(0, 50); // Show first 50 by default
+    return supplies.filter(s => 
+      s.sku.toLowerCase().includes(supplySearch.toLowerCase())
+    ).slice(0, 100);
+  }, [supplies, supplySearch]);
 
   const verifyMutation = useMutation({
     mutationFn: async (pwd: string) => {
@@ -154,14 +193,24 @@ export default function ControlPanel() {
                 </Button>
               </>
             ) : (
-              <Button onClick={() => setEditMode(true)} data-testid="button-edit">
+              <Button onClick={() => {
+                setConfig(fetchedConfig || null);
+                setEditMode(true);
+              }} data-testid="button-edit">
                 Edit Configuration
               </Button>
             )}
           </div>
         </div>
 
-        <div className="grid gap-6">
+        <Tabs defaultValue="config" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="config">Configuration</TabsTrigger>
+            <TabsTrigger value="mouldings">Mouldings ({mouldings.length})</TabsTrigger>
+            <TabsTrigger value="supplies">Supplies ({supplies.length})</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="config" className="space-y-6 mt-6">
           {/* Business Levers */}
           <Card>
             <CardHeader>
@@ -311,7 +360,114 @@ export default function ControlPanel() {
               </div>
             </CardContent>
           </Card>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="mouldings" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Database className="h-5 w-5" />
+                  <CardTitle>Moulding Pricing Data</CardTitle>
+                </div>
+                <CardDescription>
+                  {mouldings.length} moulding SKUs loaded from Excel file
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by SKU..."
+                    value={mouldingSearch}
+                    onChange={(e) => setMouldingSearch(e.target.value)}
+                    className="max-w-sm"
+                    data-testid="input-moulding-search"
+                  />
+                </div>
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="max-h-[500px] overflow-y-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted sticky top-0">
+                        <tr>
+                          <th className="text-left p-3 font-medium">SKU</th>
+                          <th className="text-right p-3 font-medium">Join Cost</th>
+                          <th className="text-right p-3 font-medium">Width (in)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredMouldings.map((moulding, idx) => (
+                          <tr key={moulding.sku} className={idx % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+                            <td className="p-3 font-mono text-sm">{moulding.sku}</td>
+                            <td className="p-3 text-right font-mono text-sm">${moulding.joinCost.toFixed(2)}</td>
+                            <td className="p-3 text-right text-sm">{moulding.width}"</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {mouldingSearch 
+                    ? `Showing ${filteredMouldings.length} results (max 100)`
+                    : `Showing first 50 of ${mouldings.length} mouldings. Use search to find specific SKUs.`
+                  }
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="supplies" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Database className="h-5 w-5" />
+                  <CardTitle>Supply Pricing Data</CardTitle>
+                </div>
+                <CardDescription>
+                  {supplies.length} supply SKUs loaded from Excel file
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by SKU..."
+                    value={supplySearch}
+                    onChange={(e) => setSupplySearch(e.target.value)}
+                    className="max-w-sm"
+                    data-testid="input-supply-search"
+                  />
+                </div>
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="max-h-[500px] overflow-y-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted sticky top-0">
+                        <tr>
+                          <th className="text-left p-3 font-medium">SKU</th>
+                          <th className="text-right p-3 font-medium">Price</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredSupplies.map((supply, idx) => (
+                          <tr key={supply.sku} className={idx % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+                            <td className="p-3 font-mono text-sm">{supply.sku}</td>
+                            <td className="p-3 text-right font-mono text-sm">${supply.price.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {supplySearch 
+                    ? `Showing ${filteredSupplies.length} results (max 100)`
+                    : `Showing first 50 of ${supplies.length} supplies. Use search to find specific SKUs.`
+                  }
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
