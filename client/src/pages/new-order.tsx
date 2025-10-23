@@ -972,17 +972,6 @@ export default function NewOrder() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-muted/30">
-                <CardContent className="pt-6">
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <p className="font-medium text-foreground mb-2">Pricing Information</p>
-                    <p>• Base price calculated from frame perimeter</p>
-                    <p>• Additional charges apply for premium materials</p>
-                    <p>• Remote destinations (HI, AK, PR) have higher shipping</p>
-                    <p>• Sales tax applied for NJ deliveries</p>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>
