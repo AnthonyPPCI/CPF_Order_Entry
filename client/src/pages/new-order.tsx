@@ -412,6 +412,52 @@ export default function NewOrder() {
                       />
                     </div>
 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="acrylicType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Acrylic Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-acrylic-type">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Standard">Standard</SelectItem>
+                                <SelectItem value="Museum Quality">Museum Quality</SelectItem>
+                                <SelectItem value="Non-Glare">Non-Glare</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="backingType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Backing Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-backing-type">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="White Foam">White Foam</SelectItem>
+                                <SelectItem value="Acid Free">Acid Free</SelectItem>
+                                <SelectItem value="Black Foam">Black Foam</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
                     <Separator />
 
                     {/* Mat Configuration */}
@@ -589,62 +635,13 @@ export default function NewOrder() {
                   </CardContent>
                 </Card>
 
-                {/* Materials & Options */}
+                {/* Additional Options */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-xl">Materials & Options</CardTitle>
+                    <CardTitle className="text-xl">Additional Options</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="acrylicType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Acrylic Type</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger data-testid="select-acrylic-type">
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Standard">Standard</SelectItem>
-                                <SelectItem value="Museum Quality">Museum Quality</SelectItem>
-                                <SelectItem value="Non-Glare">Non-Glare</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="backingType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Backing Type</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger data-testid="select-backing-type">
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="White Foam">White Foam</SelectItem>
-                                <SelectItem value="Acid Free">Acid Free</SelectItem>
-                                <SelectItem value="Black Foam">Black Foam</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <Separator />
-
                     <div className="space-y-4">
-                      <h3 className="text-base font-semibold">Additional Options</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-3">
                           <FormField
