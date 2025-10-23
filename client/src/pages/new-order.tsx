@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -75,6 +76,7 @@ export default function NewOrder() {
       additionalLaborCost: "0.00",
       extraMatOpeningsCost: "0.00",
     },
+    bom: [] as string[],
   });
 
   const form = useForm<InsertOrder>({
@@ -175,6 +177,7 @@ export default function NewOrder() {
             total: parseFloat(pricing.total),
             balance: parseFloat(pricing.balance),
             breakdown: pricing.breakdown,
+            bom: pricing.bom || [],
           });
         }
       } catch (error) {
@@ -419,6 +422,43 @@ export default function NewOrder() {
                         />
                       )}
                     </div>
+
+                    {form.watch("stackerFrame") && (
+                      <FormField
+                        control={form.control}
+                        name="topperSku"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3">
+                            <FormLabel>Topper Style</FormLabel>
+                            <FormControl>
+                              <RadioGroup
+                                onValueChange={field.onChange}
+                                value={field.value || "9731"}
+                                className="flex flex-col space-y-1"
+                              >
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="9731" data-testid="radio-topper-9731" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal cursor-pointer">
+                                    9731 (1.0" depth)
+                                  </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="9531" data-testid="radio-topper-9531" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal cursor-pointer">
+                                    9531 (0.75" depth)
+                                  </FormLabel>
+                                </FormItem>
+                              </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <FormField
@@ -1217,6 +1257,22 @@ export default function NewOrder() {
                       </div>
                     )}
                   </div>
+
+                  {calculatedPricing.bom && calculatedPricing.bom.length > 0 && (
+                    <>
+                      <Separator />
+                      <div className="space-y-2">
+                        <div className="text-sm font-semibold text-foreground">Bill of Materials (Production)</div>
+                        <div className="space-y-1">
+                          {calculatedPricing.bom.map((bomLine, index) => (
+                            <div key={index} className="text-xs font-mono bg-muted px-2 py-1 rounded" data-testid={`text-bom-line-${index}`}>
+                              {bomLine}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   <Separator />
 
