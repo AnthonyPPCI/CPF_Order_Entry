@@ -120,9 +120,12 @@ class PricingConfigStorage {
         { type: 'Acid Free', price: 3 },
       ],
       stackerFrames: [
-        { sku: 'F9532', depth: 2.25, pricePerFt: 11.81 },
-        { sku: 'F9533', depth: 1.25, pricePerFt: 8.36 },
-        { sku: 'F9531', depth: 0.5, pricePerFt: 8.50 },
+        { sku: '9532', depth: 2.5, pricePerFt: 11.81 },
+        { sku: '9533', depth: 1.5, pricePerFt: 8.36 },
+      ],
+      topperPieces: [
+        { sku: '9531', depth: 0.75, pricePerFt: 8.50 },
+        { sku: '9731', depth: 1.0, pricePerFt: 9.00 },
       ],
       stackerAssemblyCharge: 29.17,
       stackerMarkup: 2.5,
