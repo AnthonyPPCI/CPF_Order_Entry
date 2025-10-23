@@ -147,8 +147,8 @@ function calculateStackerFrames(
 
   // Convert solution to layers format
   const layers: { sku: string; depth: number; quantity: number; cost: number }[] = [];
-  for (const [sku, quantity] of bestSolution.combination.entries()) {
-    const frame = stackerFrames.find(f => f.sku === sku);
+  for (const [sku, quantity] of Array.from(bestSolution.combination.entries())) {
+    const frame = stackerFrames.find((f: any) => f.sku === sku);
     if (frame && quantity > 0) {
       const layerCost = perimeterFeet * frame.pricePerFt * quantity;
       layers.push({
@@ -426,5 +426,91 @@ export function calculatePricing(order: InsertOrder): PricingResult {
       extraMatOpeningsCost: (extraMatOpeningsCostBase * markup * quantity).toFixed(2),
     },
     bom,
+  };
+}
+
+// Multi-item pricing interfaces
+export interface MultiItemPricingInput {
+  items: InsertOrder[];
+  customerAddress: {
+    cityStateZip?: string;
+  };
+  deliveryMethod?: string;
+  discount?: string;
+  deposit?: string;
+}
+
+export interface MultiItemPricingResult {
+  items: (PricingResult & { itemNumber: number })[];
+  subtotal: string;
+  shipping: string;
+  salesTax: string;
+  total: string;
+  balance: string;
+}
+
+// Calculate pricing for multiple items in a single order
+export function calculateMultiItemPricing(input: MultiItemPricingInput): MultiItemPricingResult {
+  // Calculate pricing for each item
+  const itemResults = input.items.map((item, index) => {
+    const itemPrice = calculatePricing(item);
+    return {
+      ...itemPrice,
+      itemNumber: index + 1,
+    };
+  });
+
+  // Sum all item totals (excluding shipping which is order-level)
+  const subtotalNum = itemResults.reduce((sum, item) => {
+    return sum + parseFloat(item.itemTotal);
+  }, 0);
+
+  // Calculate shipping based on delivery method and largest united inches
+  let shippingNum = 0;
+  if (input.deliveryMethod !== 'pickup') {
+    // Find the item with the largest united inches for shipping calculation
+    const config = pricingConfigStorage.getConfig();
+    let maxUnitedInches = 0;
+    
+    for (const item of input.items) {
+      const width = parseFraction(item.width);
+      const height = parseFraction(item.height);
+      const unitedInches = width + height;
+      maxUnitedInches = Math.max(maxUnitedInches, unitedInches);
+    }
+
+    // Find shipping rate based on largest united inches
+    const shippingRate = config.shippingRates.find(
+      (r) => maxUnitedInches >= r.min && maxUnitedInches <= r.max
+    );
+    shippingNum = shippingRate ? shippingRate.rate : 0;
+
+    // Add remote destination surcharge if applicable
+    const cityStateZip = input.customerAddress?.cityStateZip || "";
+    const isRemoteDestination = /\b(HI|AK|PR)\b/i.test(cityStateZip);
+    if (isRemoteDestination && maxUnitedInches < 75) {
+      shippingNum += 99;
+    }
+  }
+
+  // Calculate sales tax (7% if in NJ)
+  const cityStateZip = input.customerAddress?.cityStateZip || "";
+  const isTaxable = /\bNJ\b/i.test(cityStateZip);
+  const salesTaxNum = isTaxable ? subtotalNum * 0.07 : 0;
+
+  // Calculate total (discount is text field, not applied in calculation)
+  const totalNum = subtotalNum + shippingNum + salesTaxNum;
+
+  // Calculate balance (deposit is text field, parse it)
+  const depositNum = parseFraction(input.deposit);
+  const balanceNum = totalNum - depositNum;
+
+  return {
+    items: itemResults,
+    subtotal: subtotalNum.toFixed(2),
+    shipping: shippingNum.toFixed(2),
+    salesTax: salesTaxNum > 0 ? salesTaxNum.toFixed(2) : "",
+    total: totalNum.toFixed(2),
+    balance: balanceNum.toFixed(2),
   };
 }
