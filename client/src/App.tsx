@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/header";
 import NewOrder from "@/pages/new-order";
-import NewMultiOrder from "@/pages/new-multi-order";
 import OrderList from "@/pages/order-list";
 import OrderDetail from "@/pages/order-detail";
 import ControlPanel from "@/pages/control-panel";
@@ -15,7 +14,6 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={NewOrder} />
-      <Route path="/new-multi-order" component={NewMultiOrder} />
       <Route path="/orders" component={OrderList} />
       <Route path="/order/:id" component={OrderDetail} />
       <Route path="/control-panel" component={ControlPanel} />

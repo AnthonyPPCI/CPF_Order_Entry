@@ -222,7 +222,17 @@ export default function NewOrder() {
     
     if (pendingItems.length > 0) {
       // Multi-item order: combine pending items with current item
-      const allItems = [...pendingItems, orderData];
+      let allItems;
+      
+      if (editingItemIndex !== null) {
+        // User is editing an existing item - replace it in pendingItems
+        const updated = [...pendingItems];
+        updated[editingItemIndex] = orderData;
+        allItems = updated;
+      } else {
+        // User is adding a new item - append to pendingItems
+        allItems = [...pendingItems, orderData];
+      }
       
       // Extract customer/order-level data from the first item (current form)
       const { 
