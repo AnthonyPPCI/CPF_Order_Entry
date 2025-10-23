@@ -1,4 +1,11 @@
-import { type Order, type InsertOrder } from "@shared/schema";
+import { 
+  type Order, 
+  type InsertOrder,
+  type OrderHeader,
+  type InsertOrderHeader,
+  type OrderItem,
+  type InsertOrderItem,
+} from "@shared/schema";
 import { randomUUID, createHash } from "crypto";
 
 // Extended insert type that includes calculated pricing fields
@@ -10,20 +17,48 @@ type InsertOrderWithPricing = InsertOrder & {
   balance: string;
 };
 
+// Multi-item order types
+type InsertOrderHeaderWithPricing = InsertOrderHeader & {
+  shipping: string;
+  salesTax?: string;
+  total: string;
+  balance: string;
+};
+
+type InsertOrderItemWithPricing = InsertOrderItem & {
+  itemTotal: string;
+};
+
+// Complete multi-item order with items included
+export type MultiItemOrder = OrderHeader & {
+  items: OrderItem[];
+};
+
 export interface IStorage {
-  // Order operations
+  // Legacy single-item order operations (for backwards compatibility)
   getAllOrders(): Promise<Order[]>;
   getOrderById(id: string): Promise<Order | undefined>;
   createOrder(order: InsertOrderWithPricing): Promise<Order>;
   updateOrder(id: string, order: Partial<InsertOrderWithPricing>): Promise<Order | undefined>;
   deleteOrder(id: string): Promise<boolean>;
+  
+  // Multi-item order operations
+  getAllMultiItemOrders(): Promise<MultiItemOrder[]>;
+  getMultiItemOrderById(id: string): Promise<MultiItemOrder | undefined>;
+  createMultiItemOrder(header: InsertOrderHeaderWithPricing, items: InsertOrderItemWithPricing[]): Promise<MultiItemOrder>;
+  updateMultiItemOrder(id: string, header: Partial<InsertOrderHeaderWithPricing>, items?: InsertOrderItemWithPricing[]): Promise<MultiItemOrder | undefined>;
+  deleteMultiItemOrder(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private orders: Map<string, Order>;
+  private orderHeaders: Map<string, OrderHeader>;
+  private orderItems: Map<string, OrderItem[]>; // Maps orderId -> OrderItem[]
 
   constructor() {
     this.orders = new Map();
+    this.orderHeaders = new Map();
+    this.orderItems = new Map();
   }
 
   async getAllOrders(): Promise<Order[]> {
@@ -115,6 +150,189 @@ export class MemStorage implements IStorage {
 
   async deleteOrder(id: string): Promise<boolean> {
     return this.orders.delete(id);
+  }
+
+  // Multi-item order operations
+  async getAllMultiItemOrders(): Promise<MultiItemOrder[]> {
+    const headers = Array.from(this.orderHeaders.values());
+    const ordersWithItems = headers.map(header => ({
+      ...header,
+      items: this.orderItems.get(header.id) || [],
+    }));
+    
+    return ordersWithItems.sort(
+      (a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
+    );
+  }
+
+  async getMultiItemOrderById(id: string): Promise<MultiItemOrder | undefined> {
+    const header = this.orderHeaders.get(id);
+    if (!header) {
+      return undefined;
+    }
+    
+    return {
+      ...header,
+      items: this.orderItems.get(id) || [],
+    };
+  }
+
+  async createMultiItemOrder(
+    insertHeader: InsertOrderHeaderWithPricing,
+    insertItems: InsertOrderItemWithPricing[]
+  ): Promise<MultiItemOrder> {
+    const orderId = randomUUID();
+    
+    // Create order header
+    const header: OrderHeader = {
+      id: orderId,
+      orderDate: new Date(),
+      customerName: insertHeader.customerName || null,
+      address1: insertHeader.address1 || null,
+      address2: insertHeader.address2 || null,
+      cityStateZip: insertHeader.cityStateZip || null,
+      phone: insertHeader.phone || null,
+      email: insertHeader.email || null,
+      deliveryMethod: insertHeader.deliveryMethod || "shipping",
+      description: insertHeader.description || null,
+      specialRequests: insertHeader.specialRequests || null,
+      shipping: insertHeader.shipping,
+      salesTax: insertHeader.salesTax || null,
+      discount: insertHeader.discount || null,
+      total: insertHeader.total,
+      deposit: insertHeader.deposit || null,
+      balance: insertHeader.balance,
+    };
+    
+    // Create order items
+    const items: OrderItem[] = insertItems.map((insertItem, index) => ({
+      id: randomUUID(),
+      orderId,
+      itemNumber: insertItem.itemNumber || index + 1,
+      frameSku: insertItem.frameSku || null,
+      chopOnly: insertItem.chopOnly || false,
+      stackerFrame: insertItem.stackerFrame || false,
+      shadowDepth: insertItem.shadowDepth || null,
+      topperSku: insertItem.topperSku || null,
+      width: insertItem.width?.toString() || null,
+      height: insertItem.height?.toString() || null,
+      matBorderAll: insertItem.matBorderAll || null,
+      matBorderLeft: insertItem.matBorderLeft || null,
+      matBorderRight: insertItem.matBorderRight || null,
+      matBorderTop: insertItem.matBorderTop || null,
+      matBorderBottom: insertItem.matBorderBottom || null,
+      mat1Sku: insertItem.mat1Sku || null,
+      mat1Reveal: insertItem.mat1Reveal || null,
+      mat2Sku: insertItem.mat2Sku || null,
+      mat2Reveal: insertItem.mat2Reveal || null,
+      mat3Sku: insertItem.mat3Sku || null,
+      extraMatOpenings: insertItem.extraMatOpenings || 0,
+      acrylicType: insertItem.acrylicType || "Standard",
+      backingType: insertItem.backingType || "White Foam",
+      printPaper: insertItem.printPaper || false,
+      printPaperType: insertItem.printPaperType || null,
+      dryMount: insertItem.dryMount || false,
+      printCanvas: insertItem.printCanvas || false,
+      printCanvasWrapStyle: insertItem.printCanvasWrapStyle || null,
+      engravedPlaque: insertItem.engravedPlaque || false,
+      engravedPlaqueSize: insertItem.engravedPlaqueSize || null,
+      engravedPlaqueColor: insertItem.engravedPlaqueColor || null,
+      engravedPlaqueFont: insertItem.engravedPlaqueFont || null,
+      engravedPlaqueText1: insertItem.engravedPlaqueText1 || null,
+      engravedPlaqueText2: insertItem.engravedPlaqueText2 || null,
+      engravedPlaqueText3: insertItem.engravedPlaqueText3 || null,
+      engravedPlaqueTextAdditional: insertItem.engravedPlaqueTextAdditional || null,
+      leds: insertItem.leds || false,
+      shadowboxFitting: insertItem.shadowboxFitting || false,
+      additionalLabor: insertItem.additionalLabor || false,
+      quantity: insertItem.quantity || 1,
+      itemTotal: insertItem.itemTotal,
+    }));
+    
+    this.orderHeaders.set(orderId, header);
+    this.orderItems.set(orderId, items);
+    
+    return {
+      ...header,
+      items,
+    };
+  }
+
+  async updateMultiItemOrder(
+    id: string,
+    updateHeader: Partial<InsertOrderHeaderWithPricing>,
+    updateItems?: InsertOrderItemWithPricing[]
+  ): Promise<MultiItemOrder | undefined> {
+    const existingHeader = this.orderHeaders.get(id);
+    if (!existingHeader) {
+      return undefined;
+    }
+
+    // Update header
+    const updatedHeader: OrderHeader = {
+      ...existingHeader,
+      ...updateHeader,
+    };
+    this.orderHeaders.set(id, updatedHeader);
+
+    // Update items if provided
+    if (updateItems) {
+      const items: OrderItem[] = updateItems.map((insertItem, index) => ({
+        id: randomUUID(),
+        orderId: id,
+        itemNumber: insertItem.itemNumber || index + 1,
+        frameSku: insertItem.frameSku || null,
+        chopOnly: insertItem.chopOnly || false,
+        stackerFrame: insertItem.stackerFrame || false,
+        shadowDepth: insertItem.shadowDepth || null,
+        topperSku: insertItem.topperSku || null,
+        width: insertItem.width?.toString() || null,
+        height: insertItem.height?.toString() || null,
+        matBorderAll: insertItem.matBorderAll || null,
+        matBorderLeft: insertItem.matBorderLeft || null,
+        matBorderRight: insertItem.matBorderRight || null,
+        matBorderTop: insertItem.matBorderTop || null,
+        matBorderBottom: insertItem.matBorderBottom || null,
+        mat1Sku: insertItem.mat1Sku || null,
+        mat1Reveal: insertItem.mat1Reveal || null,
+        mat2Sku: insertItem.mat2Sku || null,
+        mat2Reveal: insertItem.mat2Reveal || null,
+        mat3Sku: insertItem.mat3Sku || null,
+        extraMatOpenings: insertItem.extraMatOpenings || 0,
+        acrylicType: insertItem.acrylicType || "Standard",
+        backingType: insertItem.backingType || "White Foam",
+        printPaper: insertItem.printPaper || false,
+        printPaperType: insertItem.printPaperType || null,
+        dryMount: insertItem.dryMount || false,
+        printCanvas: insertItem.printCanvas || false,
+        printCanvasWrapStyle: insertItem.printCanvasWrapStyle || null,
+        engravedPlaque: insertItem.engravedPlaque || false,
+        engravedPlaqueSize: insertItem.engravedPlaqueSize || null,
+        engravedPlaqueColor: insertItem.engravedPlaqueColor || null,
+        engravedPlaqueFont: insertItem.engravedPlaqueFont || null,
+        engravedPlaqueText1: insertItem.engravedPlaqueText1 || null,
+        engravedPlaqueText2: insertItem.engravedPlaqueText2 || null,
+        engravedPlaqueText3: insertItem.engravedPlaqueText3 || null,
+        engravedPlaqueTextAdditional: insertItem.engravedPlaqueTextAdditional || null,
+        leds: insertItem.leds || false,
+        shadowboxFitting: insertItem.shadowboxFitting || false,
+        additionalLabor: insertItem.additionalLabor || false,
+        quantity: insertItem.quantity || 1,
+        itemTotal: insertItem.itemTotal,
+      }));
+      this.orderItems.set(id, items);
+    }
+
+    return {
+      ...updatedHeader,
+      items: this.orderItems.get(id) || [],
+    };
+  }
+
+  async deleteMultiItemOrder(id: string): Promise<boolean> {
+    const headerDeleted = this.orderHeaders.delete(id);
+    this.orderItems.delete(id);
+    return headerDeleted;
   }
 }
 
