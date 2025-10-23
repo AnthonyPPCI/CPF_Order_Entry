@@ -1,28 +1,44 @@
 import { useQuery } from "@tanstack/react-query";
-import { type Order } from "@shared/schema";
+import { type Order, type OrderHeader, type OrderItem } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, Search } from "lucide-react";
+import { Eye, Search, Package } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 
+// Union type for both single-item and multi-item orders
+type MultiItemOrder = OrderHeader & { items: OrderItem[] };
+type AnyOrder = Order | MultiItemOrder;
+
+// Type guard to check if order is multi-item
+function isMultiItemOrder(order: AnyOrder): order is MultiItemOrder {
+  return 'items' in order && Array.isArray(order.items);
+}
+
 export default function OrderList() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: orders, isLoading } = useQuery<Order[]>({
+  const { data: orders, isLoading } = useQuery<AnyOrder[]>({
     queryKey: ["/api/orders"],
   });
 
   const filteredOrders = orders?.filter((order) => {
     const search = searchTerm.toLowerCase();
-    return (
-      order.customerName.toLowerCase().includes(search) ||
-      order.description?.toLowerCase().includes(search) ||
-      order.frameSku.toLowerCase().includes(search) ||
-      order.id.toLowerCase().includes(search)
-    );
+    const customerName = order.customerName?.toLowerCase() || "";
+    const description = order.description?.toLowerCase() || "";
+    const id = order.id.toLowerCase();
+    
+    // For multi-item orders, search in items' frame SKUs
+    if (isMultiItemOrder(order)) {
+      const itemSkus = order.items.map(item => item.frameSku?.toLowerCase() || "").join(" ");
+      return customerName.includes(search) || description.includes(search) || id.includes(search) || itemSkus.includes(search);
+    }
+    
+    // For single-item orders
+    const frameSku = (order as Order).frameSku?.toLowerCase() || "";
+    return customerName.includes(search) || description.includes(search) || frameSku.includes(search) || id.includes(search);
   });
 
   if (isLoading) {
@@ -118,6 +134,7 @@ export default function OrderList() {
                         {filteredOrders.map((order, index) => {
                           const hasDeposit = order.deposit && parseFloat(order.deposit) > 0;
                           const isPaid = parseFloat(order.balance) === 0;
+                          const isMulti = isMultiItemOrder(order);
 
                           return (
                             <tr
@@ -133,12 +150,19 @@ export default function OrderList() {
                                 <div className="text-xs text-muted-foreground">{order.cityStateZip}</div>
                               </td>
                               <td className="p-4">
-                                <code className="text-sm font-mono bg-muted px-2 py-1 rounded">
-                                  {order.frameSku}
-                                </code>
+                                {isMulti ? (
+                                  <div className="flex items-center gap-2">
+                                    <Package className="h-4 w-4 text-muted-foreground" />
+                                    <Badge variant="outline">{order.items.length} Items</Badge>
+                                  </div>
+                                ) : (
+                                  <code className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                                    {(order as Order).frameSku}
+                                  </code>
+                                )}
                               </td>
                               <td className="p-4 text-sm font-mono">
-                                {order.width}×{order.height}
+                                {isMulti ? "—" : `${(order as Order).width}×${(order as Order).height}`}
                               </td>
                               <td className="p-4 text-sm text-muted-foreground max-w-xs truncate">
                                 {order.description || "—"}
@@ -181,6 +205,7 @@ export default function OrderList() {
                 {filteredOrders.map((order) => {
                   const hasDeposit = order.deposit && parseFloat(order.deposit) > 0;
                   const isPaid = parseFloat(order.balance) === 0;
+                  const isMulti = isMultiItemOrder(order);
 
                   return (
                     <Card key={order.id} className="hover-elevate" data-testid={`card-order-${order.id}`}>
@@ -202,18 +227,25 @@ export default function OrderList() {
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Frame SKU:</span>
-                            <div className="font-mono font-medium">{order.frameSku}</div>
+                        {isMulti ? (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{order.items.length} Items</span>
                           </div>
-                          <div>
-                            <span className="text-muted-foreground">Size:</span>
-                            <div className="font-mono font-medium">
-                              {order.width}×{order.height}
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Frame SKU:</span>
+                              <div className="font-mono font-medium">{(order as Order).frameSku}</div>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Size:</span>
+                              <div className="font-mono font-medium">
+                                {(order as Order).width}×{(order as Order).height}
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        )}
                         {order.description && (
                           <div className="text-sm">
                             <span className="text-muted-foreground">Description:</span>

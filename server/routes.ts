@@ -6,11 +6,21 @@ import { calculatePricing, calculateMultiItemPricing } from "./pricing";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Get all orders
+  // Get all orders (both single-item and multi-item)
   app.get("/api/orders", async (req, res) => {
     try {
-      const orders = await storage.getAllOrders();
-      res.json(orders);
+      const singleOrders = await storage.getAllOrders();
+      const multiOrders = await storage.getAllMultiItemOrders();
+      
+      // Merge both types into a single array
+      // Multi-item orders have 'items' array, single-item orders don't
+      const allOrders = [...singleOrders, ...multiOrders].sort((a, b) => {
+        const dateA = new Date(a.orderDate).getTime();
+        const dateB = new Date(b.orderDate).getTime();
+        return dateB - dateA; // Most recent first
+      });
+      
+      res.json(allOrders);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch orders" });
     }
