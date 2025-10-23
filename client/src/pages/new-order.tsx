@@ -1230,7 +1230,7 @@ export default function NewOrder() {
                 href="https://squareup.com/dashboard" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="block w-full"
+                className="block w-1/2"
                 data-testid="button-square-payment"
               >
                 <img 
