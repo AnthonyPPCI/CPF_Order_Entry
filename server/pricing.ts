@@ -25,6 +25,8 @@ interface PricingResult {
     additionalLaborCost: string;
     extraMatOpeningsCost: string;
   };
+  // Bill of Materials for stacker frames (production ordering format)
+  bom?: string[];
 }
 
 // Helper function to parse fractions and decimals (e.g., "16 1/2", "16-1/2", "16.5", "1/2")
@@ -60,6 +62,7 @@ function parseFraction(input: string | number | null | undefined): number {
 // Uses dynamic programming to find minimum-cost combination that meets/exceeds desired depth
 function calculateStackerFrames(
   desiredDepth: number,
+  topperSku: string | undefined,
   width: number,
   height: number,
   matBorderAll: number,
@@ -68,7 +71,7 @@ function calculateStackerFrames(
   matBorderTop: number,
   matBorderBottom: number,
   config: any
-): { layers: { sku: string; depth: number; quantity: number; cost: number }[]; totalCost: number; assemblyCharge: number } {
+): { layers: { sku: string; depth: number; quantity: number; cost: number }[]; totalCost: number; assemblyCharge: number; topper?: { sku: string; depth: number; cost: number } } {
   if (desiredDepth <= 0) {
     return { layers: [], totalCost: 0, assemblyCharge: 0 };
   }
@@ -81,14 +84,31 @@ function calculateStackerFrames(
   const perimeterInches = 2 * (frameWidth + frameHeight);
   const perimeterFeet = perimeterInches / 12;
 
+  // Handle topper piece
+  let topperData: { sku: string; depth: number; cost: number } | undefined;
+  let baseDepth = desiredDepth;
+  
+  if (topperSku && config.topperPieces) {
+    const topper = config.topperPieces.find((t: any) => t.sku === topperSku);
+    if (topper) {
+      topperData = {
+        sku: topper.sku,
+        depth: topper.depth,
+        cost: perimeterFeet * topper.pricePerFt,
+      };
+      // Subtract topper depth from desired depth for base layer calculation
+      baseDepth = Math.max(0, desiredDepth - topper.depth);
+    }
+  }
+
   const stackerFrames = config.stackerFrames;
   
   // Dynamic programming approach: find minimum cost for each depth level
-  // We need to find combinations that reach at least desiredDepth with minimum cost
+  // We need to find combinations that reach at least baseDepth with minimum cost
   // Scale depth to avoid floating point issues (multiply by 100 to work with integers)
   const SCALE = 100;
-  const targetDepth = Math.ceil(desiredDepth * SCALE);
-  const maxDepth = targetDepth + Math.max(...stackerFrames.map(f => f.depth)) * SCALE; // Allow some overshoot
+  const targetDepth = Math.ceil(baseDepth * SCALE);
+  const maxDepth = targetDepth + Math.max(...stackerFrames.map((f: any) => f.depth)) * SCALE; // Allow some overshoot
   
   // dp[d] = { cost: number, combination: Map<sku, quantity> }
   const dp: Array<{ cost: number; combination: Map<string, number> }> = new Array(maxDepth + 1).fill(null).map(() => ({
@@ -143,9 +163,10 @@ function calculateStackerFrames(
   // Calculate total frame cost
   const frameCost = layers.reduce((sum, layer) => sum + layer.cost, 0);
   const assemblyCharge = config.stackerAssemblyCharge;
-  const totalCost = frameCost + assemblyCharge;
+  const topperCost = topperData ? topperData.cost : 0;
+  const totalCost = frameCost + topperCost + assemblyCharge;
 
-  return { layers, totalCost, assemblyCharge };
+  return { layers, totalCost, assemblyCharge, topper: topperData };
 }
 
 export function calculatePricing(order: InsertOrder): PricingResult {
@@ -197,6 +218,7 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     const desiredDepth = parseFraction(order.shadowDepth);
     stackerFrameData = calculateStackerFrames(
       desiredDepth,
+      order.topperSku,
       width,
       height,
       matBorderAll,
@@ -363,6 +385,24 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   const deposit = parseFraction(order.deposit);
   const balance = total - deposit;
   
+  // Generate Bill of Materials (BOM) for stacker frames
+  let bom: string[] | undefined;
+  if (stackerFrameData && order.stackerFrame) {
+    bom = [];
+    const interiorWidth = Math.round(width);
+    const interiorHeight = Math.round(height);
+    
+    // Add stacker frame layers
+    for (const layer of stackerFrameData.layers) {
+      bom.push(`${layer.sku}_${interiorWidth}x${interiorHeight}_(${layer.quantity})`);
+    }
+    
+    // Add topper piece
+    if (stackerFrameData.topper) {
+      bom.push(`${stackerFrameData.topper.sku}_${interiorWidth}x${interiorHeight}_(1)`);
+    }
+  }
+  
   return {
     itemTotal: itemTotal.toFixed(2),
     shipping: shipping.toFixed(2),
@@ -385,5 +425,6 @@ export function calculatePricing(order: InsertOrder): PricingResult {
       additionalLaborCost: (additionalLaborCostBase * markup * quantity).toFixed(2),
       extraMatOpeningsCost: (extraMatOpeningsCostBase * markup * quantity).toFixed(2),
     },
+    bom,
   };
 }
