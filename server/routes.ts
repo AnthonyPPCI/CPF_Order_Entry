@@ -159,11 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { loadPricingData } = await import("./pricing-data");
       const data = loadPricingData();
-      const mouldings = Array.from(data.mouldings.entries()).map(([sku, mouldingData]) => ({
-        sku,
-        joinCost: mouldingData.joinCost,
-        width: mouldingData.width,
-      }));
+      const mouldings = Array.from(data.mouldings.entries()).map(([sku, mouldingData]) => mouldingData);
       res.json(mouldings);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch moulding data" });
@@ -175,10 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { loadPricingData } = await import("./pricing-data");
       const data = loadPricingData();
-      const supplies = Array.from(data.supplies.entries()).map(([sku, supplyData]) => ({
-        sku,
-        price: supplyData.price,
-      }));
+      const supplies = Array.from(data.supplies.entries()).map(([sku, supplyData]) => supplyData);
       res.json(supplies);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch supply data" });

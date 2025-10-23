@@ -8,12 +8,19 @@ const __dirname = dirname(__filename);
 export interface MouldingData {
   sku: string;
   width: number;
+  supplier: string;
+  description: string;
+  retailPrice: number;
+  discountPercent: number;
+  costPerFoot: number;
+  chop: number;
   joinCost: number;
 }
 
 export interface SupplyData {
   sku: string;
   name: string;
+  size: string;
   price: number;
 }
 
@@ -46,7 +53,13 @@ export function loadPricingData(): PricingData {
       mouldings.set(String(row[0]), {
         sku: String(row[0]),
         width: Number(row[1] || 0),
-        joinCost: Number(row[8] || 0),  // Column I (index 8) is join cost
+        supplier: String(row[2] || ''),
+        description: String(row[3] || ''),
+        retailPrice: Number(row[4] || 0),
+        discountPercent: Number(row[5] || 0),
+        costPerFoot: Number(row[6] || 0),
+        chop: Number(row[7] || 0),
+        joinCost: Number(row[8] || 0),
       });
     }
   }
@@ -62,7 +75,8 @@ export function loadPricingData(): PricingData {
       supplies.set(String(row[0]), {
         sku: String(row[0]),
         name: String(row[1] || ''),
-        price: Number(row[3] || 0),  // Column D (index 3) is price
+        size: String(row[2] || ''),
+        price: Number(row[3] || 0),
       });
     }
   }

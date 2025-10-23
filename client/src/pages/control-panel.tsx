@@ -19,12 +19,20 @@ interface PricingConfig {
 
 interface Moulding {
   sku: string;
-  joinCost: number;
   width: number;
+  supplier: string;
+  description: string;
+  retailPrice: number;
+  discountPercent: number;
+  costPerFoot: number;
+  chop: number;
+  joinCost: number;
 }
 
 interface Supply {
   sku: string;
+  name: string;
+  size: string;
   price: number;
 }
 
@@ -385,21 +393,33 @@ export default function ControlPanel() {
                   />
                 </div>
                 <div className="border rounded-lg overflow-hidden">
-                  <div className="max-h-[500px] overflow-y-auto">
-                    <table className="w-full">
+                  <div className="max-h-[500px] overflow-auto">
+                    <table className="w-full text-sm">
                       <thead className="bg-muted sticky top-0">
                         <tr>
-                          <th className="text-left p-3 font-medium">SKU</th>
-                          <th className="text-right p-3 font-medium">Join Cost</th>
-                          <th className="text-right p-3 font-medium">Width (in)</th>
+                          <th className="text-left p-2 font-medium whitespace-nowrap">SKU</th>
+                          <th className="text-left p-2 font-medium whitespace-nowrap">Width</th>
+                          <th className="text-left p-2 font-medium whitespace-nowrap">Supplier</th>
+                          <th className="text-left p-2 font-medium whitespace-nowrap">Description</th>
+                          <th className="text-right p-2 font-medium whitespace-nowrap">Retail Price</th>
+                          <th className="text-right p-2 font-medium whitespace-nowrap">Discount %</th>
+                          <th className="text-right p-2 font-medium whitespace-nowrap">Cost/Ft</th>
+                          <th className="text-right p-2 font-medium whitespace-nowrap">Chop</th>
+                          <th className="text-right p-2 font-medium whitespace-nowrap">Join Cost</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredMouldings.map((moulding, idx) => (
                           <tr key={moulding.sku} className={idx % 2 === 0 ? "bg-background" : "bg-muted/30"}>
-                            <td className="p-3 font-mono text-sm">{moulding.sku}</td>
-                            <td className="p-3 text-right font-mono text-sm">${moulding.joinCost.toFixed(2)}</td>
-                            <td className="p-3 text-right text-sm">{moulding.width}"</td>
+                            <td className="p-2 font-mono whitespace-nowrap">{moulding.sku}</td>
+                            <td className="p-2 whitespace-nowrap">{moulding.width}"</td>
+                            <td className="p-2 whitespace-nowrap">{moulding.supplier}</td>
+                            <td className="p-2 max-w-xs truncate" title={moulding.description}>{moulding.description}</td>
+                            <td className="p-2 text-right font-mono whitespace-nowrap">${moulding.retailPrice.toFixed(2)}</td>
+                            <td className="p-2 text-right whitespace-nowrap">{moulding.discountPercent}%</td>
+                            <td className="p-2 text-right font-mono whitespace-nowrap">${moulding.costPerFoot.toFixed(2)}</td>
+                            <td className="p-2 text-right font-mono whitespace-nowrap">${moulding.chop.toFixed(2)}</td>
+                            <td className="p-2 text-right font-mono whitespace-nowrap">${moulding.joinCost.toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -439,19 +459,23 @@ export default function ControlPanel() {
                   />
                 </div>
                 <div className="border rounded-lg overflow-hidden">
-                  <div className="max-h-[500px] overflow-y-auto">
-                    <table className="w-full">
+                  <div className="max-h-[500px] overflow-auto">
+                    <table className="w-full text-sm">
                       <thead className="bg-muted sticky top-0">
                         <tr>
-                          <th className="text-left p-3 font-medium">SKU</th>
-                          <th className="text-right p-3 font-medium">Price</th>
+                          <th className="text-left p-2 font-medium whitespace-nowrap">SKU</th>
+                          <th className="text-left p-2 font-medium whitespace-nowrap">Name</th>
+                          <th className="text-left p-2 font-medium whitespace-nowrap">Size</th>
+                          <th className="text-right p-2 font-medium whitespace-nowrap">Price</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredSupplies.map((supply, idx) => (
                           <tr key={supply.sku} className={idx % 2 === 0 ? "bg-background" : "bg-muted/30"}>
-                            <td className="p-3 font-mono text-sm">{supply.sku}</td>
-                            <td className="p-3 text-right font-mono text-sm">${supply.price.toFixed(2)}</td>
+                            <td className="p-2 font-mono whitespace-nowrap">{supply.sku}</td>
+                            <td className="p-2 max-w-md truncate" title={supply.name}>{supply.name}</td>
+                            <td className="p-2 whitespace-nowrap">{supply.size}</td>
+                            <td className="p-2 text-right font-mono whitespace-nowrap">${supply.price.toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
