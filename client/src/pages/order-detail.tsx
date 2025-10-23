@@ -143,6 +143,11 @@ export default function OrderDetail() {
                               </div>
                             )}
                           </div>
+                          {item.canvasStretching && (
+                            <div className="mt-3">
+                              <Badge variant="outline">Canvas Stretching (Customer Supplied)</Badge>
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     ))}
