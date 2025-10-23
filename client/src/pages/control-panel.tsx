@@ -15,6 +15,9 @@ interface PricingConfig {
   shippingRates: { min: number; max: number; rate: number }[];
   acrylicPrices: { type: string; pricePerSqIn: number }[];
   backingPrices: { type: string; price: number }[];
+  stackerFrames: { sku: string; depth: number; pricePerFt: number }[];
+  stackerAssemblyCharge: number;
+  stackerMarkup: number;
 }
 
 interface Moulding {
@@ -369,6 +372,79 @@ export default function ControlPanel() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Stacker Frames (Deep Shadowbox) */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                <CardTitle>Stacker Frames (Deep Shadowbox)</CardTitle>
+              </div>
+              <CardDescription>Frame layers for custom depth shadowboxes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <Label className="text-sm font-medium">Frame Layer Options</Label>
+                  {currentConfig.stackerFrames.map((frame, idx) => (
+                    <div key={idx} className="grid grid-cols-3 gap-4 items-center">
+                      <div className="text-sm font-medium">{frame.sku} ({frame.depth}")</div>
+                      <div className="flex items-center gap-2 col-span-2">
+                        <span className="text-sm">$</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={frame.pricePerFt}
+                          onChange={(e) => {
+                            const newFrames = [...currentConfig.stackerFrames];
+                            newFrames[idx].pricePerFt = parseFloat(e.target.value);
+                            setConfig({ ...currentConfig, stackerFrames: newFrames });
+                          }}
+                          disabled={!editMode}
+                          className="w-32"
+                          data-testid={`input-stacker-frame-${idx}`}
+                        />
+                        <span className="text-sm text-muted-foreground">/ft</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6 pt-4 border-t">
+                  <div className="space-y-2">
+                    <Label htmlFor="stackerAssemblyCharge">Assembly Charge</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">$</span>
+                      <Input
+                        id="stackerAssemblyCharge"
+                        type="number"
+                        step="0.01"
+                        value={currentConfig.stackerAssemblyCharge}
+                        onChange={(e) => setConfig({ ...currentConfig, stackerAssemblyCharge: parseFloat(e.target.value) })}
+                        disabled={!editMode}
+                        className="w-32"
+                        data-testid="input-stacker-assembly"
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground">Flat fee for assembling stacker layers</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="stackerMarkup">Stacker Markup Multiplier</Label>
+                    <Input
+                      id="stackerMarkup"
+                      type="number"
+                      step="0.01"
+                      value={currentConfig.stackerMarkup}
+                      onChange={(e) => setConfig({ ...currentConfig, stackerMarkup: parseFloat(e.target.value) })}
+                      disabled={!editMode}
+                      data-testid="input-stacker-markup"
+                    />
+                    <p className="text-sm text-muted-foreground">Current: {currentConfig.stackerMarkup}×</p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
