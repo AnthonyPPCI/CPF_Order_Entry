@@ -66,6 +66,7 @@ export default function NewOrder() {
       cityStateZip: "",
       phone: "",
       email: "",
+      deliveryMethod: "shipping",
       description: "",
       specialRequests: "",
       frameSku: "",
@@ -172,8 +173,42 @@ export default function NewOrder() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {/* Customer Information */}
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-6">
                     <CardTitle className="text-xl">Customer Information</CardTitle>
+                    <FormField
+                      control={form.control}
+                      name="deliveryMethod"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <div className="flex items-center gap-4">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  value="shipping"
+                                  checked={field.value === "shipping"}
+                                  onChange={() => field.onChange("shipping")}
+                                  className="w-4 h-4"
+                                  data-testid="radio-shipping"
+                                />
+                                <span className="text-sm font-medium">Shipping</span>
+                              </label>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  value="pickup"
+                                  checked={field.value === "pickup"}
+                                  onChange={() => field.onChange("pickup")}
+                                  className="w-4 h-4"
+                                  data-testid="radio-pickup"
+                                />
+                                <span className="text-sm font-medium">Customer Pickup</span>
+                              </label>
+                            </div>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <FormField

@@ -16,6 +16,7 @@ export const orders = pgTable("orders", {
   email: text("email"),
   
   // Order Details
+  deliveryMethod: text("delivery_method").notNull().default("shipping"),
   description: text("description"),
   specialRequests: text("special_requests"),
   
@@ -73,6 +74,7 @@ export const insertOrderSchema = createInsertSchema(orders, {
   customerName: z.string().optional().or(z.literal("")),
   address1: z.string().optional().or(z.literal("")),
   cityStateZip: z.string().optional().or(z.literal("")),
+  deliveryMethod: z.string().optional().default("shipping"),
   frameSku: z.string().optional().or(z.literal("")),
   width: z.coerce.number().optional().or(z.literal("" as any)),
   height: z.coerce.number().optional().or(z.literal("" as any)),

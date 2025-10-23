@@ -140,6 +140,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 23, 2025)
 
+**Delivery Method Selection:**
+- Added "Shipping" vs "Customer Pickup" radio buttons at top of Customer Information section
+- When "Customer Pickup" is selected, shipping charges are set to $0
+- Delivery method defaults to "Shipping"
+- Database schema updated with delivery_method field
+
 **Form Flexibility & Mat Selection Enhancement:**
 - Made all form fields optional - orders can be saved with any combination of filled fields
 - Implemented autocomplete (combobox) inputs for mat SKUs with intelligent search

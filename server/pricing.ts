@@ -158,7 +158,11 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   
   // Calculate Shipping - use dynamic config shipping rates
   let shipping: number;
-  if (order.chopOnly) {
+  
+  // Check if customer pickup - no shipping charge
+  if (order.deliveryMethod === "pickup") {
+    shipping = 0;
+  } else if (order.chopOnly) {
     shipping = 29;
   } else {
     // Find appropriate shipping rate based on united inches
