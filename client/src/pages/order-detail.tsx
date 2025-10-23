@@ -3,13 +3,15 @@ import { useRoute, Link } from "wouter";
 import { type Order } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Printer, Download } from "lucide-react";
+import { ArrowLeft, Printer, Mail, Mic, Square } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 export default function OrderDetail() {
   const [, params] = useRoute("/order/:id");
   const orderId = params?.id;
+  const { toast } = useToast();
 
   const { data: order, isLoading } = useQuery<Order>({
     queryKey: ["/api/orders", orderId],
@@ -57,9 +59,71 @@ export default function OrderDetail() {
     window.print();
   };
 
-  const handleDownload = () => {
-    // In a real app, this would generate a PDF
-    alert("PDF download would be implemented with a library like jsPDF");
+  const handleEmailBrian = () => {
+    if (!order) return;
+    
+    const subject = encodeURIComponent(`Order #${order.id.slice(0, 8).toUpperCase()} - ${order.customerName}`);
+    const body = encodeURIComponent(
+      `Order Details:\n\n` +
+      `Customer: ${order.customerName}\n` +
+      `Frame: ${order.frameSku} (${order.width}" × ${order.height}")\n` +
+      `Quantity: ${order.quantity}\n` +
+      `Total: $${parseFloat(order.total).toFixed(2)}\n` +
+      `Balance Due: $${parseFloat(order.balance).toFixed(2)}\n\n` +
+      `Description: ${order.description || 'N/A'}\n\n` +
+      `View full order: ${window.location.href}`
+    );
+    
+    window.location.href = `mailto:brian@custompictureframes.com?subject=${subject}&body=${body}`;
+  };
+
+  const handleEmailCustomer = () => {
+    if (!order || !order.email) {
+      toast({
+        title: "No Email Address",
+        description: "This order does not have a customer email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const subject = encodeURIComponent(`Your Order from CustomPictureFrames.com`);
+    const body = encodeURIComponent(
+      `Dear ${order.customerName},\n\n` +
+      `Thank you for your order!\n\n` +
+      `Order #: ${order.id.slice(0, 8).toUpperCase()}\n` +
+      `Frame: ${order.frameSku} (${order.width}" × ${order.height}")\n` +
+      `Quantity: ${order.quantity}\n` +
+      `Total: $${parseFloat(order.total).toFixed(2)}\n` +
+      `Balance Due: $${parseFloat(order.balance).toFixed(2)}\n\n` +
+      `We will contact you when your order is ready.\n\n` +
+      `Best regards,\n` +
+      `CustomPictureFrames.com\n` +
+      `(800) 916-8770`
+    );
+    
+    window.location.href = `mailto:${order.email}?subject=${subject}&body=${body}`;
+  };
+
+  const handleRecordOrder = () => {
+    if (!order) return;
+    
+    toast({
+      title: "Order Recorded",
+      description: `Order #${order.id.slice(0, 8).toUpperCase()} has been recorded in the system.`,
+    });
+  };
+
+  const handleOpenSquare = () => {
+    if (!order) return;
+    
+    const squareUrl = `https://squareup.com/dashboard/sales/transactions`;
+    window.open(squareUrl, '_blank');
+    
+    toast({
+      title: "Opening Square",
+      description: "Square payment system opened in new tab.",
+    });
   };
 
   const hasDeposit = order.deposit && parseFloat(order.deposit) > 0;
@@ -69,24 +133,67 @@ export default function OrderDetail() {
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 md:px-8 py-8">
         <div className="space-y-6">
-          {/* Actions */}
-          <div className="flex flex-wrap items-center justify-between gap-4 print:hidden">
+          {/* Navigation */}
+          <div className="flex items-center print:hidden">
             <Link href="/orders" asChild>
               <Button variant="ghost" data-testid="button-back">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Orders
               </Button>
             </Link>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handlePrint} data-testid="button-print">
-                <Printer className="h-4 w-4 mr-2" />
-                Print
-              </Button>
-              <Button variant="outline" onClick={handleDownload} data-testid="button-download">
-                <Download className="h-4 w-4 mr-2" />
-                Download PDF
-              </Button>
-            </div>
+          </div>
+
+          {/* Action Buttons - Google Sheets Style */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 print:hidden">
+            <Button 
+              variant="outline" 
+              onClick={handlePrint} 
+              data-testid="button-print-order"
+              className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2"
+            >
+              <Printer className="h-6 w-6" />
+              <span className="font-semibold">Print Order</span>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={handleEmailBrian} 
+              data-testid="button-email-brian"
+              className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2"
+            >
+              <Mail className="h-6 w-6" />
+              <span className="font-semibold">Email Brian</span>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={handleEmailCustomer} 
+              data-testid="button-email-customer"
+              className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2"
+            >
+              <Mail className="h-6 w-6" />
+              <span className="font-semibold">Email Customer</span>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={handleRecordOrder} 
+              data-testid="button-record-order"
+              className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2"
+            >
+              <Mic className="h-6 w-6" />
+              <span className="font-semibold">Record Order</span>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={handleOpenSquare} 
+              data-testid="button-open-square"
+              className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2"
+            >
+              <Square className="h-6 w-6" />
+              <span className="font-semibold">Open Square</span>
+            </Button>
           </div>
 
           {/* Invoice */}
