@@ -18,6 +18,7 @@ interface PricingConfig {
   stackerFrames: { sku: string; depth: number; pricePerFt: number }[];
   stackerAssemblyCharge: number;
   stackerMarkup: number;
+  topperPieces: { sku: string; depth: number; pricePerFt: number }[];
 }
 
 interface Moulding {
