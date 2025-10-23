@@ -199,6 +199,126 @@ export default function NewOrder() {
     createOrderMutation.mutate(orderData);
   };
 
+  // Handler to add current item to pending items
+  const handleAddItem = async () => {
+    const isValid = await form.trigger(); // Validate form
+    if (!isValid) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form before adding the item.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const formData = form.getValues();
+    
+    if (editingItemIndex !== null) {
+      // Update existing item
+      const updated = [...pendingItems];
+      updated[editingItemIndex] = formData;
+      setPendingItems(updated);
+      setEditingItemIndex(null);
+      toast({
+        title: "Item Updated",
+        description: `Item #${editingItemIndex + 1} has been updated.`,
+      });
+    } else {
+      // Add new item
+      setPendingItems([...pendingItems, formData]);
+      toast({
+        title: "Item Added",
+        description: `Item #${pendingItems.length + 1} added to order.`,
+      });
+    }
+
+    // Reset form but keep customer data
+    const customerData = {
+      customerName: formData.customerName,
+      address1: formData.address1,
+      address2: formData.address2,
+      cityStateZip: formData.cityStateZip,
+      phone: formData.phone,
+      email: formData.email,
+      deliveryMethod: formData.deliveryMethod,
+      description: formData.description,
+      specialRequests: formData.specialRequests,
+      discount: formData.discount,
+      deposit: formData.deposit,
+    };
+
+    form.reset({
+      ...customerData,
+      frameSku: "",
+      chopOnly: false,
+      width: 12,
+      height: 16,
+      matBorderAll: "",
+      matBorderLeft: "",
+      matBorderRight: "",
+      matBorderTop: "",
+      matBorderBottom: "",
+      mat1Sku: "",
+      mat1Reveal: "",
+      mat2Sku: "",
+      mat2Reveal: "",
+      mat3Sku: "",
+      extraMatOpenings: 0,
+      acrylicType: "Standard",
+      backingType: "White Foam",
+      printPaper: false,
+      printPaperType: "",
+      dryMount: false,
+      printCanvas: false,
+      printCanvasWrapStyle: "",
+      canvasStretching: false,
+      engravedPlaque: false,
+      engravedPlaqueSize: "",
+      engravedPlaqueColor: "",
+      engravedPlaqueFont: "",
+      engravedPlaqueText1: "",
+      engravedPlaqueText2: "",
+      engravedPlaqueText3: "",
+      engravedPlaqueTextAdditional: [],
+      leds: false,
+      shadowboxFitting: false,
+      additionalLabor: false,
+      stackerFrame: false,
+      shadowDepth: "",
+      quantity: 1,
+    });
+    
+    setWidthText("12");
+    setHeightText("16");
+  };
+
+  // Handler to edit an item
+  const handleEditItem = (index: number) => {
+    const item = pendingItems[index];
+    form.reset(item);
+    setWidthText(item.width?.toString() || "12");
+    setHeightText(item.height?.toString() || "16");
+    setEditingItemIndex(index);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast({
+      title: "Editing Item",
+      description: `Item #${index + 1} loaded into form for editing.`,
+    });
+  };
+
+  // Handler to remove an item
+  const handleRemoveItem = (index: number) => {
+    const updated = pendingItems.filter((_, i) => i !== index);
+    setPendingItems(updated);
+    if (editingItemIndex === index) {
+      setEditingItemIndex(null);
+    }
+    toast({
+      title: "Item Removed",
+      description: `Item #${index + 1} removed from order.`,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
@@ -1337,16 +1457,39 @@ export default function NewOrder() {
                     </div>
                   </div>
 
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    size="lg"
-                    disabled={createOrderMutation.isPending}
-                    onClick={form.handleSubmit(onSubmit)}
-                    data-testid="button-create-order"
-                  >
-                    {createOrderMutation.isPending ? "Creating Order..." : "Create Order"}
-                  </Button>
+                  {pendingItems.length > 0 && (
+                    <div className="p-3 bg-primary/5 rounded-md border border-primary/20">
+                      <p className="text-sm font-medium">
+                        {pendingItems.length} item{pendingItems.length !== 1 ? 's' : ''} in this order
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      size="lg"
+                      onClick={handleAddItem}
+                      data-testid="button-add-item"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {editingItemIndex !== null ? "Update Item" : "Add Another Item"}
+                    </Button>
+                    
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      size="lg"
+                      disabled={createOrderMutation.isPending}
+                      onClick={form.handleSubmit(onSubmit)}
+                      data-testid="button-create-order"
+                    >
+                      {createOrderMutation.isPending ? "Creating Order..." : 
+                        pendingItems.length > 0 ? `Submit Order (${pendingItems.length + 1} items)` : "Create Order"}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
