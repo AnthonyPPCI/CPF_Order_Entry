@@ -19,6 +19,7 @@ interface PricingResult {
     printPaperCost: string;
     dryMountCost: string;
     printCanvasCost: string;
+    canvasStretchingCost: string;
     engravedPlaqueCost: string;
     ledsCost: string;
     shadowboxFittingCost: string;
@@ -260,6 +261,7 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   let printPaperCostBase = 0;
   let dryMountCostBase = 0;
   let printCanvasCostBase = 0;
+  let canvasStretchingCostBase = 0;
   let engravedPlaqueCostBase = 0;
   let ledsCostBase = 0;
   let shadowboxFittingCostBase = 0;
@@ -324,6 +326,11 @@ export function calculatePricing(order: InsertOrder): PricingResult {
       printCanvasCostBase = 0.08 * squareInches;
     }
     addOnCosts += printCanvasCostBase;
+  }
+  if (order.canvasStretching) {
+    // Canvas stretching is 10% below gallery canvas price ($0.08 × 0.90 = $0.072)
+    canvasStretchingCostBase = 0.072 * squareInches;
+    addOnCosts += canvasStretchingCostBase;
   }
   
   // Fixed-cost options
@@ -419,6 +426,7 @@ export function calculatePricing(order: InsertOrder): PricingResult {
       printPaperCost: (printPaperCostBase * markup * quantity).toFixed(2),
       dryMountCost: (dryMountCostBase * markup * quantity).toFixed(2),
       printCanvasCost: (printCanvasCostBase * markup * quantity).toFixed(2),
+      canvasStretchingCost: (canvasStretchingCostBase * markup * quantity).toFixed(2),
       engravedPlaqueCost: (engravedPlaqueCostBase * markup * quantity).toFixed(2),
       ledsCost: (ledsCostBase * markup * quantity).toFixed(2),
       shadowboxFittingCost: (shadowboxFittingCostBase * markup * quantity).toFixed(2),
