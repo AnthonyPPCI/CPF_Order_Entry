@@ -225,7 +225,7 @@ export default function NewOrder() {
                       name="customerName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Customer Name *</FormLabel>
+                          <FormLabel>Customer Name</FormLabel>
                           <FormControl>
                             <Input {...field} data-testid="input-customer-name" />
                           </FormControl>
@@ -240,7 +240,7 @@ export default function NewOrder() {
                         name="address1"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Address 1 *</FormLabel>
+                            <FormLabel>Address 1</FormLabel>
                             <FormControl>
                               <Input {...field} data-testid="input-address1" />
                             </FormControl>
@@ -269,7 +269,7 @@ export default function NewOrder() {
                       name="cityStateZip"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>City, State, Zip *</FormLabel>
+                          <FormLabel>City, State, Zip</FormLabel>
                           <FormControl>
                             <Input {...field} placeholder="e.g., Somerset, NJ 08873" data-testid="input-city-state-zip" />
                           </FormControl>
