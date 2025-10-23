@@ -55,6 +55,7 @@ export const orders = pgTable("orders", {
   
   printCanvas: boolean("print_canvas").notNull().default(false),
   printCanvasWrapStyle: text("print_canvas_wrap_style"),
+  canvasStretching: boolean("canvas_stretching").notNull().default(false),
   
   // Additional Options
   engravedPlaque: boolean("engraved_plaque").notNull().default(false),
@@ -230,6 +231,7 @@ export const orderItems = pgTable("order_items", {
   
   printCanvas: boolean("print_canvas").notNull().default(false),
   printCanvasWrapStyle: text("print_canvas_wrap_style"),
+  canvasStretching: boolean("canvas_stretching").notNull().default(false),
   
   // Additional Options
   engravedPlaque: boolean("engraved_plaque").notNull().default(false),
