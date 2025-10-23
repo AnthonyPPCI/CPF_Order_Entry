@@ -23,6 +23,8 @@ export const orders = pgTable("orders", {
   // Frame Details
   frameSku: text("frame_sku"),
   chopOnly: boolean("chop_only").notNull().default(false),
+  stackerFrame: boolean("stacker_frame").notNull().default(false),
+  shadowDepth: text("shadow_depth"),
   width: decimal("width"),
   height: decimal("height"),
   
@@ -95,6 +97,7 @@ export const insertOrderSchema = createInsertSchema(orders, {
   matBorderBottom: z.string().optional().or(z.literal("")),
   mat1Reveal: z.string().optional().or(z.literal("")),
   mat2Reveal: z.string().optional().or(z.literal("")),
+  shadowDepth: z.string().optional().or(z.literal("")),
   email: z.string().email().optional().or(z.literal("")),
 }).omit({
   id: true,

@@ -56,6 +56,61 @@ function parseFraction(input: string | number | null | undefined): number {
   return parseFloat(str) || 0;
 }
 
+// Calculate optimal stacker frame combination for desired shadow depth
+function calculateStackerFrames(
+  desiredDepth: number,
+  width: number,
+  height: number,
+  matBorderAll: number,
+  matBorderLeft: number,
+  matBorderRight: number,
+  matBorderTop: number,
+  matBorderBottom: number,
+  config: any
+): { layers: { sku: string; depth: number; quantity: number; cost: number }[]; totalCost: number; assemblyCharge: number } {
+  if (desiredDepth <= 0) {
+    return { layers: [], totalCost: 0, assemblyCharge: 0 };
+  }
+
+  // Calculate frame outer dimensions (including mat borders)
+  const frameWidth = width + (2 * matBorderAll) + matBorderLeft + matBorderRight;
+  const frameHeight = height + (2 * matBorderAll) + matBorderTop + matBorderBottom;
+  
+  // Calculate perimeter in feet
+  const perimeterInches = 2 * (frameWidth + frameHeight);
+  const perimeterFeet = perimeterInches / 12;
+
+  // Sort stacker frames by depth (descending) for greedy algorithm
+  const stackerFrames = [...config.stackerFrames].sort((a, b) => b.depth - a.depth);
+  
+  let remainingDepth = desiredDepth;
+  const layers: { sku: string; depth: number; quantity: number; cost: number }[] = [];
+
+  // Greedy algorithm: use largest depth first
+  for (const frame of stackerFrames) {
+    if (remainingDepth <= 0) break;
+    
+    const quantity = Math.floor(remainingDepth / frame.depth);
+    if (quantity > 0) {
+      const layerCost = perimeterFeet * frame.pricePerFt * quantity;
+      layers.push({
+        sku: frame.sku,
+        depth: frame.depth,
+        quantity,
+        cost: layerCost,
+      });
+      remainingDepth -= quantity * frame.depth;
+    }
+  }
+
+  // Calculate total frame cost
+  const frameCost = layers.reduce((sum, layer) => sum + layer.cost, 0);
+  const assemblyCharge = config.stackerAssemblyCharge;
+  const totalCost = frameCost + assemblyCharge;
+
+  return { layers, totalCost, assemblyCharge };
+}
+
 export function calculatePricing(order: InsertOrder): PricingResult {
   // Load pricing data
   const pricingData = loadPricingData();
@@ -94,23 +149,43 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     height + 2 * matBorderAll + matBorderTop + matBorderBottom + (mat1Reveal + mat2Reveal) / 2
   );
   
-  // Look up moulding data
-  const mouldingData = order.frameSku ? getMoulding(order.frameSku) : null;
-  const mouldingWidth = mouldingData?.width || 2; // Default to 2 if not found
-  const joinCost = mouldingData?.joinCost || 0;
-  
-  // Calculate Join Feet (Formula from Google Sheets H14)
   const config = pricingConfigStorage.getConfig();
-  let joinFt: number;
-  if (order.chopOnly) {
-    joinFt = config.chopOnlyJoinFt; // Default 18 feet for chop only
-  } else {
-    // MAX(4, ROUNDUP(((unitedInchesX2 + 8 + (mouldingWidth * 4)) / 12), 0))
-    joinFt = Math.max(4, Math.ceil((unitedInchesX2 + 8 + (mouldingWidth * 4)) / 12));
-  }
   
-  // Frame Cost = Join Cost * Join Feet
-  const frameCost = joinCost * joinFt;
+  // Check if this is a stacker frame order
+  let frameCost = 0;
+  let stackerFrameData = null;
+  
+  if (order.stackerFrame && order.shadowDepth) {
+    // Calculate stacker frame pricing
+    const desiredDepth = parseFraction(order.shadowDepth);
+    stackerFrameData = calculateStackerFrames(
+      desiredDepth,
+      width,
+      height,
+      matBorderAll,
+      matBorderLeft,
+      matBorderRight,
+      matBorderTop,
+      matBorderBottom,
+      config
+    );
+    frameCost = stackerFrameData.totalCost;
+  } else {
+    // Regular frame pricing
+    const mouldingData = order.frameSku ? getMoulding(order.frameSku) : null;
+    const mouldingWidth = mouldingData?.width || 2;
+    const joinCost = mouldingData?.joinCost || 0;
+    
+    // Calculate Join Feet
+    let joinFt: number;
+    if (order.chopOnly) {
+      joinFt = config.chopOnlyJoinFt;
+    } else {
+      joinFt = Math.max(4, Math.ceil((unitedInchesX2 + 8 + (mouldingWidth * 4)) / 12));
+    }
+    
+    frameCost = joinCost * joinFt;
+  }
   
   // Determine if this is a standalone component order (no frame)
   const isStandaloneOrder = !order.frameSku || order.frameSku.trim() === "" || order.frameSku === "None";
@@ -212,7 +287,9 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   
   // Calculate Item Total with Markup (use dynamic config)
   // Formula: (Frame Cost + Add-ons) * Markup * Quantity
-  const itemTotal = (frameCost + addOnCosts) * config.markup * quantity;
+  // Use stacker markup for stacker frames, otherwise use regular markup
+  const markup = order.stackerFrame ? config.stackerMarkup : config.markup;
+  const itemTotal = (frameCost + addOnCosts) * markup * quantity;
   
   // Calculate Shipping - use dynamic config shipping rates
   let shipping: number;
@@ -256,20 +333,20 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     total: total.toFixed(2),
     balance: balance.toFixed(2),
     breakdown: {
-      frameCost: (frameCost * config.markup * quantity).toFixed(2),
-      mat1Cost: (mat1CostBase * config.markup * quantity).toFixed(2),
-      mat2Cost: (mat2CostBase * config.markup * quantity).toFixed(2),
-      mat3Cost: (mat3CostBase * config.markup * quantity).toFixed(2),
-      acrylicCost: (acrylicCostBase * config.markup * quantity).toFixed(2),
-      backingCost: (backingCostBase * config.markup * quantity).toFixed(2),
-      printPaperCost: (printPaperCostBase * config.markup * quantity).toFixed(2),
-      dryMountCost: (dryMountCostBase * config.markup * quantity).toFixed(2),
-      printCanvasCost: (printCanvasCostBase * config.markup * quantity).toFixed(2),
-      engravedPlaqueCost: (engravedPlaqueCostBase * config.markup * quantity).toFixed(2),
-      ledsCost: (ledsCostBase * config.markup * quantity).toFixed(2),
-      shadowboxFittingCost: (shadowboxFittingCostBase * config.markup * quantity).toFixed(2),
-      additionalLaborCost: (additionalLaborCostBase * config.markup * quantity).toFixed(2),
-      extraMatOpeningsCost: (extraMatOpeningsCostBase * config.markup * quantity).toFixed(2),
+      frameCost: (frameCost * markup * quantity).toFixed(2),
+      mat1Cost: (mat1CostBase * markup * quantity).toFixed(2),
+      mat2Cost: (mat2CostBase * markup * quantity).toFixed(2),
+      mat3Cost: (mat3CostBase * markup * quantity).toFixed(2),
+      acrylicCost: (acrylicCostBase * markup * quantity).toFixed(2),
+      backingCost: (backingCostBase * markup * quantity).toFixed(2),
+      printPaperCost: (printPaperCostBase * markup * quantity).toFixed(2),
+      dryMountCost: (dryMountCostBase * markup * quantity).toFixed(2),
+      printCanvasCost: (printCanvasCostBase * markup * quantity).toFixed(2),
+      engravedPlaqueCost: (engravedPlaqueCostBase * markup * quantity).toFixed(2),
+      ledsCost: (ledsCostBase * markup * quantity).toFixed(2),
+      shadowboxFittingCost: (shadowboxFittingCostBase * markup * quantity).toFixed(2),
+      additionalLaborCost: (additionalLaborCostBase * markup * quantity).toFixed(2),
+      extraMatOpeningsCost: (extraMatOpeningsCostBase * markup * quantity).toFixed(2),
     },
   };
 }

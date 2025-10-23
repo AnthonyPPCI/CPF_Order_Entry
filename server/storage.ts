@@ -88,6 +88,9 @@ interface PricingConfig {
   shippingRates: { min: number; max: number; rate: number }[];
   acrylicPrices: { type: string; pricePerSqIn: number }[];
   backingPrices: { type: string; price: number }[];
+  stackerFrames: { sku: string; depth: number; pricePerFt: number }[];
+  stackerAssemblyCharge: number;
+  stackerMarkup: number;
   passwordHash: string; // SHA-256 hash of the password
 }
 
@@ -116,6 +119,13 @@ class PricingConfigStorage {
         { type: 'Black Foam', price: 2.5 },
         { type: 'Acid Free', price: 3 },
       ],
+      stackerFrames: [
+        { sku: 'F9532', depth: 2.25, pricePerFt: 11.81 },
+        { sku: 'F9533', depth: 1.25, pricePerFt: 8.36 },
+        { sku: 'F9531', depth: 0.5, pricePerFt: 8.50 },
+      ],
+      stackerAssemblyCharge: 29.17,
+      stackerMarkup: 2.5,
       // SHA-256 hash of "2026DOG"
       passwordHash: '8a707e0ded3de11960657de67f2e66292900c86c1ecfe7e570167397943cdaf4',
     };
