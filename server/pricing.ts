@@ -146,10 +146,10 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     addOnCosts += 45;
   }
   if (order.shadowboxFitting) {
-    addOnCosts += 40;
+    addOnCosts += 17.50;
   }
   if (order.additionalLabor) {
-    addOnCosts += 50;
+    addOnCosts += 17.50;
   }
   
   // Calculate Item Total with Markup (use dynamic config)
