@@ -39,6 +39,7 @@ type MultiOrderForm = {
     quantity: number;
     acrylicType: string;
     backingType: string;
+    canvasStretching: boolean;
   }>;
 };
 
@@ -73,6 +74,7 @@ export default function NewMultiOrder() {
           quantity: 1,
           acrylicType: "Standard",
           backingType: "White Foam",
+          canvasStretching: false,
         },
       ],
     },
@@ -281,6 +283,7 @@ export default function NewMultiOrder() {
                     quantity: 1,
                     acrylicType: "Standard",
                     backingType: "White Foam",
+                    canvasStretching: false,
                   })
                 }
                 variant="outline"
@@ -406,6 +409,55 @@ export default function NewMultiOrder() {
                             />
                           </FormControl>
                           <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.acrylicType`}
+                      render={({ field }) => (
+                        <FormItem data-testid={`field-acrylic-type-${index}`}>
+                          <FormLabel>Acrylic Type</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Standard" data-testid={`input-acrylic-type-${index}`} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.backingType`}
+                      render={({ field }) => (
+                        <FormItem data-testid={`field-backing-type-${index}`}>
+                          <FormLabel>Backing Type</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="White Foam" data-testid={`input-backing-type-${index}`} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.canvasStretching`}
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0 pt-8" data-testid={`field-canvas-stretching-${index}`}>
+                          <FormControl>
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                              className="h-4 w-4 cursor-pointer"
+                              data-testid={`checkbox-canvas-stretching-${index}`}
+                            />
+                          </FormControl>
+                          <FormLabel className="font-normal cursor-pointer">Canvas Stretching</FormLabel>
                         </FormItem>
                       )}
                     />
