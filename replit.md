@@ -148,6 +148,10 @@ Preferred communication style: Simple, everyday language.
   - Limits display to 100 results for performance
 - Mat pricing correctly pulls from Supply tab using `getSupply()` function
 - Updated control panel to display all Excel columns for mouldings (9 cols) and supplies (4 cols)
+- Changed discount, deposit, mat reveal 1, and mat reveal 2 to text boxes for flexible input
+  - Allows freeform text like "10%", "$50", "0.125", etc.
+  - Updated database schema: discount, deposit, mat_1_reveal, mat_2_reveal are now text fields
+- Updated "Extra Mat Openings" label to clarify "(after the first opening)"
 
 **Pricing System Enhancement:**
 - Implemented exact Google Sheets formulas using real moulding/supply data from Excel file

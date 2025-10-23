@@ -96,7 +96,7 @@ export default function NewOrder() {
       shadowboxFitting: false,
       additionalLabor: false,
       quantity: 1,
-      discountPercent: 0,
+      discount: "",
       deposit: "",
     },
   });
@@ -471,7 +471,7 @@ export default function NewOrder() {
                             <FormItem>
                               <FormLabel className="text-sm">Mat 1 Reveal</FormLabel>
                               <FormControl>
-                                <Input {...field} value={field.value || ""} type="number" step="0.125" data-testid="input-mat1-reveal" />
+                                <Input {...field} value={field.value || ""} placeholder="e.g., 0.125" data-testid="input-mat1-reveal" />
                               </FormControl>
                             </FormItem>
                           )}
@@ -499,7 +499,7 @@ export default function NewOrder() {
                             <FormItem>
                               <FormLabel className="text-sm">Mat 2 Reveal</FormLabel>
                               <FormControl>
-                                <Input {...field} value={field.value || ""} type="number" step="0.125" data-testid="input-mat2-reveal" />
+                                <Input {...field} value={field.value || ""} placeholder="e.g., 0.125" data-testid="input-mat2-reveal" />
                               </FormControl>
                             </FormItem>
                           )}
@@ -525,7 +525,7 @@ export default function NewOrder() {
                           name="extraMatOpenings"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-sm">Extra Mat Openings</FormLabel>
+                              <FormLabel className="text-sm">Extra Mat Openings (after the first opening)</FormLabel>
                               <FormControl>
                                 <Input
                                   {...field}
@@ -800,18 +800,16 @@ export default function NewOrder() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
-                        name="discountPercent"
+                        name="discount"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Discount (%)</FormLabel>
+                            <FormLabel>Discount</FormLabel>
                             <FormControl>
                               <Input
                                 {...field}
-                                type="number"
-                                min="0"
-                                max="100"
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                data-testid="input-discount-percent"
+                                value={field.value || ""}
+                                placeholder="e.g., 10% or $50"
+                                data-testid="input-discount"
                               />
                             </FormControl>
                           </FormItem>
@@ -823,9 +821,9 @@ export default function NewOrder() {
                         name="deposit"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Deposit ($)</FormLabel>
+                            <FormLabel>Deposit</FormLabel>
                             <FormControl>
-                              <Input {...field} value={field.value || ""} type="number" step="0.01" data-testid="input-deposit" />
+                              <Input {...field} value={field.value || ""} placeholder="e.g., $100" data-testid="input-deposit" />
                             </FormControl>
                           </FormItem>
                         )}
@@ -885,14 +883,6 @@ export default function NewOrder() {
                         <span className="text-muted-foreground">Sales Tax:</span>
                         <span className="font-mono font-semibold" data-testid="text-sales-tax">
                           ${calculatedPricing.salesTax.toFixed(2)}
-                        </span>
-                      </div>
-                    )}
-                    {form.watch("discountPercent") > 0 && (
-                      <div className="flex justify-between text-chart-2">
-                        <span>Discount ({form.watch("discountPercent")}%):</span>
-                        <span className="font-mono font-semibold">
-                          -${((calculatedPricing.itemTotal + calculatedPricing.shipping + calculatedPricing.salesTax) * (form.watch("discountPercent") / 100)).toFixed(2)}
                         </span>
                       </div>
                     )}

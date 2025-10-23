@@ -33,9 +33,9 @@ export const orders = pgTable("orders", {
   matBorderBottom: decimal("mat_border_bottom"),
   
   mat1Sku: text("mat_1_sku"),
-  mat1Reveal: decimal("mat_1_reveal"),
+  mat1Reveal: text("mat_1_reveal"),
   mat2Sku: text("mat_2_sku"),
-  mat2Reveal: decimal("mat_2_reveal"),
+  mat2Reveal: text("mat_2_reveal"),
   mat3Sku: text("mat_3_sku"),
   extraMatOpenings: integer("extra_mat_openings").notNull().default(0),
   
@@ -63,9 +63,9 @@ export const orders = pgTable("orders", {
   itemTotal: decimal("item_total", { precision: 10, scale: 2 }).notNull(),
   shipping: decimal("shipping", { precision: 10, scale: 2 }).notNull(),
   salesTax: decimal("sales_tax", { precision: 10, scale: 2 }),
-  discountPercent: integer("discount_percent").notNull().default(0),
+  discount: text("discount"),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
-  deposit: decimal("deposit", { precision: 10, scale: 2 }),
+  deposit: text("deposit"),
   balance: decimal("balance", { precision: 10, scale: 2 }).notNull(),
 });
 
@@ -78,7 +78,10 @@ export const insertOrderSchema = createInsertSchema(orders, {
   height: z.coerce.number().optional().or(z.literal("" as any)),
   quantity: z.coerce.number().optional().default(1),
   extraMatOpenings: z.coerce.number().optional().default(0),
-  discountPercent: z.coerce.number().optional().default(0),
+  discount: z.string().optional().or(z.literal("")),
+  deposit: z.string().optional().or(z.literal("")),
+  mat1Reveal: z.string().optional().or(z.literal("")),
+  mat2Reveal: z.string().optional().or(z.literal("")),
   email: z.string().email().optional().or(z.literal("")),
 }).omit({
   id: true,
