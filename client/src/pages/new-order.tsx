@@ -309,12 +309,19 @@ export default function NewOrder() {
                   </CardContent>
                 </Card>
 
-                {/* Frame Configuration */}
+                {/* Order Configuration - Combined Card */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-xl">Frame Configuration</CardTitle>
+                    <CardTitle className="text-xl">Order Configuration</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent>
+                    <Accordion type="multiple" className="w-full">
+                      {/* Frame Configuration */}
+                      <AccordionItem value="frame-config">
+                        <AccordionTrigger className="text-base font-semibold hover:no-underline" data-testid="accordion-trigger-frame-config">
+                          Frame Configuration
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-6 pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
@@ -465,10 +472,10 @@ export default function NewOrder() {
                       />
                     </div>
 
-                    <Separator />
+                        </AccordionContent>
+                      </AccordionItem>
 
-                    {/* Mat Configuration */}
-                    <Accordion type="single" collapsible className="w-full" data-testid="accordion-mat-configuration">
+                      {/* Mat Configuration */}
                       <AccordionItem value="mat-config">
                         <AccordionTrigger className="text-base font-semibold hover:no-underline" data-testid="accordion-trigger-mat-config">
                           Mat Configuration
@@ -638,19 +645,15 @@ export default function NewOrder() {
                           </div>
                         </AccordionContent>
                       </AccordionItem>
-                    </Accordion>
-                  </CardContent>
-                </Card>
 
-                {/* Additional Options */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-xl">Additional Options</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-3">
+                      {/* Print Options */}
+                      <AccordionItem value="print-options">
+                        <AccordionTrigger className="text-base font-semibold hover:no-underline" data-testid="accordion-trigger-print-options">
+                          Print Options
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-6 pt-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-3">
                           <FormField
                             control={form.control}
                             name="printPaper"
@@ -737,7 +740,19 @@ export default function NewOrder() {
                               )}
                             />
                           )}
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
 
+                      {/* Additional Options */}
+                      <AccordionItem value="additional-options">
+                        <AccordionTrigger className="text-base font-semibold hover:no-underline" data-testid="accordion-trigger-additional-options">
+                          Additional Options
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-6 pt-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-3">
                           <FormField
                             control={form.control}
                             name="engravedPlaque"
@@ -943,16 +958,15 @@ export default function NewOrder() {
                           />
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                        </AccordionContent>
+                      </AccordionItem>
 
-                {/* Order Details */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-xl">Order Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                      {/* Order Details */}
+                      <AccordionItem value="order-details">
+                        <AccordionTrigger className="text-base font-semibold hover:no-underline" data-testid="accordion-trigger-order-details">
+                          Order Details
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-4 pt-4">
                     <FormField
                       control={form.control}
                       name="description"
@@ -1011,6 +1025,9 @@ export default function NewOrder() {
                         )}
                       />
                     </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   </CardContent>
                 </Card>
               </form>
