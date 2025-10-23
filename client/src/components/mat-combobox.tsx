@@ -20,8 +20,8 @@ import { useQuery } from "@tanstack/react-query";
 interface Supply {
   sku: string;
   name: string;
-  size: string;
   price: number;
+  itemType: string;
 }
 
 interface MatComboboxProps {
@@ -41,8 +41,9 @@ export function MatCombobox({ value, onChange, placeholder = "Select mat...", di
 
   const selectedSupply = supplies.find((supply) => supply.sku === value);
 
-  // Filter supplies based on search - search both SKU and name
+  // Filter supplies based on search - search both SKU and name, and only show mats
   const filteredSupplies = supplies.filter((supply) => {
+    if (supply.itemType !== "Mat") return false;
     const search = searchValue.toLowerCase();
     return (
       supply.sku.toString().toLowerCase().includes(search) ||

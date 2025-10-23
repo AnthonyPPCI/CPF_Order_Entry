@@ -32,8 +32,8 @@ interface Moulding {
 interface Supply {
   sku: string;
   name: string;
-  size: string;
   price: number;
+  itemType: string;
 }
 
 export default function ControlPanel() {
@@ -191,7 +191,9 @@ export default function ControlPanel() {
             {editMode ? (
               <>
                 <Button variant="outline" onClick={() => {
-                  setConfig(fetchedConfig);
+                  if (fetchedConfig) {
+                    setConfig(fetchedConfig);
+                  }
                   setEditMode(false);
                 }} data-testid="button-cancel">
                   Cancel
@@ -202,7 +204,9 @@ export default function ControlPanel() {
               </>
             ) : (
               <Button onClick={() => {
-                setConfig(fetchedConfig || null);
+                if (fetchedConfig) {
+                  setConfig(fetchedConfig);
+                }
                 setEditMode(true);
               }} data-testid="button-edit">
                 Edit Configuration
@@ -465,8 +469,8 @@ export default function ControlPanel() {
                         <tr>
                           <th className="text-left p-2 font-medium whitespace-nowrap">SKU</th>
                           <th className="text-left p-2 font-medium whitespace-nowrap">Name</th>
-                          <th className="text-left p-2 font-medium whitespace-nowrap">Size</th>
                           <th className="text-right p-2 font-medium whitespace-nowrap">Price</th>
+                          <th className="text-left p-2 font-medium whitespace-nowrap">Item Type</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -474,8 +478,8 @@ export default function ControlPanel() {
                           <tr key={supply.sku} className={idx % 2 === 0 ? "bg-background" : "bg-muted/30"}>
                             <td className="p-2 font-mono whitespace-nowrap">{supply.sku}</td>
                             <td className="p-2 max-w-md truncate" title={supply.name}>{supply.name}</td>
-                            <td className="p-2 whitespace-nowrap">{supply.size}</td>
                             <td className="p-2 text-right font-mono whitespace-nowrap">${supply.price.toFixed(2)}</td>
+                            <td className="p-2 whitespace-nowrap">{supply.itemType}</td>
                           </tr>
                         ))}
                       </tbody>

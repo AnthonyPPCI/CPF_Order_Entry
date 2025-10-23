@@ -559,7 +559,7 @@ export default function NewOrder() {
                                 name="mat1Sku"
                                 render={({ field }) => (
                                   <FormItem>
-                                    <FormLabel className="text-sm">Mat 1 SKU</FormLabel>
+                                    <FormLabel className="text-sm">Mat 1</FormLabel>
                                     <FormControl>
                                       <MatCombobox
                                         value={field.value || ""}
@@ -587,7 +587,7 @@ export default function NewOrder() {
                                 name="mat2Sku"
                                 render={({ field }) => (
                                   <FormItem>
-                                    <FormLabel className="text-sm">Mat 2 SKU</FormLabel>
+                                    <FormLabel className="text-sm">Mat 2</FormLabel>
                                     <FormControl>
                                       <MatCombobox
                                         value={field.value || ""}
@@ -615,7 +615,7 @@ export default function NewOrder() {
                                 name="mat3Sku"
                                 render={({ field }) => (
                                   <FormItem>
-                                    <FormLabel className="text-sm">Mat 3 SKU</FormLabel>
+                                    <FormLabel className="text-sm">Mat 3</FormLabel>
                                     <FormControl>
                                       <MatCombobox
                                         value={field.value || ""}
@@ -1069,21 +1069,21 @@ export default function NewOrder() {
                         <span className="font-mono" data-testid="text-frame-cost">Included</span>
                       </div>
                     )}
-                    {form.watch("mat1") && (
+                    {form.watch("mat1Sku") && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Mat 1 ({form.watch("mat1")})</span>
+                        <span className="text-muted-foreground">Mat 1 ({form.watch("mat1Sku")})</span>
                         <span className="font-mono">Included</span>
                       </div>
                     )}
-                    {form.watch("mat2") && (
+                    {form.watch("mat2Sku") && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Mat 2 ({form.watch("mat2")})</span>
+                        <span className="text-muted-foreground">Mat 2 ({form.watch("mat2Sku")})</span>
                         <span className="font-mono">Included</span>
                       </div>
                     )}
-                    {form.watch("mat3") && (
+                    {form.watch("mat3Sku") && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Mat 3 ({form.watch("mat3")})</span>
+                        <span className="text-muted-foreground">Mat 3 ({form.watch("mat3Sku")})</span>
                         <span className="font-mono">Included</span>
                       </div>
                     )}

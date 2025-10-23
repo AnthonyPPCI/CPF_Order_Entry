@@ -20,8 +20,8 @@ export interface MouldingData {
 export interface SupplyData {
   sku: string;
   name: string;
-  size: string;
   price: number;
+  itemType: string;
 }
 
 export interface PricingData {
@@ -75,8 +75,8 @@ export function loadPricingData(): PricingData {
       supplies.set(String(row[0]), {
         sku: String(row[0]),
         name: String(row[1] || ''),
-        size: String(row[2] || ''),
         price: Number(row[3] || 0),
+        itemType: String(row[5] || ''),
       });
     }
   }
