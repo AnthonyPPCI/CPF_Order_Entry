@@ -996,24 +996,32 @@ export default function NewOrder() {
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="discount"
-                      render={({ field }) => (
-                        <FormItem className="opacity-30 hover:opacity-100 transition-opacity">
-                          <FormLabel className="text-xs">Disc.</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value || ""}
-                              placeholder="e.g., 10% or $50"
-                              className="text-sm h-8"
-                              data-testid="input-discount"
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+                    <Accordion type="single" collapsible className="border rounded-md px-3">
+                      <AccordionItem value="discount" className="border-none">
+                        <AccordionTrigger className="text-xs text-muted-foreground hover:no-underline py-2" data-testid="accordion-trigger-discount">
+                          Disc.
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-3">
+                          <FormField
+                            control={form.control}
+                            name="discount"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    value={field.value || ""}
+                                    placeholder="e.g., 10% or $50"
+                                    className="text-sm h-8"
+                                    data-testid="input-discount"
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>
@@ -1216,6 +1224,26 @@ export default function NewOrder() {
                   )}
                 </CardContent>
               </Card>
+
+              <Button
+                variant="outline"
+                className="w-full"
+                size="lg"
+                asChild
+                data-testid="button-square-payment"
+              >
+                <a 
+                  href="https://squareup.com/dashboard" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M4.01 4.01h15.98v15.98H4.01V4.01zM0 0v24h24V0H0z"/>
+                  </svg>
+                  Open Square Payment Processor
+                </a>
+              </Button>
 
             </div>
           </div>
