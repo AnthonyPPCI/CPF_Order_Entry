@@ -226,8 +226,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedItems = z.array(insertOrderItemSchema).parse(items);
       
       // Calculate multi-item pricing server-side
+      // Add required fields to items for pricing calculation
+      const itemsForPricing = validatedItems.map(item => ({
+        ...item,
+        deliveryMethod: validatedHeader.deliveryMethod || "shipping",
+        cityStateZip: validatedHeader.cityStateZip || undefined,
+      }));
+      
       const pricing = calculateMultiItemPricing({
-        items: validatedItems,
+        items: itemsForPricing as any[],
         customerAddress: {
           cityStateZip: validatedHeader.cityStateZip || undefined,
         },
@@ -285,11 +292,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // Use updated items or existing items for pricing calculation
-      const itemsForPricing = validatedItems || existingOrder.items;
+      const itemsForPricing = (validatedItems || existingOrder.items).map(item => ({
+        ...item,
+        deliveryMethod: mergedHeader.deliveryMethod || "shipping",
+        cityStateZip: mergedHeader.cityStateZip || undefined,
+      }));
       
       // Recalculate pricing with complete order data
       const pricing = calculateMultiItemPricing({
-        items: itemsForPricing,
+        items: itemsForPricing as any[],
         customerAddress: {
           cityStateZip: mergedHeader.cityStateZip || undefined,
         },
