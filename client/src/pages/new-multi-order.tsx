@@ -85,7 +85,7 @@ export default function NewMultiOrder() {
 
   const createOrderMutation = useMutation({
     mutationFn: async (data: MultiOrderForm) => {
-      const response = await apiRequest("/api/multi-orders", "POST", data);
+      const response = await apiRequest("POST", "/api/multi-orders", data);
       return await response.json();
     },
     onSuccess: (data) => {

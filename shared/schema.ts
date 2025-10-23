@@ -267,6 +267,7 @@ export const insertOrderItemSchema = createInsertSchema(orderItems, {
   itemNumber: z.coerce.number().optional().default(1),
 }).omit({
   id: true,
+  orderId: true,
   itemTotal: true,
 });
 
