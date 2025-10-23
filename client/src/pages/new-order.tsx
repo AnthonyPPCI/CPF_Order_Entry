@@ -325,6 +325,84 @@ export default function NewOrder() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Accumulated Items Display */}
+            {pendingItems.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center justify-between">
+                    <span>Items in Order ({pendingItems.length})</span>
+                    {editingItemIndex !== null && (
+                      <Badge variant="secondary">Editing Item #{editingItemIndex + 1}</Badge>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {pendingItems.map((item, index) => (
+                      <Card key={index} className="border-muted">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="outline">Item #{index + 1}</Badge>
+                                {item.frameSku && (
+                                  <span className="text-sm font-mono text-muted-foreground">{item.frameSku}</span>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                {item.width && item.height && (
+                                  <div>
+                                    <span className="text-muted-foreground">Size:</span>{" "}
+                                    <span className="font-mono">{item.width}" × {item.height}"</span>
+                                  </div>
+                                )}
+                                {item.quantity && (
+                                  <div>
+                                    <span className="text-muted-foreground">Qty:</span> {item.quantity}
+                                  </div>
+                                )}
+                                {item.mat1Sku && (
+                                  <div>
+                                    <span className="text-muted-foreground">Mat 1:</span>{" "}
+                                    <span className="font-mono text-xs">{item.mat1Sku}</span>
+                                  </div>
+                                )}
+                                {item.acrylicType && (
+                                  <div>
+                                    <span className="text-muted-foreground">Acrylic:</span> {item.acrylicType}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditItem(index)}
+                                data-testid={`button-edit-item-${index}`}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveItem(index)}
+                                data-testid={`button-remove-item-${index}`}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {/* Customer Information */}
