@@ -175,3 +175,19 @@ Preferred communication style: Simple, everyday language.
 - Added dynamic pricing levers: markup multiplier, shipping rates, acrylic/backing prices
 - Validated pricing accuracy: SKU 8694 (20×60") calculates to $105.74 with 2.75× markup, $115.35 with 3.00× markup
 - Configuration changes take effect immediately across all pricing calculations
+
+**Differential Markup for Standalone Components (Critical Pricing Fix):**
+- Added "None" option to Acrylic Type and Backing Type dropdowns for flexible ordering
+- Implemented 1.65× markup multiplier for standalone component orders (when frameSku is empty or "None")
+- Standalone multiplier applies to: acrylic, backing, mat 1, mat 2, mat 3
+- Example: 20×44 Standard Acrylic = $35.94 standalone vs $21.78 when ordered with frame
+- Differential pricing ensures standalone components are correctly priced higher than combo pricing
+- Verified test results: Frame+Acrylic combo shows Frame $56.43 + Acrylic $21.78, standalone acrylic shows $35.94
+
+**Itemized Component Pricing Display:**
+- Expanded PricingResult interface to include detailed breakdown object with individual component costs
+- Order summary now displays actual dollar amounts for each component instead of generic "Included" text
+- Breakdown includes: frame cost, mat 1-3 costs, acrylic cost, backing cost, print costs, engraved plaque, LEDs, shadowbox fitting, additional labor, extra mat openings
+- Each component cost includes standalone multiplier (if applicable) × global markup × quantity
+- Components with $0.00 cost are hidden from display
+- Real-time pricing preview shows itemized breakdown as form fields are edited
