@@ -448,6 +448,44 @@ export default function ControlPanel() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Topper Pieces */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                <CardTitle>Topper Pieces (Stacker Frame)</CardTitle>
+              </div>
+              <CardDescription>Topper frame options for stacker frames</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Topper Frame Options</Label>
+                {currentConfig.topperPieces.map((topper, idx) => (
+                  <div key={idx} className="grid grid-cols-3 gap-4 items-center">
+                    <div className="text-sm font-medium">{topper.sku} ({topper.depth}")</div>
+                    <div className="flex items-center gap-2 col-span-2">
+                      <span className="text-sm">$</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={topper.pricePerFt}
+                        onChange={(e) => {
+                          const newToppers = [...currentConfig.topperPieces];
+                          newToppers[idx].pricePerFt = parseFloat(e.target.value);
+                          setConfig({ ...currentConfig, topperPieces: newToppers });
+                        }}
+                        disabled={!editMode}
+                        className="w-32"
+                        data-testid={`input-topper-${idx}`}
+                      />
+                      <span className="text-sm text-muted-foreground">/ft</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
           </TabsContent>
 
           <TabsContent value="mouldings" className="space-y-6 mt-6">
