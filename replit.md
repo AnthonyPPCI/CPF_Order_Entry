@@ -139,6 +139,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 23, 2025)
 
+**Form Flexibility & Mat Selection Enhancement:**
+- Made all form fields optional - orders can be saved with any combination of filled fields
+- Implemented autocomplete (combobox) inputs for mat SKUs with intelligent search
+  - Search by either SKU or supply name
+  - Shows SKU, name, and price in dropdown
+  - Filters through all 1,781 supply items
+  - Limits display to 100 results for performance
+- Mat pricing correctly pulls from Supply tab using `getSupply()` function
+- Updated control panel to display all Excel columns for mouldings (9 cols) and supplies (4 cols)
+
 **Pricing System Enhancement:**
 - Implemented exact Google Sheets formulas using real moulding/supply data from Excel file
 - Added real-time pricing preview with debounced API calls (500ms) in order creation form

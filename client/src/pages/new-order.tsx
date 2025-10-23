@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { MatCombobox } from "@/components/mat-combobox";
 
 // Helper function to parse fractions and decimals
 function parseFraction(input: string): number {
@@ -454,7 +455,11 @@ export default function NewOrder() {
                             <FormItem>
                               <FormLabel className="text-sm">Mat 1 SKU</FormLabel>
                               <FormControl>
-                                <Input {...field} value={field.value || ""} className="font-mono" data-testid="input-mat1-sku" />
+                                <MatCombobox
+                                  value={field.value || ""}
+                                  onChange={field.onChange}
+                                  placeholder="Select mat 1..."
+                                />
                               </FormControl>
                             </FormItem>
                           )}
@@ -478,7 +483,11 @@ export default function NewOrder() {
                             <FormItem>
                               <FormLabel className="text-sm">Mat 2 SKU</FormLabel>
                               <FormControl>
-                                <Input {...field} value={field.value || ""} className="font-mono" data-testid="input-mat2-sku" />
+                                <MatCombobox
+                                  value={field.value || ""}
+                                  onChange={field.onChange}
+                                  placeholder="Select mat 2..."
+                                />
                               </FormControl>
                             </FormItem>
                           )}
@@ -502,7 +511,11 @@ export default function NewOrder() {
                             <FormItem>
                               <FormLabel className="text-sm">Mat 3 SKU</FormLabel>
                               <FormControl>
-                                <Input {...field} value={field.value || ""} className="font-mono" data-testid="input-mat3-sku" />
+                                <MatCombobox
+                                  value={field.value || ""}
+                                  onChange={field.onChange}
+                                  placeholder="Select mat 3..."
+                                />
                               </FormControl>
                             </FormItem>
                           )}

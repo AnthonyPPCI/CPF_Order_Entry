@@ -178,6 +178,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all supplies for mat autocomplete (return all since mat items aren't specifically labeled)
+  app.get("/api/supplies", async (req, res) => {
+    try {
+      const { loadPricingData } = await import("./pricing-data");
+      const data = loadPricingData();
+      const supplies = Array.from(data.supplies.entries()).map(([sku, supplyData]) => supplyData);
+      res.json(supplies);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch supplies" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
