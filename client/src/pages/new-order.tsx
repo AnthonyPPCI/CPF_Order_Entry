@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
@@ -654,92 +655,94 @@ export default function NewOrder() {
                         <AccordionContent className="space-y-6 pt-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-3">
-                          <FormField
-                            control={form.control}
-                            name="printPaper"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    data-testid="checkbox-print-paper"
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal cursor-pointer">Print (Paper)</FormLabel>
-                              </FormItem>
-                            )}
-                          />
-                          {form.watch("printPaper") && (
-                            <FormField
-                              control={form.control}
-                              name="printPaperType"
-                              render={({ field }) => (
-                                <FormItem className="ml-6">
-                                  <FormControl>
-                                    <Input {...field} value={field.value || ""} placeholder="Paper type" data-testid="input-print-paper-type" />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                          )}
-
-                          <FormField
-                            control={form.control}
-                            name="dryMount"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    data-testid="checkbox-dry-mount"
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal cursor-pointer">Dry Mount</FormLabel>
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="printCanvas"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    data-testid="checkbox-print-canvas"
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal cursor-pointer">Print (Canvas)</FormLabel>
-                              </FormItem>
-                            )}
-                          />
-                          {form.watch("printCanvas") && (
-                            <FormField
-                              control={form.control}
-                              name="printCanvasWrapStyle"
-                              render={({ field }) => (
-                                <FormItem className="ml-6">
-                                  <FormLabel className="text-sm">Wrap Style</FormLabel>
-                                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <FormField
+                                control={form.control}
+                                name="printPaper"
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                                     <FormControl>
-                                      <SelectTrigger data-testid="select-canvas-wrap-style">
-                                        <SelectValue placeholder="Select wrap style" />
-                                      </SelectTrigger>
+                                      <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        data-testid="checkbox-print-paper"
+                                      />
                                     </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="Gallery">Gallery - Wrapped around frame edges</SelectItem>
-                                      <SelectItem value="Museum">Museum - Extra border before wrapping</SelectItem>
-                                      <SelectItem value="Rolled">Rolled - Canvas not stretched</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormItem>
+                                    <FormLabel className="font-normal cursor-pointer">Print (Paper)</FormLabel>
+                                  </FormItem>
+                                )}
+                              />
+                              {form.watch("printPaper") && (
+                                <FormField
+                                  control={form.control}
+                                  name="printPaperType"
+                                  render={({ field }) => (
+                                    <FormItem className="ml-6">
+                                      <FormControl>
+                                        <Input {...field} value={field.value || ""} placeholder="Paper type" data-testid="input-print-paper-type" />
+                                      </FormControl>
+                                    </FormItem>
+                                  )}
+                                />
                               )}
-                            />
-                          )}
+
+                              <FormField
+                                control={form.control}
+                                name="dryMount"
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        data-testid="checkbox-dry-mount"
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="font-normal cursor-pointer">Dry Mount</FormLabel>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+
+                            <div className="space-y-3">
+                              <FormField
+                                control={form.control}
+                                name="printCanvas"
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        data-testid="checkbox-print-canvas"
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="font-normal cursor-pointer">Print (Canvas)</FormLabel>
+                                  </FormItem>
+                                )}
+                              />
+                              {form.watch("printCanvas") && (
+                                <FormField
+                                  control={form.control}
+                                  name="printCanvasWrapStyle"
+                                  render={({ field }) => (
+                                    <FormItem className="ml-6">
+                                      <FormLabel className="text-sm">Wrap Style</FormLabel>
+                                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                                        <FormControl>
+                                          <SelectTrigger data-testid="select-canvas-wrap-style">
+                                            <SelectValue placeholder="Select wrap style" />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                          <SelectItem value="Gallery">Gallery - Wrapped around frame edges</SelectItem>
+                                          <SelectItem value="Museum">Museum - Extra border before wrapping</SelectItem>
+                                          <SelectItem value="Rolled">Rolled - Canvas not stretched</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormItem>
+                                  )}
+                                />
+                              )}
                             </div>
                           </div>
                         </AccordionContent>
@@ -752,6 +755,59 @@ export default function NewOrder() {
                         </AccordionTrigger>
                         <AccordionContent className="space-y-6 pt-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-3">
+                              <FormField
+                                control={form.control}
+                                name="leds"
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        data-testid="checkbox-leds"
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="font-normal cursor-pointer">LEDs</FormLabel>
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="shadowboxFitting"
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        data-testid="checkbox-shadowbox-fitting"
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="font-normal cursor-pointer">Shadowbox Fitting</FormLabel>
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="additionalLabor"
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        data-testid="checkbox-additional-labor"
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="font-normal cursor-pointer">Additional Labor</FormLabel>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+
                             <div className="space-y-3">
                           <FormField
                             control={form.control}
@@ -903,61 +959,8 @@ export default function NewOrder() {
                               </Button>
                             </div>
                           )}
-                        </div>
-
-                        <div className="space-y-3">
-                          <FormField
-                            control={form.control}
-                            name="leds"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    data-testid="checkbox-leds"
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal cursor-pointer">LEDs</FormLabel>
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="shadowboxFitting"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    data-testid="checkbox-shadowbox-fitting"
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal cursor-pointer">Shadowbox Fitting</FormLabel>
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="additionalLabor"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    data-testid="checkbox-additional-labor"
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal cursor-pointer">Additional Labor</FormLabel>
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
+                            </div>
+                          </div>
                         </AccordionContent>
                       </AccordionItem>
 
@@ -993,38 +996,24 @@ export default function NewOrder() {
                       )}
                     />
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="discount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Discount</FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                value={field.value || ""}
-                                placeholder="e.g., 10% or $50"
-                                data-testid="input-discount"
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="deposit"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Deposit</FormLabel>
-                            <FormControl>
-                              <Input {...field} value={field.value || ""} placeholder="e.g., $100" data-testid="input-deposit" />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="discount"
+                      render={({ field }) => (
+                        <FormItem className="opacity-30 hover:opacity-100 transition-opacity">
+                          <FormLabel className="text-xs">Disc.</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value || ""}
+                              placeholder="e.g., 10% or $50"
+                              className="text-sm h-8"
+                              data-testid="input-discount"
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>
@@ -1042,9 +1031,9 @@ export default function NewOrder() {
                   <CardTitle className="text-xl">Order Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Frame Size:</span>
+                      <span className="text-muted-foreground">Size:</span>
                       <span className="font-mono font-medium" data-testid="text-frame-size">
                         {form.watch("width")} × {form.watch("height")} in
                       </span>
@@ -1064,7 +1053,90 @@ export default function NewOrder() {
 
                   <Separator />
 
-                  <div className="space-y-3">
+                  <div className="space-y-2 text-sm">
+                    {form.watch("frameSku") && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Frame ({form.watch("frameSku")})</span>
+                        <span className="font-mono" data-testid="text-frame-cost">Included</span>
+                      </div>
+                    )}
+                    {form.watch("mat1") && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Mat 1 ({form.watch("mat1")})</span>
+                        <span className="font-mono">Included</span>
+                      </div>
+                    )}
+                    {form.watch("mat2") && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Mat 2 ({form.watch("mat2")})</span>
+                        <span className="font-mono">Included</span>
+                      </div>
+                    )}
+                    {form.watch("mat3") && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Mat 3 ({form.watch("mat3")})</span>
+                        <span className="font-mono">Included</span>
+                      </div>
+                    )}
+                    {form.watch("acrylicType") && form.watch("acrylicType") !== "None" && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{form.watch("acrylicType")} Acrylic</span>
+                        <span className="font-mono">Included</span>
+                      </div>
+                    )}
+                    {form.watch("backingType") && form.watch("backingType") !== "None" && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{form.watch("backingType")}</span>
+                        <span className="font-mono">Included</span>
+                      </div>
+                    )}
+                    {form.watch("printPaper") && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Print (Paper)</span>
+                        <span className="font-mono">Included</span>
+                      </div>
+                    )}
+                    {form.watch("dryMount") && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Dry Mount</span>
+                        <span className="font-mono">Included</span>
+                      </div>
+                    )}
+                    {form.watch("printCanvas") && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Print (Canvas - {form.watch("printCanvasWrapStyle") || "Gallery"})</span>
+                        <span className="font-mono">Included</span>
+                      </div>
+                    )}
+                    {form.watch("engravedPlaque") && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Engraved Plaque</span>
+                        <span className="font-mono">Included</span>
+                      </div>
+                    )}
+                    {form.watch("leds") && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">LEDs</span>
+                        <span className="font-mono">Included</span>
+                      </div>
+                    )}
+                    {form.watch("shadowboxFitting") && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Shadowbox Fitting</span>
+                        <span className="font-mono">Included</span>
+                      </div>
+                    )}
+                    {form.watch("additionalLabor") && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Additional Labor</span>
+                        <span className="font-mono">Included</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Item Total:</span>
                       <span className="font-mono font-semibold" data-testid="text-item-total">
@@ -1089,29 +1161,13 @@ export default function NewOrder() {
 
                   <Separator />
 
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div className="flex justify-between text-lg">
                       <span className="font-semibold">Total:</span>
                       <span className="font-mono font-bold text-primary" data-testid="text-total">
                         ${calculatedPricing.total.toFixed(2)}
                       </span>
                     </div>
-                    {form.watch("deposit") && parseFloat(form.watch("deposit") || "0") > 0 && (
-                      <>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Deposit:</span>
-                          <span className="font-mono">
-                            ${parseFloat(form.watch("deposit") || "0").toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-semibold">Balance Due:</span>
-                          <span className="font-mono font-bold" data-testid="text-balance">
-                            ${calculatedPricing.balance.toFixed(2)}
-                          </span>
-                        </div>
-                      </>
-                    )}
                   </div>
 
                   <Button
@@ -1124,6 +1180,40 @@ export default function NewOrder() {
                   >
                     {createOrderMutation.isPending ? "Creating Order..." : "Create Order"}
                   </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Payment</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <Label htmlFor="deposit-input">Deposit</Label>
+                    <Input 
+                      id="deposit-input"
+                      value={form.watch("deposit") || ""} 
+                      onChange={(e) => form.setValue("deposit", e.target.value)}
+                      placeholder="e.g., $100 or 50%" 
+                      data-testid="input-deposit-sidebar" 
+                    />
+                  </div>
+                  {form.watch("deposit") && calculatedPricing.balance > 0 && (
+                    <div className="mt-4 pt-4 border-t space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Deposit:</span>
+                        <span className="font-mono">
+                          ${parseFloat(form.watch("deposit") || "0").toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-semibold">Balance Due:</span>
+                        <span className="font-mono font-bold" data-testid="text-balance">
+                          ${calculatedPricing.balance.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
