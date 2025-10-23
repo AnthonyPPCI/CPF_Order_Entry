@@ -723,7 +723,7 @@ export default function NewOrder() {
                                     <SelectContent>
                                       <SelectItem value="Gallery">Gallery - Wrapped around frame edges</SelectItem>
                                       <SelectItem value="Museum">Museum - Extra border before wrapping</SelectItem>
-                                      <SelectItem value="Rolled">Rolled - Canvas not stretched (40% off)</SelectItem>
+                                      <SelectItem value="Rolled">Rolled - Canvas not stretched</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </FormItem>
