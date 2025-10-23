@@ -18,7 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MatCombobox } from "@/components/mat-combobox";
-import { X, Plus } from "lucide-react";
+import { X, Plus, ChevronDown } from "lucide-react";
 import squareLogo from "@assets/image_1761242611311.png";
 
 // Helper function to parse fractions and decimals
@@ -1000,7 +1000,7 @@ export default function NewOrder() {
                     <Accordion type="single" collapsible className="border rounded-md px-3">
                       <AccordionItem value="discount" className="border-none">
                         <AccordionTrigger className="text-xs text-muted-foreground hover:no-underline py-2" data-testid="accordion-trigger-discount">
-                          Disc.
+                          <ChevronDown className="w-3 h-3" />
                         </AccordionTrigger>
                         <AccordionContent className="pb-3">
                           <FormField
