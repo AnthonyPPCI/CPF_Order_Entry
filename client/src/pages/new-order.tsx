@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MatCombobox } from "@/components/mat-combobox";
 import { X, Plus } from "lucide-react";
+import squareLogo from "@assets/image_1761242611311.png";
 
 // Helper function to parse fractions and decimals
 function parseFraction(input: string): number {
@@ -1225,24 +1226,19 @@ export default function NewOrder() {
                 </CardContent>
               </Card>
 
-              <Button
-                variant="outline"
-                className="w-full h-12"
-                asChild
+              <a 
+                href="https://squareup.com/dashboard" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block w-full"
                 data-testid="button-square-payment"
               >
-                <a 
-                  href="https://squareup.com/dashboard" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center"
-                >
-                  <svg className="h-6" viewBox="0 0 102 24" fill="currentColor">
-                    <rect x="0" y="0" width="23" height="23" rx="3.5"/>
-                    <text x="32" y="18" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontSize: '16px', fontWeight: '600' }}>Square</text>
-                  </svg>
-                </a>
-              </Button>
+                <img 
+                  src={squareLogo} 
+                  alt="Square Payment Processor" 
+                  className="w-full h-auto rounded-md hover-elevate"
+                />
+              </a>
 
             </div>
           </div>
