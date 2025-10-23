@@ -389,7 +389,7 @@ export default function NewOrder() {
                             <FormItem>
                               <FormLabel className="text-sm">All Sides</FormLabel>
                               <FormControl>
-                                <Input {...field} value={field.value || ""} type="number" step="0.125" placeholder="0" data-testid="input-mat-border-all" />
+                                <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-all" />
                               </FormControl>
                             </FormItem>
                           )}
@@ -401,7 +401,7 @@ export default function NewOrder() {
                             <FormItem>
                               <FormLabel className="text-sm">Left</FormLabel>
                               <FormControl>
-                                <Input {...field} value={field.value || ""} type="number" step="0.125" placeholder="0" data-testid="input-mat-border-left" />
+                                <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-left" />
                               </FormControl>
                             </FormItem>
                           )}
@@ -413,7 +413,7 @@ export default function NewOrder() {
                             <FormItem>
                               <FormLabel className="text-sm">Right</FormLabel>
                               <FormControl>
-                                <Input {...field} value={field.value || ""} type="number" step="0.125" placeholder="0" data-testid="input-mat-border-right" />
+                                <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-right" />
                               </FormControl>
                             </FormItem>
                           )}
@@ -425,7 +425,7 @@ export default function NewOrder() {
                             <FormItem>
                               <FormLabel className="text-sm">Top</FormLabel>
                               <FormControl>
-                                <Input {...field} value={field.value || ""} type="number" step="0.125" placeholder="0" data-testid="input-mat-border-top" />
+                                <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-top" />
                               </FormControl>
                             </FormItem>
                           )}
@@ -437,7 +437,7 @@ export default function NewOrder() {
                             <FormItem>
                               <FormLabel className="text-sm">Bottom</FormLabel>
                               <FormControl>
-                                <Input {...field} value={field.value || ""} type="number" step="0.125" placeholder="0" data-testid="input-mat-border-bottom" />
+                                <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-bottom" />
                               </FormControl>
                             </FormItem>
                           )}

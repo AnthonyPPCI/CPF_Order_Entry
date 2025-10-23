@@ -10,24 +10,52 @@ interface PricingResult {
   balance: string;
 }
 
+// Helper function to parse fractions and decimals (e.g., "16 1/2", "16-1/2", "16.5", "1/2")
+function parseFraction(input: string | number | null | undefined): number {
+  if (!input) return 0;
+  if (typeof input === 'number') return input;
+  
+  const str = input.toString().trim();
+  if (str === "") return 0;
+  
+  // Check for mixed fraction (e.g., "16 1/2" or "16-1/2")
+  const mixedMatch = str.match(/^(\d+)[\s-]+(\d+)\/(\d+)$/);
+  if (mixedMatch) {
+    const whole = parseInt(mixedMatch[1]);
+    const numerator = parseInt(mixedMatch[2]);
+    const denominator = parseInt(mixedMatch[3]);
+    return whole + (numerator / denominator);
+  }
+  
+  // Check for simple fraction (e.g., "1/2")
+  const fractionMatch = str.match(/^(\d+)\/(\d+)$/);
+  if (fractionMatch) {
+    const numerator = parseInt(fractionMatch[1]);
+    const denominator = parseInt(fractionMatch[2]);
+    return numerator / denominator;
+  }
+  
+  // Otherwise parse as decimal
+  return parseFloat(str) || 0;
+}
+
 export function calculatePricing(order: InsertOrder): PricingResult {
   // Load pricing data
   const pricingData = loadPricingData();
   
-  // Parse dimensions (they're decimals now to support fractions)
-  const width = typeof order.width === 'string' ? parseFloat(order.width) : order.width;
-  const height = typeof order.height === 'string' ? parseFloat(order.height) : order.height;
+  // Parse dimensions (support both decimals and fractions)
+  const width = parseFraction(order.width);
+  const height = parseFraction(order.height);
   const quantity = order.quantity || 1;
-  const discountPercent = order.discountPercent || 0;
   
-  // Parse mat borders
-  const matBorderAll = order.matBorderAll ? parseFloat(order.matBorderAll.toString()) : 0;
-  const matBorderLeft = order.matBorderLeft ? parseFloat(order.matBorderLeft.toString()) : 0;
-  const matBorderRight = order.matBorderRight ? parseFloat(order.matBorderRight.toString()) : 0;
-  const matBorderTop = order.matBorderTop ? parseFloat(order.matBorderTop.toString()) : 0;
-  const matBorderBottom = order.matBorderBottom ? parseFloat(order.matBorderBottom.toString()) : 0;
-  const mat1Reveal = order.mat1Reveal ? parseFloat(order.mat1Reveal.toString()) : 0;
-  const mat2Reveal = order.mat2Reveal ? parseFloat(order.mat2Reveal.toString()) : 0;
+  // Parse mat borders (support both decimals and fractions)
+  const matBorderAll = parseFraction(order.matBorderAll);
+  const matBorderLeft = parseFraction(order.matBorderLeft);
+  const matBorderRight = parseFraction(order.matBorderRight);
+  const matBorderTop = parseFraction(order.matBorderTop);
+  const matBorderBottom = parseFraction(order.matBorderBottom);
+  const mat1Reveal = parseFraction(order.mat1Reveal);
+  const mat2Reveal = parseFraction(order.mat2Reveal);
   
   // Calculate United Inches (Formula from Google Sheets H10)
   // ( Width + 2*MatBorderAll + MatBorderLeft + MatBorderRight )
@@ -152,14 +180,11 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   const isTaxable = /\bNJ\b/i.test(cityStateZip);
   const salesTax = isTaxable ? itemTotal * 0.07 : 0;
   
-  // Calculate Total with Discount
-  // Formula: (ItemTotal + Shipping + SalesTax) * (1 - Discount%)
-  const subtotal = itemTotal + shipping + salesTax;
-  const discountAmount = subtotal * (discountPercent / 100);
-  const total = subtotal - discountAmount;
+  // Calculate Total (discount is now a text field, not applied in calculation)
+  const total = itemTotal + shipping + salesTax;
   
-  // Calculate Balance
-  const deposit = order.deposit ? parseFloat(order.deposit.toString()) : 0;
+  // Calculate Balance (deposit is now a text field, parse it)
+  const deposit = parseFraction(order.deposit);
   const balance = total - deposit;
   
   return {

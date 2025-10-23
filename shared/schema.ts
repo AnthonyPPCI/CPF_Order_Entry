@@ -26,11 +26,11 @@ export const orders = pgTable("orders", {
   height: decimal("height"),
   
   // Mat Configuration
-  matBorderAll: decimal("mat_border_all"),
-  matBorderLeft: decimal("mat_border_left"),
-  matBorderRight: decimal("mat_border_right"),
-  matBorderTop: decimal("mat_border_top"),
-  matBorderBottom: decimal("mat_border_bottom"),
+  matBorderAll: text("mat_border_all"),
+  matBorderLeft: text("mat_border_left"),
+  matBorderRight: text("mat_border_right"),
+  matBorderTop: text("mat_border_top"),
+  matBorderBottom: text("mat_border_bottom"),
   
   mat1Sku: text("mat_1_sku"),
   mat1Reveal: text("mat_1_reveal"),
@@ -80,6 +80,11 @@ export const insertOrderSchema = createInsertSchema(orders, {
   extraMatOpenings: z.coerce.number().optional().default(0),
   discount: z.string().optional().or(z.literal("")),
   deposit: z.string().optional().or(z.literal("")),
+  matBorderAll: z.string().optional().or(z.literal("")),
+  matBorderLeft: z.string().optional().or(z.literal("")),
+  matBorderRight: z.string().optional().or(z.literal("")),
+  matBorderTop: z.string().optional().or(z.literal("")),
+  matBorderBottom: z.string().optional().or(z.literal("")),
   mat1Reveal: z.string().optional().or(z.literal("")),
   mat2Reveal: z.string().optional().or(z.literal("")),
   email: z.string().email().optional().or(z.literal("")),

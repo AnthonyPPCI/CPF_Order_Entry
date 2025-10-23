@@ -148,9 +148,12 @@ Preferred communication style: Simple, everyday language.
   - Limits display to 100 results for performance
 - Mat pricing correctly pulls from Supply tab using `getSupply()` function
 - Updated control panel to display all Excel columns for mouldings (9 cols) and supplies (4 cols)
-- Changed discount, deposit, mat reveal 1, and mat reveal 2 to text boxes for flexible input
-  - Allows freeform text like "10%", "$50", "0.125", etc.
-  - Updated database schema: discount, deposit, mat_1_reveal, mat_2_reveal are now text fields
+- Changed all mat fields to text boxes with fraction support for flexible input
+  - Mat borders (all sides, left, right, top, bottom) accept fractions like "2 1/2" or decimals like "2.5"
+  - Mat reveals (mat 1, mat 2) accept fractions and decimals
+  - Discount and deposit fields accept freeform text like "10%", "$50", or any format
+  - Updated database schema: all mat_border fields, mat_reveal fields, discount, and deposit are now text
+  - Server-side parseFraction() function handles both "16 1/2" and "16.5" formats
 - Updated "Extra Mat Openings" label to clarify "(after the first opening)"
 
 **Pricing System Enhancement:**

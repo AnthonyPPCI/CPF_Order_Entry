@@ -111,7 +111,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pricing = calculatePricing(req.body);
       res.json(pricing);
     } catch (error) {
-      res.status(500).json({ error: "Failed to calculate pricing" });
+      console.error("Pricing calculation error:", error);
+      res.status(500).json({ error: "Failed to calculate pricing", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
