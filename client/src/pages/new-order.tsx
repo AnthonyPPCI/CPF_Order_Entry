@@ -122,6 +122,8 @@ export default function NewOrder() {
       leds: false,
       shadowboxFitting: false,
       additionalLabor: false,
+      stackerFrame: false,
+      shadowDepth: "",
       quantity: 1,
       discount: "",
       deposit: "",
@@ -374,6 +376,48 @@ export default function NewOrder() {
                           </FormItem>
                         )}
                       />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="stackerFrame"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid="checkbox-stacker-frame"
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer">
+                              Stacker Frame (Deep Shadowbox)
+                            </FormLabel>
+                          </FormItem>
+                        )}
+                      />
+
+                      {form.watch("stackerFrame") && (
+                        <FormField
+                          control={form.control}
+                          name="shadowDepth"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Shadow Depth (inches)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  value={field.value || ""}
+                                  placeholder="e.g., 9 or 4.5"
+                                  data-testid="input-shadow-depth"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
