@@ -242,17 +242,19 @@ export default function NewOrder() {
       } = orderData;
       
       const multiItemOrderData = {
-        customerName,
-        address1,
-        address2,
-        cityStateZip,
-        phone,
-        email,
-        deliveryMethod,
-        description,
-        specialRequests,
-        discount,
-        deposit,
+        header: {
+          customerName,
+          address1,
+          address2,
+          cityStateZip,
+          phone,
+          email,
+          deliveryMethod,
+          description,
+          specialRequests,
+          discount,
+          deposit,
+        },
         items: allItems.map((item: any) => {
           // Remove customer fields from each item, keep only item-specific fields
           const { 

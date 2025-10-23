@@ -13,9 +13,10 @@ Preferred communication style: Simple, everyday language.
 ### UI/UX Decisions
 -   **Framework**: React 18 with TypeScript and Vite.
 -   **Components**: Radix UI primitives wrapped with shadcn/ui ("new-york" style) for accessible and consistent styling via Tailwind CSS.
--   **Routing**: Wouter for client-side routing, including single-item order creation (`/`), multi-item order creation (`/new-multi-order`), order list (`/orders`), individual order detail (`/order/:id`), and password-protected control panel (`/control-panel`).
+-   **Routing**: Wouter for client-side routing, including unified order creation (`/`), order list (`/orders`), individual order detail (`/order/:id`), and password-protected control panel (`/control-panel`).
 -   **State Management**: TanStack Query for server state management.
 -   **Form Handling**: React Hook Form with Zod for type-safe validation.
+-   **Unified Order Form**: Single form at `/` supports both single and multi-item orders with "Add Another Item" workflow - users fill out one item, click to add more, edit/remove accumulated items, then submit all at once. Form intelligently routes to `/api/orders` (single) or `/api/multi-orders` (multiple) based on pending items count.
 -   **Styling**: Tailwind CSS with custom design tokens, supporting light/dark themes, following Material Design principles with a professional blue color palette (HSL 210 85% 45%).
 -   **Typography**: Inter font for UI, JetBrains Mono for monospace content.
 
@@ -25,7 +26,7 @@ Preferred communication style: Simple, everyday language.
 -   **Data Validation**: Shared Zod schemas between frontend and backend for consistent validation.
 -   **Monorepo Structure**: `client/`, `server/`, and `shared/` directories.
 -   **Component Library Strategy**: shadcn/ui components copied into the project for full customization.
--   **Multi-Item Order System**: Normalized database schema with `order_headers` and `order_items` tables, supporting orders with multiple frames or components, and a dedicated multi-item order creation form.
+-   **Multi-Item Order System**: Normalized database schema with `order_headers` and `order_items` tables, supporting orders with multiple frames or components through the unified order form's "Add Another Item" workflow.
 -   **Stacker Frames (Deep Shadowbox)**: Custom-depth shadowbox system with dynamic algorithm for optimal layer combination, specific pricing, and BOM generation.
 -   **Differential Markup**: Implemented 3.0× markup for standalone components (acrylic, backing, mats) when not ordered with a frame.
 -   **Itemized Component Pricing**: Expanded pricing result to include detailed breakdown of individual component costs in the order summary.
