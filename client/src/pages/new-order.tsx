@@ -54,6 +54,8 @@ export default function NewOrder() {
   const [, setLocation] = useLocation();
   const [widthText, setWidthText] = useState("12");
   const [heightText, setHeightText] = useState("16");
+  const [pendingItems, setPendingItems] = useState<InsertOrder[]>([]);
+  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
   const [calculatedPricing, setCalculatedPricing] = useState({
     itemTotal: 0,
     shipping: 0,
