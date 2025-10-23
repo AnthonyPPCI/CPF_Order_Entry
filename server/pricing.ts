@@ -135,10 +135,13 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     addOnCosts += 0.03 * squareInches;
   }
   if (order.printCanvas) {
-    let canvasCost = 0.08 * squareInches;
-    // Apply 40% discount for rolled canvas (multiply by 0.6)
+    let canvasCost;
+    // Rolled canvas is 10% more than paper print ($0.05 × 1.10 = $0.055)
     if (order.printCanvasWrapStyle === "Rolled") {
-      canvasCost *= 0.6;
+      canvasCost = 0.055 * squareInches;
+    } else {
+      // Gallery and Museum use standard canvas pricing
+      canvasCost = 0.08 * squareInches;
     }
     addOnCosts += canvasCost;
   }
