@@ -3,6 +3,7 @@ import { pgTable, text, varchar, integer, decimal, timestamp, boolean } from "dr
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Legacy single-item orders table (will be migrated to order_headers + order_items)
 export const orders = pgTable("orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   orderDate: timestamp("order_date").notNull().defaultNow(),
@@ -138,3 +139,136 @@ export const pricingConfig = pgTable("pricing_config", {
 });
 
 export type PricingConfig = typeof pricingConfig.$inferSelect;
+
+// ============================================================================
+// Multi-Item Order Tables (Normalized Schema)
+// ============================================================================
+
+// Order header - customer info, delivery, and order-level pricing
+export const orderHeaders = pgTable("order_headers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderDate: timestamp("order_date").notNull().defaultNow(),
+  
+  // Customer Information
+  customerName: text("customer_name"),
+  address1: text("address_1"),
+  address2: text("address_2"),
+  cityStateZip: text("city_state_zip"),
+  phone: text("phone"),
+  email: text("email"),
+  
+  // Delivery & Notes
+  deliveryMethod: text("delivery_method").notNull().default("shipping"),
+  description: text("description"),
+  specialRequests: text("special_requests"),
+  
+  // Order-level Pricing
+  shipping: decimal("shipping", { precision: 10, scale: 2 }).notNull(),
+  salesTax: decimal("sales_tax", { precision: 10, scale: 2 }),
+  discount: text("discount"),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  deposit: text("deposit"),
+  balance: decimal("balance", { precision: 10, scale: 2 }).notNull(),
+});
+
+export const insertOrderHeaderSchema = createInsertSchema(orderHeaders, {
+  customerName: z.string().optional().or(z.literal("")),
+  address1: z.string().optional().or(z.literal("")),
+  cityStateZip: z.string().optional().or(z.literal("")),
+  deliveryMethod: z.string().optional().default("shipping"),
+  discount: z.string().optional().or(z.literal("")),
+  deposit: z.string().optional().or(z.literal("")),
+  email: z.string().email().optional().or(z.literal("")),
+}).omit({
+  id: true,
+  orderDate: true,
+  shipping: true,
+  total: true,
+  balance: true,
+});
+
+export type InsertOrderHeader = z.infer<typeof insertOrderHeaderSchema>;
+export type OrderHeader = typeof orderHeaders.$inferSelect;
+
+// Order items - individual frame/item configurations
+export const orderItems = pgTable("order_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull().references(() => orderHeaders.id, { onDelete: "cascade" }),
+  itemNumber: integer("item_number").notNull(), // Position in order (1, 2, 3, etc.)
+  
+  // Frame Details
+  frameSku: text("frame_sku"),
+  chopOnly: boolean("chop_only").notNull().default(false),
+  stackerFrame: boolean("stacker_frame").notNull().default(false),
+  shadowDepth: text("shadow_depth"),
+  topperSku: text("topper_sku"),
+  width: decimal("width"),
+  height: decimal("height"),
+  
+  // Mat Configuration
+  matBorderAll: text("mat_border_all"),
+  matBorderLeft: text("mat_border_left"),
+  matBorderRight: text("mat_border_right"),
+  matBorderTop: text("mat_border_top"),
+  matBorderBottom: text("mat_border_bottom"),
+  
+  mat1Sku: text("mat_1_sku"),
+  mat1Reveal: text("mat_1_reveal"),
+  mat2Sku: text("mat_2_sku"),
+  mat2Reveal: text("mat_2_reveal"),
+  mat3Sku: text("mat_3_sku"),
+  extraMatOpenings: integer("extra_mat_openings").notNull().default(0),
+  
+  // Materials
+  acrylicType: text("acrylic_type").notNull().default("Standard"),
+  backingType: text("backing_type").notNull().default("White Foam"),
+  
+  // Print Options
+  printPaper: boolean("print_paper").notNull().default(false),
+  printPaperType: text("print_paper_type"),
+  dryMount: boolean("dry_mount").notNull().default(false),
+  
+  printCanvas: boolean("print_canvas").notNull().default(false),
+  printCanvasWrapStyle: text("print_canvas_wrap_style"),
+  
+  // Additional Options
+  engravedPlaque: boolean("engraved_plaque").notNull().default(false),
+  engravedPlaqueSize: text("engraved_plaque_size"),
+  engravedPlaqueColor: text("engraved_plaque_color"),
+  engravedPlaqueFont: text("engraved_plaque_font"),
+  engravedPlaqueText1: text("engraved_plaque_text_1"),
+  engravedPlaqueText2: text("engraved_plaque_text_2"),
+  engravedPlaqueText3: text("engraved_plaque_text_3"),
+  engravedPlaqueTextAdditional: text("engraved_plaque_text_additional").array(),
+  leds: boolean("leds").notNull().default(false),
+  shadowboxFitting: boolean("shadowbox_fitting").notNull().default(false),
+  additionalLabor: boolean("additional_labor").notNull().default(false),
+  
+  // Item-level Pricing
+  quantity: integer("quantity").notNull().default(1),
+  itemTotal: decimal("item_total", { precision: 10, scale: 2 }).notNull(),
+});
+
+export const insertOrderItemSchema = createInsertSchema(orderItems, {
+  frameSku: z.string().optional().or(z.literal("")),
+  width: z.coerce.number().optional().or(z.literal("" as any)),
+  height: z.coerce.number().optional().or(z.literal("" as any)),
+  quantity: z.coerce.number().optional().default(1),
+  extraMatOpenings: z.coerce.number().optional().default(0),
+  matBorderAll: z.string().optional().or(z.literal("")),
+  matBorderLeft: z.string().optional().or(z.literal("")),
+  matBorderRight: z.string().optional().or(z.literal("")),
+  matBorderTop: z.string().optional().or(z.literal("")),
+  matBorderBottom: z.string().optional().or(z.literal("")),
+  mat1Reveal: z.string().optional().or(z.literal("")),
+  mat2Reveal: z.string().optional().or(z.literal("")),
+  shadowDepth: z.string().optional().or(z.literal("")),
+  topperSku: z.string().optional().or(z.literal("")),
+  itemNumber: z.coerce.number().optional().default(1),
+}).omit({
+  id: true,
+  itemTotal: true,
+});
+
+export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
+export type OrderItem = typeof orderItems.$inferSelect;

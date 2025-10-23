@@ -39,24 +39,61 @@ export class MemStorage implements IStorage {
   async createOrder(insertOrder: InsertOrderWithPricing): Promise<Order> {
     const id = randomUUID();
     const order: Order = {
-      ...insertOrder,
+      id,
+      orderDate: new Date(),
+      customerName: insertOrder.customerName || null,
+      address1: insertOrder.address1 || null,
       address2: insertOrder.address2 || null,
+      cityStateZip: insertOrder.cityStateZip || null,
       phone: insertOrder.phone || null,
       email: insertOrder.email || null,
+      deliveryMethod: insertOrder.deliveryMethod || "shipping",
       description: insertOrder.description || null,
       specialRequests: insertOrder.specialRequests || null,
+      frameSku: insertOrder.frameSku || null,
       chopOnly: insertOrder.chopOnly || false,
+      stackerFrame: insertOrder.stackerFrame || false,
+      shadowDepth: insertOrder.shadowDepth || null,
+      topperSku: insertOrder.topperSku || null,
+      width: insertOrder.width?.toString() || null,
+      height: insertOrder.height?.toString() || null,
+      matBorderAll: insertOrder.matBorderAll || null,
+      matBorderLeft: insertOrder.matBorderLeft || null,
+      matBorderRight: insertOrder.matBorderRight || null,
+      matBorderTop: insertOrder.matBorderTop || null,
+      matBorderBottom: insertOrder.matBorderBottom || null,
+      mat1Sku: insertOrder.mat1Sku || null,
+      mat1Reveal: insertOrder.mat1Reveal || null,
+      mat2Sku: insertOrder.mat2Sku || null,
+      mat2Reveal: insertOrder.mat2Reveal || null,
+      mat3Sku: insertOrder.mat3Sku || null,
+      extraMatOpenings: insertOrder.extraMatOpenings || 0,
+      acrylicType: insertOrder.acrylicType || "Standard",
+      backingType: insertOrder.backingType || "White Foam",
       printPaper: insertOrder.printPaper || false,
+      printPaperType: insertOrder.printPaperType || null,
       dryMount: insertOrder.dryMount || false,
       printCanvas: insertOrder.printCanvas || false,
+      printCanvasWrapStyle: insertOrder.printCanvasWrapStyle || null,
       engravedPlaque: insertOrder.engravedPlaque || false,
+      engravedPlaqueSize: insertOrder.engravedPlaqueSize || null,
+      engravedPlaqueColor: insertOrder.engravedPlaqueColor || null,
+      engravedPlaqueFont: insertOrder.engravedPlaqueFont || null,
+      engravedPlaqueText1: insertOrder.engravedPlaqueText1 || null,
+      engravedPlaqueText2: insertOrder.engravedPlaqueText2 || null,
+      engravedPlaqueText3: insertOrder.engravedPlaqueText3 || null,
+      engravedPlaqueTextAdditional: insertOrder.engravedPlaqueTextAdditional || null,
       leds: insertOrder.leds || false,
       shadowboxFitting: insertOrder.shadowboxFitting || false,
       additionalLabor: insertOrder.additionalLabor || false,
-      width: insertOrder.width.toString(),
-      height: insertOrder.height.toString(),
-      id,
-      orderDate: new Date(),
+      quantity: insertOrder.quantity || 1,
+      itemTotal: insertOrder.itemTotal,
+      shipping: insertOrder.shipping,
+      salesTax: insertOrder.salesTax || null,
+      discount: insertOrder.discount || null,
+      total: insertOrder.total,
+      deposit: insertOrder.deposit || null,
+      balance: insertOrder.balance,
     };
     this.orders.set(id, order);
     return order;
@@ -89,6 +126,7 @@ interface PricingConfig {
   acrylicPrices: { type: string; pricePerSqIn: number }[];
   backingPrices: { type: string; price: number }[];
   stackerFrames: { sku: string; depth: number; pricePerFt: number }[];
+  topperPieces: { sku: string; depth: number; pricePerFt: number }[];
   stackerAssemblyCharge: number;
   stackerMarkup: number;
   passwordHash: string; // SHA-256 hash of the password
