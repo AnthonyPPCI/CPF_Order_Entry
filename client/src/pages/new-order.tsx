@@ -845,7 +845,7 @@ export default function NewOrder() {
                         {form.watch("quantity")}
                       </span>
                     </div>
-                    {/\b(HI|AK|PR|Hawaii|Alaska|Puerto Rico)\b/i.test(form.watch("cityStateZip")) && (
+                    {/\b(HI|AK|PR|Hawaii|Alaska|Puerto Rico)\b/i.test(form.watch("cityStateZip") || "") && (
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="text-xs">Remote Destination</Badge>
                       </div>

@@ -8,10 +8,10 @@ export const orders = pgTable("orders", {
   orderDate: timestamp("order_date").notNull().defaultNow(),
   
   // Customer Information
-  customerName: text("customer_name").notNull(),
-  address1: text("address_1").notNull(),
+  customerName: text("customer_name"),
+  address1: text("address_1"),
   address2: text("address_2"),
-  cityStateZip: text("city_state_zip").notNull(),
+  cityStateZip: text("city_state_zip"),
   phone: text("phone"),
   email: text("email"),
   
@@ -20,10 +20,10 @@ export const orders = pgTable("orders", {
   specialRequests: text("special_requests"),
   
   // Frame Details
-  frameSku: text("frame_sku").notNull(),
+  frameSku: text("frame_sku"),
   chopOnly: boolean("chop_only").notNull().default(false),
-  width: decimal("width").notNull(),
-  height: decimal("height").notNull(),
+  width: decimal("width"),
+  height: decimal("height"),
   
   // Mat Configuration
   matBorderAll: decimal("mat_border_all"),
@@ -70,15 +70,15 @@ export const orders = pgTable("orders", {
 });
 
 export const insertOrderSchema = createInsertSchema(orders, {
-  customerName: z.string().min(1, "Customer name is required"),
-  address1: z.string().min(1, "Address is required"),
-  cityStateZip: z.string().min(1, "City, State, Zip is required"),
-  frameSku: z.string().min(1, "Frame SKU is required"),
-  width: z.coerce.number().min(1, "Width must be at least 1"),
-  height: z.coerce.number().min(1, "Height must be at least 1"),
-  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
-  extraMatOpenings: z.coerce.number().min(0).default(0),
-  discountPercent: z.coerce.number().min(0).max(100).default(0),
+  customerName: z.string().optional().or(z.literal("")),
+  address1: z.string().optional().or(z.literal("")),
+  cityStateZip: z.string().optional().or(z.literal("")),
+  frameSku: z.string().optional().or(z.literal("")),
+  width: z.coerce.number().optional().or(z.literal("" as any)),
+  height: z.coerce.number().optional().or(z.literal("" as any)),
+  quantity: z.coerce.number().optional().default(1),
+  extraMatOpenings: z.coerce.number().optional().default(0),
+  discountPercent: z.coerce.number().optional().default(0),
   email: z.string().email().optional().or(z.literal("")),
 }).omit({
   id: true,
