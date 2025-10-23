@@ -73,15 +73,17 @@ export default function NewOrder() {
 
   const createOrderMutation = useMutation({
     mutationFn: async (data: InsertOrder) => {
-      return await apiRequest("POST", "/api/orders", data);
+      const response = await apiRequest("POST", "/api/orders", data);
+      return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (createdOrder: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       toast({
         title: "Order Created",
         description: "Your custom frame order has been created successfully.",
       });
-      setLocation("/orders");
+      // Navigate directly to the order detail page with action buttons
+      setLocation(`/order/${createdOrder.id}`);
     },
     onError: (error: Error) => {
       toast({
