@@ -55,6 +55,12 @@ export const orders = pgTable("orders", {
   // Additional Options
   engravedPlaque: boolean("engraved_plaque").notNull().default(false),
   engravedPlaqueSize: text("engraved_plaque_size"),
+  engravedPlaqueColor: text("engraved_plaque_color"),
+  engravedPlaqueFont: text("engraved_plaque_font"),
+  engravedPlaqueText1: text("engraved_plaque_text_1"),
+  engravedPlaqueText2: text("engraved_plaque_text_2"),
+  engravedPlaqueText3: text("engraved_plaque_text_3"),
+  engravedPlaqueTextAdditional: text("engraved_plaque_text_additional").array(),
   leds: boolean("leds").notNull().default(false),
   shadowboxFitting: boolean("shadowbox_fitting").notNull().default(false),
   additionalLabor: boolean("additional_labor").notNull().default(false),

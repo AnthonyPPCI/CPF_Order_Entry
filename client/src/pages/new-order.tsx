@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MatCombobox } from "@/components/mat-combobox";
+import { X, Plus } from "lucide-react";
 
 // Helper function to parse fractions and decimals
 function parseFraction(input: string): number {
@@ -94,6 +95,12 @@ export default function NewOrder() {
       printCanvasWrapStyle: "",
       engravedPlaque: false,
       engravedPlaqueSize: "",
+      engravedPlaqueColor: "",
+      engravedPlaqueFont: "",
+      engravedPlaqueText1: "",
+      engravedPlaqueText2: "",
+      engravedPlaqueText3: "",
+      engravedPlaqueTextAdditional: [],
       leds: false,
       shadowboxFitting: false,
       additionalLabor: false,
@@ -748,17 +755,138 @@ export default function NewOrder() {
                             )}
                           />
                           {form.watch("engravedPlaque") && (
-                            <FormField
-                              control={form.control}
-                              name="engravedPlaqueSize"
-                              render={({ field }) => (
-                                <FormItem className="ml-6">
-                                  <FormControl>
-                                    <Input {...field} value={field.value || ""} placeholder="Plaque size" data-testid="input-engraved-plaque-size" />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
+                            <div className="ml-6 space-y-3">
+                              <FormField
+                                control={form.control}
+                                name="engravedPlaqueSize"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Plaque Size</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 3x5 inches" data-testid="input-engraved-plaque-size" />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name="engravedPlaqueColor"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Plaque Color</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                                      <FormControl>
+                                        <SelectTrigger data-testid="select-plaque-color">
+                                          <SelectValue placeholder="Select color" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        <SelectItem value="Black">Black</SelectItem>
+                                        <SelectItem value="Brass">Brass</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name="engravedPlaqueFont"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Font</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., Times New Roman" data-testid="input-plaque-font" />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name="engravedPlaqueText1"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Text Line 1</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} value={field.value || ""} placeholder="First line of text" data-testid="input-plaque-text-1" />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name="engravedPlaqueText2"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Text Line 2</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} value={field.value || ""} placeholder="Second line of text" data-testid="input-plaque-text-2" />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name="engravedPlaqueText3"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">Text Line 3</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} value={field.value || ""} placeholder="Third line of text" data-testid="input-plaque-text-3" />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              {(form.watch("engravedPlaqueTextAdditional") || []).map((_, index) => (
+                                <FormField
+                                  key={index}
+                                  control={form.control}
+                                  name={`engravedPlaqueTextAdditional.${index}` as any}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-sm">Text Line {index + 4}</FormLabel>
+                                      <div className="flex gap-2">
+                                        <FormControl>
+                                          <Input {...field} value={field.value || ""} placeholder={`Line ${index + 4}`} data-testid={`input-plaque-text-${index + 4}`} />
+                                        </FormControl>
+                                        <Button
+                                          type="button"
+                                          size="icon"
+                                          variant="ghost"
+                                          onClick={() => {
+                                            const current = form.getValues("engravedPlaqueTextAdditional") || [];
+                                            form.setValue("engravedPlaqueTextAdditional", current.filter((_, i) => i !== index));
+                                          }}
+                                          data-testid={`button-remove-line-${index + 4}`}
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </Button>
+                                      </div>
+                                    </FormItem>
+                                  )}
+                                />
+                              ))}
+                              
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const current = form.getValues("engravedPlaqueTextAdditional") || [];
+                                  form.setValue("engravedPlaqueTextAdditional", [...current, ""]);
+                                }}
+                                data-testid="button-add-plaque-line"
+                                className="w-full"
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add a line
+                              </Button>
+                            </div>
                           )}
                         </div>
 
