@@ -269,9 +269,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         balance: pricing.balance,
       };
       
-      // Merge items with their calculated pricing
+      // Merge items with their calculated pricing and item numbers
       const itemsData = validatedItems.map((item, index) => ({
         ...item,
+        itemNumber: index + 1,
         itemTotal: pricing.items[index].itemTotal,
       }));
       
@@ -335,9 +336,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         balance: pricing.balance,
       };
       
-      // Prepare updated items with recalculated pricing (if items were provided)
+      // Prepare updated items with recalculated pricing and item numbers (if items were provided)
       const itemsData = validatedItems ? validatedItems.map((item, index) => ({
         ...item,
+        itemNumber: index + 1,
         itemTotal: pricing.items[index].itemTotal,
       })) : undefined;
       
