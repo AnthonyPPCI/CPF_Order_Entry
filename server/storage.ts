@@ -302,7 +302,7 @@ export class MemStorage implements IStorage {
         mat3Sku: insertItem.mat3Sku || null,
         extraMatOpenings: insertItem.extraMatOpenings || 0,
         acrylicType: insertItem.acrylicType || "Standard",
-        backingType: insertItem.backingType || "White Foam",
+        backingSku: insertItem.backingSku || null,
         printPaper: insertItem.printPaper || false,
         printPaperType: insertItem.printPaperType || null,
         dryMount: insertItem.dryMount || false,

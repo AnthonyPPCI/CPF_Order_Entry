@@ -131,6 +131,12 @@ export default function OrderDetail() {
                                 <code className="font-mono text-xs">{item.frameSku}</code>
                               </div>
                             )}
+                            {item.backingSku && (
+                              <div>
+                                <span className="text-muted-foreground">Backing SKU:</span>{" "}
+                                <code className="font-mono text-xs">{item.backingSku}</code>
+                              </div>
+                            )}
                             {item.width && item.height && (
                               <div>
                                 <span className="text-muted-foreground">Size:</span>{" "}
