@@ -823,7 +823,6 @@ export default function NewOrder() {
                               <SelectContent>
                                 <SelectItem value="None">None</SelectItem>
                                 <SelectItem value="Standard">Standard</SelectItem>
-                                <SelectItem value="Museum Quality">Museum Quality</SelectItem>
                                 <SelectItem value="Non-Glare">Non-Glare</SelectItem>
                               </SelectContent>
                             </Select>

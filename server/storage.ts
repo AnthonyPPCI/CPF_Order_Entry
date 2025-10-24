@@ -373,7 +373,6 @@ class PricingConfigStorage {
       acrylicPrices: [
         { type: 'Standard', pricePerSqIn: 0.009 },
         { type: 'Non-Glare', pricePerSqIn: 0.018 },
-        { type: 'Museum Quality', pricePerSqIn: 0.027 },
       ],
       backingPrices: [
         { type: 'None', price: 0 },
