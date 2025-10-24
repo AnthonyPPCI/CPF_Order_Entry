@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PricingConfig {
   markup: number;
+  standaloneComponentMultiplier: number;
   chopOnlyJoinFt: number;
   shippingRates: { min: number; max: number; rate: number }[];
   acrylicPrices: { type: string; pricePerSqIn: number }[];
@@ -250,6 +251,19 @@ export default function ControlPanel() {
                     data-testid="input-markup"
                   />
                   <p className="text-sm text-muted-foreground">Current: {currentConfig.markup}×</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="standaloneComponentMultiplier">Component Order Markup</Label>
+                  <Input
+                    id="standaloneComponentMultiplier"
+                    type="number"
+                    step="0.1"
+                    value={currentConfig.standaloneComponentMultiplier}
+                    onChange={(e) => setConfig({ ...currentConfig, standaloneComponentMultiplier: parseFloat(e.target.value) })}
+                    disabled={!editMode}
+                    data-testid="input-standalone-multiplier"
+                  />
+                  <p className="text-sm text-muted-foreground">Current: {currentConfig.standaloneComponentMultiplier}× (components without frame)</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="chopOnlyJoinFt">Chop Only Join Feet</Label>

@@ -284,8 +284,8 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   
   // Determine if this is a standalone component order (no frame)
   const isStandaloneOrder = !order.frameSku || order.frameSku.trim() === "" || order.frameSku === "None";
-  // Standalone component markup multiplier (3x makes components more expensive when ordered alone)
-  const standaloneMultiplier = isStandaloneOrder ? 3.0 : 1.0;
+  // Standalone component markup multiplier (makes components more expensive when ordered alone)
+  const standaloneMultiplier = isStandaloneOrder ? config.standaloneComponentMultiplier : 1.0;
   
   // Track individual component costs for breakdown
   let mat1CostBase = 0;
