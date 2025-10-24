@@ -391,32 +391,56 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   // For regular orders: apply tiered markup to each component based on its cost
   let itemTotal: number;
   
+  // Store retail prices for breakdown calculation
+  let frameRetail: number, mat1Retail: number, mat2Retail: number, mat3Retail: number;
+  let acrylicRetail: number, backingRetail: number, printPaperRetail: number;
+  let dryMountRetail: number, printCanvasRetail: number, canvasStretchingRetail: number;
+  let engravedPlaqueRetail: number, ledsRetail: number, shadowboxFittingRetail: number;
+  let additionalLaborRetail: number, extraMatOpeningsRetail: number;
+  let minimumApplied = false;
+  
   if (order.stackerFrame) {
     // Stacker frames use flat markup (special pricing)
     const markup = config.stackerMarkup;
     itemTotal = (frameCost + addOnCosts) * markup * quantity;
+    
+    // Store retail values for breakdown
+    frameRetail = frameCost * markup;
+    mat1Retail = mat1CostBase * markup;
+    mat2Retail = mat2CostBase * markup;
+    mat3Retail = mat3CostBase * markup;
+    acrylicRetail = acrylicCostBase * markup;
+    backingRetail = backingCostBase * markup;
+    printPaperRetail = printPaperCostBase * markup;
+    dryMountRetail = dryMountCostBase * markup;
+    printCanvasRetail = printCanvasCostBase * markup;
+    canvasStretchingRetail = canvasStretchingCostBase * markup;
+    engravedPlaqueRetail = engravedPlaqueCostBase * markup;
+    ledsRetail = ledsCostBase * markup;
+    shadowboxFittingRetail = shadowboxFittingCostBase * markup;
+    additionalLaborRetail = additionalLaborCostBase * markup;
+    extraMatOpeningsRetail = extraMatOpeningsCostBase * markup;
   } else {
     // Apply tiered markup to each component individually
     // This gives lower-cost items higher markups and higher-cost items lower markups
-    // Only apply minimum price floor to the frame component
-    const frameRetail = applyTieredMarkup(frameCost, config, true); // Apply minimum to frame
-    const mat1Retail = applyTieredMarkup(mat1CostBase, config);
-    const mat2Retail = applyTieredMarkup(mat2CostBase, config);
-    const mat3Retail = applyTieredMarkup(mat3CostBase, config);
-    const acrylicRetail = applyTieredMarkup(acrylicCostBase, config);
-    const backingRetail = applyTieredMarkup(backingCostBase, config);
-    const printPaperRetail = applyTieredMarkup(printPaperCostBase, config);
-    const dryMountRetail = applyTieredMarkup(dryMountCostBase, config);
-    const printCanvasRetail = applyTieredMarkup(printCanvasCostBase, config);
-    const canvasStretchingRetail = applyTieredMarkup(canvasStretchingCostBase, config);
-    const engravedPlaqueRetail = applyTieredMarkup(engravedPlaqueCostBase, config);
-    const ledsRetail = applyTieredMarkup(ledsCostBase, config);
-    const shadowboxFittingRetail = applyTieredMarkup(shadowboxFittingCostBase, config);
-    const additionalLaborRetail = applyTieredMarkup(additionalLaborCostBase, config);
-    const extraMatOpeningsRetail = applyTieredMarkup(extraMatOpeningsCostBase, config);
+    frameRetail = applyTieredMarkup(frameCost, config);
+    mat1Retail = applyTieredMarkup(mat1CostBase, config);
+    mat2Retail = applyTieredMarkup(mat2CostBase, config);
+    mat3Retail = applyTieredMarkup(mat3CostBase, config);
+    acrylicRetail = applyTieredMarkup(acrylicCostBase, config);
+    backingRetail = applyTieredMarkup(backingCostBase, config);
+    printPaperRetail = applyTieredMarkup(printPaperCostBase, config);
+    dryMountRetail = applyTieredMarkup(dryMountCostBase, config);
+    printCanvasRetail = applyTieredMarkup(printCanvasCostBase, config);
+    canvasStretchingRetail = applyTieredMarkup(canvasStretchingCostBase, config);
+    engravedPlaqueRetail = applyTieredMarkup(engravedPlaqueCostBase, config);
+    ledsRetail = applyTieredMarkup(ledsCostBase, config);
+    shadowboxFittingRetail = applyTieredMarkup(shadowboxFittingCostBase, config);
+    additionalLaborRetail = applyTieredMarkup(additionalLaborCostBase, config);
+    extraMatOpeningsRetail = applyTieredMarkup(extraMatOpeningsCostBase, config);
     
-    // Sum all retail prices and multiply by quantity
-    itemTotal = (
+    // Sum all retail prices
+    let orderSubtotal = 
       frameRetail + 
       mat1Retail + mat2Retail + mat3Retail +
       acrylicRetail + backingRetail +
@@ -424,8 +448,34 @@ export function calculatePricing(order: InsertOrder): PricingResult {
       printCanvasRetail + canvasStretchingRetail +
       engravedPlaqueRetail + ledsRetail +
       shadowboxFittingRetail + additionalLaborRetail +
-      extraMatOpeningsRetail
-    ) * quantity;
+      extraMatOpeningsRetail;
+    
+    // Apply minimum price floor to the total order (before quantity multiplier)
+    if (config.minimumPrice && orderSubtotal < config.minimumPrice) {
+      const scaleFactor = config.minimumPrice / orderSubtotal;
+      // Scale all components proportionally
+      frameRetail *= scaleFactor;
+      mat1Retail *= scaleFactor;
+      mat2Retail *= scaleFactor;
+      mat3Retail *= scaleFactor;
+      acrylicRetail *= scaleFactor;
+      backingRetail *= scaleFactor;
+      printPaperRetail *= scaleFactor;
+      dryMountRetail *= scaleFactor;
+      printCanvasRetail *= scaleFactor;
+      canvasStretchingRetail *= scaleFactor;
+      engravedPlaqueRetail *= scaleFactor;
+      ledsRetail *= scaleFactor;
+      shadowboxFittingRetail *= scaleFactor;
+      additionalLaborRetail *= scaleFactor;
+      extraMatOpeningsRetail *= scaleFactor;
+      
+      orderSubtotal = config.minimumPrice;
+      minimumApplied = true;
+    }
+    
+    // Multiply by quantity
+    itemTotal = orderSubtotal * quantity;
   }
   
   // Calculate Shipping - use dynamic config shipping rates
@@ -481,51 +531,25 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     }
   }
   
-  // Calculate breakdown with appropriate markup
-  // For stacker frames: use flat markup
-  // For regular orders: use tiered markup per component
-  let breakdown;
-  
-  if (order.stackerFrame) {
-    const markup = config.stackerMarkup;
-    breakdown = {
-      frameCost: (frameCost * markup * quantity).toFixed(2),
-      mat1Cost: (mat1CostBase * markup * quantity).toFixed(2),
-      mat2Cost: (mat2CostBase * markup * quantity).toFixed(2),
-      mat3Cost: (mat3CostBase * markup * quantity).toFixed(2),
-      acrylicCost: (acrylicCostBase * markup * quantity).toFixed(2),
-      backingCost: (backingCostBase * markup * quantity).toFixed(2),
-      printPaperCost: (printPaperCostBase * markup * quantity).toFixed(2),
-      dryMountCost: (dryMountCostBase * markup * quantity).toFixed(2),
-      printCanvasCost: (printCanvasCostBase * markup * quantity).toFixed(2),
-      canvasStretchingCost: (canvasStretchingCostBase * markup * quantity).toFixed(2),
-      engravedPlaqueCost: (engravedPlaqueCostBase * markup * quantity).toFixed(2),
-      ledsCost: (ledsCostBase * markup * quantity).toFixed(2),
-      shadowboxFittingCost: (shadowboxFittingCostBase * markup * quantity).toFixed(2),
-      additionalLaborCost: (additionalLaborCostBase * markup * quantity).toFixed(2),
-      extraMatOpeningsCost: (extraMatOpeningsCostBase * markup * quantity).toFixed(2),
-    };
-  } else {
-    // Apply tiered markup to each component
-    // Only apply minimum price floor to frame
-    breakdown = {
-      frameCost: (applyTieredMarkup(frameCost, config, true) * quantity).toFixed(2),
-      mat1Cost: (applyTieredMarkup(mat1CostBase, config) * quantity).toFixed(2),
-      mat2Cost: (applyTieredMarkup(mat2CostBase, config) * quantity).toFixed(2),
-      mat3Cost: (applyTieredMarkup(mat3CostBase, config) * quantity).toFixed(2),
-      acrylicCost: (applyTieredMarkup(acrylicCostBase, config) * quantity).toFixed(2),
-      backingCost: (applyTieredMarkup(backingCostBase, config) * quantity).toFixed(2),
-      printPaperCost: (applyTieredMarkup(printPaperCostBase, config) * quantity).toFixed(2),
-      dryMountCost: (applyTieredMarkup(dryMountCostBase, config) * quantity).toFixed(2),
-      printCanvasCost: (applyTieredMarkup(printCanvasCostBase, config) * quantity).toFixed(2),
-      canvasStretchingCost: (applyTieredMarkup(canvasStretchingCostBase, config) * quantity).toFixed(2),
-      engravedPlaqueCost: (applyTieredMarkup(engravedPlaqueCostBase, config) * quantity).toFixed(2),
-      ledsCost: (applyTieredMarkup(ledsCostBase, config) * quantity).toFixed(2),
-      shadowboxFittingCost: (applyTieredMarkup(shadowboxFittingCostBase, config) * quantity).toFixed(2),
-      additionalLaborCost: (applyTieredMarkup(additionalLaborCostBase, config) * quantity).toFixed(2),
-      extraMatOpeningsCost: (applyTieredMarkup(extraMatOpeningsCostBase, config) * quantity).toFixed(2),
-    };
-  }
+  // Calculate breakdown using the retail values already calculated above
+  // (which include tiered markup and minimum price floor adjustments)
+  const breakdown = {
+    frameCost: (frameRetail * quantity).toFixed(2),
+    mat1Cost: (mat1Retail * quantity).toFixed(2),
+    mat2Cost: (mat2Retail * quantity).toFixed(2),
+    mat3Cost: (mat3Retail * quantity).toFixed(2),
+    acrylicCost: (acrylicRetail * quantity).toFixed(2),
+    backingCost: (backingRetail * quantity).toFixed(2),
+    printPaperCost: (printPaperRetail * quantity).toFixed(2),
+    dryMountCost: (dryMountRetail * quantity).toFixed(2),
+    printCanvasCost: (printCanvasRetail * quantity).toFixed(2),
+    canvasStretchingCost: (canvasStretchingRetail * quantity).toFixed(2),
+    engravedPlaqueCost: (engravedPlaqueRetail * quantity).toFixed(2),
+    ledsCost: (ledsRetail * quantity).toFixed(2),
+    shadowboxFittingCost: (shadowboxFittingRetail * quantity).toFixed(2),
+    additionalLaborCost: (additionalLaborRetail * quantity).toFixed(2),
+    extraMatOpeningsCost: (extraMatOpeningsRetail * quantity).toFixed(2),
+  };
   
   return {
     itemTotal: itemTotal.toFixed(2),
