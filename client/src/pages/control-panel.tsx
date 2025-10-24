@@ -14,7 +14,7 @@ interface PricingConfig {
   chopOnlyJoinFt: number;
   shippingRates: { min: number; max: number; rate: number }[];
   acrylicPrices: { type: string; pricePerSqIn: number }[];
-  backingPrices: { type: string; price: number }[];
+  backingPrices: { type: string; pricePerSqIn: number }[];
   stackerFrames: { sku: string; depth: number; pricePerFt: number }[];
   stackerAssemblyCharge: number;
   stackerMarkup: number;
@@ -348,7 +348,7 @@ export default function ControlPanel() {
                 <Package className="h-5 w-5" />
                 <CardTitle>Backing Prices</CardTitle>
               </div>
-              <CardDescription>Flat rate per order</CardDescription>
+              <CardDescription>Price per square inch</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -359,17 +359,18 @@ export default function ControlPanel() {
                       <span className="text-sm">$</span>
                       <Input
                         type="number"
-                        step="0.50"
-                        value={item.price}
+                        step="0.0001"
+                        value={item.pricePerSqIn}
                         onChange={(e) => {
                           const newPrices = [...currentConfig.backingPrices];
-                          newPrices[idx].price = parseFloat(e.target.value);
+                          newPrices[idx].pricePerSqIn = parseFloat(e.target.value);
                           setConfig({ ...currentConfig, backingPrices: newPrices });
                         }}
                         disabled={!editMode}
                         className="w-32"
                         data-testid={`input-backing-${idx}`}
                       />
+                      <span className="text-sm text-muted-foreground">/sq in</span>
                     </div>
                   </div>
                 ))}
