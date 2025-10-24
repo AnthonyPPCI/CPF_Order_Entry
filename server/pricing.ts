@@ -279,11 +279,10 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     addOnCosts += acrylicCostBase;
   }
   
-  // Backing cost - use dynamic config
-  const backingType = order.backingType || 'White Foam';
-  if (backingType !== 'None') {
-    const backingPrice = config.backingPrices.find(p => p.type === backingType);
-    backingCostBase = (backingPrice?.price || 0) * standaloneMultiplier;
+  // Backing cost - lookup by SKU from supplies (same as mats)
+  if (order.backingSku) {
+    const backing = getSupply(order.backingSku);
+    backingCostBase = (backing?.price || 0) * standaloneMultiplier;
     addOnCosts += backingCostBase;
   }
   

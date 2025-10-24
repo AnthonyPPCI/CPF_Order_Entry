@@ -432,10 +432,12 @@ export default function OrderDetail() {
                     <span className="text-muted-foreground">Acrylic Type:</span>
                     <span className="font-medium">{order.acrylicType}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Backing:</span>
-                    <span className="font-medium">{order.backingType}</span>
-                  </div>
+                  {order.backingSku && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Backing SKU:</span>
+                      <span className="font-mono text-xs">{order.backingSku}</span>
+                    </div>
+                  )}
                   {order.chopOnly && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Chop Only:</span>

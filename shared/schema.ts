@@ -46,7 +46,7 @@ export const orders = pgTable("orders", {
   
   // Materials
   acrylicType: text("acrylic_type").notNull().default("Standard"),
-  backingType: text("backing_type").notNull().default("White Foam"),
+  backingSku: text("backing_sku"),
   
   // Print Options
   printPaper: boolean("print_paper").notNull().default(false),
@@ -222,7 +222,7 @@ export const orderItems = pgTable("order_items", {
   
   // Materials
   acrylicType: text("acrylic_type").notNull().default("Standard"),
-  backingType: text("backing_type").notNull().default("White Foam"),
+  backingSku: text("backing_sku"),
   
   // Print Options
   printPaper: boolean("print_paper").notNull().default(false),

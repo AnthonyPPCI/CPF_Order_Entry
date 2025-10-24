@@ -110,7 +110,7 @@ export default function NewOrder() {
       mat3Sku: "",
       extraMatOpenings: 0,
       acrylicType: "Standard",
-      backingType: "White Foam",
+      backingSku: "",
       printPaper: false,
       printPaperType: "",
       dryMount: false,
@@ -341,7 +341,7 @@ export default function NewOrder() {
       mat3Sku: "",
       extraMatOpenings: 0,
       acrylicType: "Standard",
-      backingType: "White Foam",
+      backingSku: "",
       printPaper: false,
       printPaperType: "",
       dryMount: false,
@@ -833,23 +833,17 @@ export default function NewOrder() {
 
                       <FormField
                         control={form.control}
-                        name="backingType"
+                        name="backingSku"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Backing Type</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger data-testid="select-backing-type">
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="None">None</SelectItem>
-                                <SelectItem value="White Foam">White Foam</SelectItem>
-                                <SelectItem value="Acid Free">Acid Free</SelectItem>
-                                <SelectItem value="Black Foam">Black Foam</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <FormLabel>Backing SKU</FormLabel>
+                            <MatCombobox
+                              value={field.value || ""}
+                              onChange={field.onChange}
+                              placeholder="Search backing SKU..."
+                              data-testid="combobox-backing-sku"
+                            />
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
@@ -1497,9 +1491,9 @@ export default function NewOrder() {
                         <span className="font-mono">${calculatedPricing.breakdown.acrylicCost}</span>
                       </div>
                     )}
-                    {form.watch("backingType") && form.watch("backingType") !== "None" && parseFloat(calculatedPricing.breakdown.backingCost) > 0 && (
+                    {form.watch("backingSku") && parseFloat(calculatedPricing.breakdown.backingCost) > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">{form.watch("backingType")}</span>
+                        <span className="text-muted-foreground">Backing ({form.watch("backingSku")})</span>
                         <span className="font-mono">${calculatedPricing.breakdown.backingCost}</span>
                       </div>
                     )}
