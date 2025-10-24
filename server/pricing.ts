@@ -451,7 +451,8 @@ export function calculatePricing(order: InsertOrder): PricingResult {
       extraMatOpeningsRetail;
     
     // Apply minimum price floor to the total order (before quantity multiplier)
-    if (config.minimumPrice && orderSubtotal < config.minimumPrice) {
+    // Only apply minimum to orders that include a frame (not standalone component orders)
+    if (!isStandaloneOrder && config.minimumPrice && orderSubtotal < config.minimumPrice) {
       const scaleFactor = config.minimumPrice / orderSubtotal;
       // Scale all components proportionally
       frameRetail *= scaleFactor;
