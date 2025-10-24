@@ -66,6 +66,48 @@ export default function OrderDetail() {
     );
   }
 
+  // Multi-item order handlers
+  const handlePrintMulti = () => {
+    window.print();
+  };
+
+  const handleEmailBrianMulti = () => {
+    if (!multiOrder) return;
+    
+    const subject = encodeURIComponent(`Multi-Item Order #${multiOrder.id.slice(0, 8).toUpperCase()} - ${multiOrder.customerName}`);
+    const body = encodeURIComponent(
+      `Multi-Item Order Details:\n\n` +
+      `Customer: ${multiOrder.customerName}\n` +
+      `Items: ${multiOrder.items.length}\n` +
+      `Total: $${multiOrder.total}\n\n` +
+      `View order: ${window.location.href}`
+    );
+    
+    window.location.href = `mailto:brian@custompictureframes.com?subject=${subject}&body=${body}`;
+  };
+
+  const handleEmailCustomerMulti = () => {
+    if (!multiOrder || !multiOrder.email) {
+      toast({
+        title: "No Email Address",
+        description: "This order does not have a customer email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const subject = encodeURIComponent(`Your Order #${multiOrder.id.slice(0, 8).toUpperCase()}`);
+    const body = encodeURIComponent(
+      `Thank you for your order!\n\n` +
+      `Order Number: ${multiOrder.id.slice(0, 8).toUpperCase()}\n` +
+      `Items: ${multiOrder.items.length}\n` +
+      `Total: $${multiOrder.total}\n\n` +
+      `We'll contact you when your order is ready.`
+    );
+    
+    window.location.href = `mailto:${multiOrder.email}?subject=${subject}&body=${body}`;
+  };
+
   // If it's a multi-item order, show simplified view for now
   if (multiOrder) {
     return (
@@ -80,6 +122,39 @@ export default function OrderDetail() {
                   Back to Orders
                 </Button>
               </Link>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 print:hidden">
+              <Button 
+                variant="outline" 
+                onClick={handlePrintMulti} 
+                data-testid="button-print-order"
+                className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2"
+              >
+                <Printer className="h-6 w-6" />
+                <span className="font-semibold">Print Order</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={handleEmailBrianMulti} 
+                data-testid="button-email-brian"
+                className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2"
+              >
+                <Mail className="h-6 w-6" />
+                <span className="font-semibold">Email Brian</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={handleEmailCustomerMulti} 
+                data-testid="button-email-customer"
+                className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2"
+              >
+                <Mail className="h-6 w-6" />
+                <span className="font-semibold">Email Customer</span>
+              </Button>
             </div>
 
             {/* Multi-Item Order Display */}
