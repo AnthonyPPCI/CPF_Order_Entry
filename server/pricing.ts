@@ -286,8 +286,8 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     addOnCosts += backingCostBase;
   }
   
-  // Mat costs - mat prices already adjusted for final retail (will be marked up by general 2.75×)
-  // Mat data from April sheet is pre-processed: (cost × 5) / 2.75 so final price is correct
+  // Mat costs - using Annie sheet supply data only (no April supplement)
+  // Mat prices from Annie sheet will be marked up by the global markup (3.5×)
   if (order.mat1Sku) {
     const mat1 = getSupply(order.mat1Sku);
     mat1CostBase = (mat1?.price || 15) * standaloneMultiplier;

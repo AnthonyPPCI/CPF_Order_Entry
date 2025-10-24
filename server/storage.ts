@@ -359,7 +359,7 @@ class PricingConfigStorage {
   constructor() {
     // Default configuration matching Google Sheets
     this.config = {
-      markup: 2.75,
+      markup: 3.5,
       chopOnlyJoinFt: 18,
       shippingRates: [
         { min: 1, max: 30, rate: 9 },
