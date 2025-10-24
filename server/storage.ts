@@ -377,8 +377,8 @@ class PricingConfigStorage {
       backingPrices: [
         { type: 'None', pricePerSqIn: 0 },
         { type: 'White Foam', pricePerSqIn: 0.005 },
-        { type: 'Black Foam', pricePerSqIn: 0.005 },
-        { type: 'Acid Free', pricePerSqIn: 0.005 },
+        { type: 'Black Foam', pricePerSqIn: 0.0065 },
+        { type: 'Acid Free', pricePerSqIn: 0.0095 },
       ],
       stackerFrames: [
         { sku: '9532', depth: 2.5, pricePerFt: 11.81 },
