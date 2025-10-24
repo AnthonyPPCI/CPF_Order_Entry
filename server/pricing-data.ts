@@ -94,6 +94,48 @@ export function loadPricingData(): PricingData {
     });
   }
 
+  // Load supplementary mouldings from new April 2025 pricing sheet
+  const newPricingPath = join(process.cwd(), 'attached_assets', 'CS_Pricing_Sheet_APR_2025_v1_STORE VERSION_1761319469111.xlsx');
+  try {
+    const newWorkbook = XLSX.readFile(newPricingPath);
+    const newMouldingSheet = newWorkbook.Sheets['moulding'];
+    const newMouldingData = XLSX.utils.sheet_to_json(newMouldingSheet, { header: 1, defval: '' }) as any[];
+    
+    let addedCount = 0;
+    for (let i = 1; i < newMouldingData.length; i++) {
+      const row = newMouldingData[i];
+      if (row[0]) {
+        const sku = String(row[0]);
+        
+        // Only add if it doesn't exist in the old data
+        if (!mouldings.has(sku)) {
+          // Map new file columns to our format:
+          // Column 0: Décor Sku
+          // Column 2: CPF.com Sku Name
+          // Column 7: Width
+          // Column 12: Length Price (40%) - this is cost per foot
+          // Column 13: Chop Price
+          // Column 14: Join Price
+          mouldings.set(sku, {
+            sku: sku,
+            width: Number(row[7] || 0),
+            supplier: String(row[17] || ''), // VENDOR
+            description: String(row[2] || ''),
+            retailPrice: 0, // Not in new sheet
+            discountPercent: 0, // Not in new sheet
+            costPerFoot: Number(row[12] || 0), // Length Price at 40%
+            chop: Number(row[13] || 0), // Chop Price
+            joinCost: Number(row[14] || 0), // Join Price
+          });
+          addedCount++;
+        }
+      }
+    }
+    console.log(`Added ${addedCount} new mouldings from April 2025 pricing sheet`);
+  } catch (error) {
+    console.log('[Pricing] Could not load supplementary pricing sheet:', error);
+  }
+
   pricingDataCache = {
     mouldings,
     supplies,
