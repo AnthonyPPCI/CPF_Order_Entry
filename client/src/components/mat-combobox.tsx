@@ -29,9 +29,10 @@ interface MatComboboxProps {
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  filterItemType?: string; // Optional: filter by itemType (e.g., "Mat", "Backing")
 }
 
-export function MatCombobox({ value, onChange, placeholder = "Select mat...", disabled }: MatComboboxProps) {
+export function MatCombobox({ value, onChange, placeholder = "Select mat...", disabled, filterItemType = "Mat" }: MatComboboxProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
@@ -41,9 +42,11 @@ export function MatCombobox({ value, onChange, placeholder = "Select mat...", di
 
   const selectedSupply = supplies.find((supply) => supply.sku === value);
 
-  // Filter supplies based on search - search both SKU and name, and only show mats
+  // Filter supplies based on search - search both SKU and name
   const filteredSupplies = supplies.filter((supply) => {
-    if (supply.itemType !== "Mat") return false;
+    // If filterItemType is provided and not empty, filter by it
+    if (filterItemType && supply.itemType !== filterItemType) return false;
+    
     const search = searchValue.toLowerCase();
     return (
       supply.sku.toString().toLowerCase().includes(search) ||

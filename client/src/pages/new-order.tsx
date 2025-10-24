@@ -110,7 +110,7 @@ export default function NewOrder() {
       mat3Sku: "",
       extraMatOpenings: 0,
       acrylicType: "Standard",
-      backingSku: "",
+      backingSku: "White Foam",
       printPaper: false,
       printPaperType: "",
       dryMount: false,
@@ -341,7 +341,7 @@ export default function NewOrder() {
       mat3Sku: "",
       extraMatOpenings: 0,
       acrylicType: "Standard",
-      backingSku: "",
+      backingSku: "White Foam",
       printPaper: false,
       printPaperType: "",
       dryMount: false,
@@ -841,6 +841,7 @@ export default function NewOrder() {
                               value={field.value || ""}
                               onChange={field.onChange}
                               placeholder="Search backing SKU..."
+                              filterItemType="" // Show all supplies for backing (no filter)
                               data-testid="combobox-backing-sku"
                             />
                             <FormMessage />
