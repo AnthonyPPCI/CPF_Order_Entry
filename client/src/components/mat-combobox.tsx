@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,23 +55,24 @@ export function MatCombobox({ value, onChange, placeholder = "Select mat...", di
   }).slice(0, 100); // Limit to 100 results for performance
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between font-normal"
-          disabled={disabled}
-        >
-          {selectedSupply ? (
-            <span className="truncate font-mono">{selectedSupply.sku}</span>
-          ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
-          )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
+    <div className="relative w-full">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between font-normal pr-8"
+            disabled={disabled}
+          >
+            {selectedSupply ? (
+              <span className="truncate font-mono">{selectedSupply.sku}</span>
+            ) : (
+              <span className="text-muted-foreground">{placeholder}</span>
+            )}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput 
@@ -112,5 +113,20 @@ export function MatCombobox({ value, onChange, placeholder = "Select mat...", di
         </Command>
       </PopoverContent>
     </Popover>
+    {selectedSupply && !disabled && (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          onChange("");
+        }}
+        className="absolute right-8 top-1/2 -translate-y-1/2 p-1 hover:bg-accent rounded-sm transition-colors"
+        data-testid="button-clear-mat"
+        aria-label="Clear selection"
+      >
+        <X className="h-3.5 w-3.5 text-muted-foreground" />
+      </button>
+    )}
+    </div>
   );
 }

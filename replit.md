@@ -30,7 +30,8 @@ Preferred communication style: Simple, everyday language.
 -   **Stacker Frames (Deep Shadowbox)**: Custom-depth shadowbox system with dynamic algorithm for optimal layer combination, specific pricing, and BOM generation.
 -   **Differential Markup**: Implemented 3.0× markup for standalone components (acrylic, backing, mats) when not ordered with a frame.
 -   **Itemized Component Pricing**: Expanded pricing result to include detailed breakdown of individual component costs in the order summary.
--   **Form Flexibility**: All form fields are optional, and mat fields support fraction/decimal inputs. Autocomplete (combobox) inputs for mat SKUs.
+-   **Form Flexibility**: All form fields are optional, and mat fields support fraction/decimal inputs. Autocomplete (combobox) inputs for mat SKUs with clear button functionality - users can easily remove selected mats by clicking the X icon that appears when a value is selected.
+-   **Global Markup**: System uses 3.5× markup for all components (changed from 2.75× on October 24, 2025).
 
 ### System Design Choices
 -   **Server-Side Pricing**: All pricing calculations are performed on the server to ensure business logic integrity and prevent client manipulation.
