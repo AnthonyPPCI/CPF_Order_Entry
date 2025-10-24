@@ -65,9 +65,7 @@ export function MatCombobox({ value, onChange, placeholder = "Select mat...", di
           disabled={disabled}
         >
           {selectedSupply ? (
-            <span className="truncate">
-              <span className="font-mono">{selectedSupply.sku}</span> - {selectedSupply.name}
-            </span>
+            <span className="truncate font-mono">{selectedSupply.sku}</span>
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
           )}

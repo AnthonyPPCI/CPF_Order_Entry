@@ -72,8 +72,12 @@ export function loadPricingData(): PricingData {
   for (let i = 1; i < supplyData.length; i++) {
     const row = supplyData[i];
     if (row[0]) {  // Has SKU
-      supplies.set(String(row[0]), {
-        sku: String(row[0]),
+      const rawSku = String(row[0]);
+      // Extract just the SKU part (before first " - ") for mat SKUs that are formatted as "SKU - Name - Description"
+      const skuPart = rawSku.includes(' - ') ? rawSku.split(' - ')[0].trim() : rawSku;
+      
+      supplies.set(skuPart, {
+        sku: skuPart,
         name: String(row[1] || ''),
         price: Number(row[3] || 0),
         itemType: String(row[5] || ''),
