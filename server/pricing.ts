@@ -233,15 +233,15 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   } else {
     // Regular frame pricing
     const mouldingData = order.frameSku ? getMoulding(order.frameSku) : null;
-    const mouldingWidth = mouldingData?.width || 2;
     const joinCost = mouldingData?.joinCost || 0;
     
     // Calculate Join Feet
+    // Formula: (United Inches × 2) + 8" scrap, divided by 12, rounded up, minimum 4ft
     let joinFt: number;
     if (order.chopOnly) {
       joinFt = config.chopOnlyJoinFt;
     } else {
-      joinFt = Math.max(4, Math.ceil((unitedInchesX2 + 8 + (mouldingWidth * 4)) / 12));
+      joinFt = Math.max(4, Math.ceil((unitedInchesX2 + 8) / 12));
     }
     
     frameCost = joinCost * joinFt;
@@ -286,7 +286,8 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     addOnCosts += backingCostBase;
   }
   
-  // Mat costs - apply standalone multiplier
+  // Mat costs - mat prices already adjusted for final retail (will be marked up by general 2.75×)
+  // Mat data from April sheet is pre-processed: (cost × 5) / 2.75 so final price is correct
   if (order.mat1Sku) {
     const mat1 = getSupply(order.mat1Sku);
     mat1CostBase = (mat1?.price || 15) * standaloneMultiplier;
