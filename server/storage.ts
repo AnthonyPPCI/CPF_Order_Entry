@@ -345,7 +345,7 @@ interface PricingConfig {
   chopOnlyJoinFt: number;
   shippingRates: { min: number; max: number; rate: number }[];
   acrylicPrices: { type: string; pricePerSqIn: number }[];
-  backingPrices: { type: string; price: number }[];
+  backingPrices: { type: string; pricePerSqIn: number }[];
   stackerFrames: { sku: string; depth: number; pricePerFt: number }[];
   topperPieces: { sku: string; depth: number; pricePerFt: number }[];
   stackerAssemblyCharge: number;
@@ -375,10 +375,10 @@ class PricingConfigStorage {
         { type: 'Non-Glare', pricePerSqIn: 0.018 },
       ],
       backingPrices: [
-        { type: 'None', price: 0 },
-        { type: 'White Foam', price: 2 },
-        { type: 'Black Foam', price: 2.5 },
-        { type: 'Acid Free', price: 3 },
+        { type: 'None', pricePerSqIn: 0 },
+        { type: 'White Foam', pricePerSqIn: 0.005 },
+        { type: 'Black Foam', pricePerSqIn: 0.005 },
+        { type: 'Acid Free', pricePerSqIn: 0.005 },
       ],
       stackerFrames: [
         { sku: '9532', depth: 2.5, pricePerFt: 11.81 },

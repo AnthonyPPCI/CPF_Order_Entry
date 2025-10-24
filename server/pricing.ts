@@ -314,10 +314,10 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     addOnCosts += acrylicCostBase;
   }
   
-  // Backing cost - lookup by SKU from supplies (same as mats)
-  if (order.backingSku) {
-    const backing = getSupply(order.backingSku);
-    backingCostBase = (backing?.price || 0) * standaloneMultiplier;
+  // Backing cost (per square inch) - use dynamic config
+  if (order.backingSku && order.backingSku !== 'None') {
+    const backingPrice = config.backingPrices.find(p => p.type === order.backingSku);
+    backingCostBase = (backingPrice?.pricePerSqIn || 0) * squareInches * standaloneMultiplier;
     addOnCosts += backingCostBase;
   }
   
