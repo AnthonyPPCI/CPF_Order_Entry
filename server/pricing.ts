@@ -170,6 +170,41 @@ function calculateStackerFrames(
   return { layers, totalCost, assemblyCharge, topper: topperData };
 }
 
+/**
+ * Apply tiered markup to a base cost
+ * Uses markup tiers to adjust pricing based on cost ranges
+ * Formula: baseCost × (globalMarkup × tierFactor)
+ * 
+ * @param baseCost - The base cost before markup
+ * @param config - Pricing configuration with markup and markupTiers
+ * @param applyMinimum - Whether to apply minimum price floor (default: false, only for frame/total)
+ * @returns The retail price after tiered markup
+ */
+function applyTieredMarkup(baseCost: number, config: any, applyMinimum: boolean = false): number {
+  if (baseCost <= 0) return 0;
+  
+  // Find the appropriate tier for this cost
+  const tier = config.markupTiers?.find(
+    (t: any) => baseCost >= t.minCost && baseCost < t.maxCost
+  );
+  
+  // If no tier found (shouldn't happen with Infinity max), use global markup
+  const tierFactor = tier ? tier.factor : 1.0;
+  
+  // Calculate effective markup: globalMarkup × tierFactor
+  const effectiveMarkup = config.markup * tierFactor;
+  
+  // Apply markup to base cost
+  let retailPrice = baseCost * effectiveMarkup;
+  
+  // Apply minimum price floor only if requested (for frames or total order)
+  if (applyMinimum && config.minimumPrice && retailPrice < config.minimumPrice) {
+    retailPrice = config.minimumPrice;
+  }
+  
+  return retailPrice;
+}
+
 export function calculatePricing(order: InsertOrder): PricingResult {
   // Load pricing data
   const pricingData = loadPricingData();
@@ -351,11 +386,47 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     addOnCosts += additionalLaborCostBase;
   }
   
-  // Calculate Item Total with Markup (use dynamic config)
-  // Formula: (Frame Cost + Add-ons) * Markup * Quantity
-  // Use stacker markup for stacker frames, otherwise use regular markup
-  const markup = order.stackerFrame ? config.stackerMarkup : config.markup;
-  const itemTotal = (frameCost + addOnCosts) * markup * quantity;
+  // Calculate Item Total with Markup
+  // For stacker frames: use flat stacker markup (2.5)
+  // For regular orders: apply tiered markup to each component based on its cost
+  let itemTotal: number;
+  
+  if (order.stackerFrame) {
+    // Stacker frames use flat markup (special pricing)
+    const markup = config.stackerMarkup;
+    itemTotal = (frameCost + addOnCosts) * markup * quantity;
+  } else {
+    // Apply tiered markup to each component individually
+    // This gives lower-cost items higher markups and higher-cost items lower markups
+    // Only apply minimum price floor to the frame component
+    const frameRetail = applyTieredMarkup(frameCost, config, true); // Apply minimum to frame
+    const mat1Retail = applyTieredMarkup(mat1CostBase, config);
+    const mat2Retail = applyTieredMarkup(mat2CostBase, config);
+    const mat3Retail = applyTieredMarkup(mat3CostBase, config);
+    const acrylicRetail = applyTieredMarkup(acrylicCostBase, config);
+    const backingRetail = applyTieredMarkup(backingCostBase, config);
+    const printPaperRetail = applyTieredMarkup(printPaperCostBase, config);
+    const dryMountRetail = applyTieredMarkup(dryMountCostBase, config);
+    const printCanvasRetail = applyTieredMarkup(printCanvasCostBase, config);
+    const canvasStretchingRetail = applyTieredMarkup(canvasStretchingCostBase, config);
+    const engravedPlaqueRetail = applyTieredMarkup(engravedPlaqueCostBase, config);
+    const ledsRetail = applyTieredMarkup(ledsCostBase, config);
+    const shadowboxFittingRetail = applyTieredMarkup(shadowboxFittingCostBase, config);
+    const additionalLaborRetail = applyTieredMarkup(additionalLaborCostBase, config);
+    const extraMatOpeningsRetail = applyTieredMarkup(extraMatOpeningsCostBase, config);
+    
+    // Sum all retail prices and multiply by quantity
+    itemTotal = (
+      frameRetail + 
+      mat1Retail + mat2Retail + mat3Retail +
+      acrylicRetail + backingRetail +
+      printPaperRetail + dryMountRetail +
+      printCanvasRetail + canvasStretchingRetail +
+      engravedPlaqueRetail + ledsRetail +
+      shadowboxFittingRetail + additionalLaborRetail +
+      extraMatOpeningsRetail
+    ) * quantity;
+  }
   
   // Calculate Shipping - use dynamic config shipping rates
   let shipping: number;
@@ -410,13 +481,14 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     }
   }
   
-  return {
-    itemTotal: itemTotal.toFixed(2),
-    shipping: shipping.toFixed(2),
-    salesTax: salesTax > 0 ? salesTax.toFixed(2) : "",
-    total: total.toFixed(2),
-    balance: balance.toFixed(2),
-    breakdown: {
+  // Calculate breakdown with appropriate markup
+  // For stacker frames: use flat markup
+  // For regular orders: use tiered markup per component
+  let breakdown;
+  
+  if (order.stackerFrame) {
+    const markup = config.stackerMarkup;
+    breakdown = {
       frameCost: (frameCost * markup * quantity).toFixed(2),
       mat1Cost: (mat1CostBase * markup * quantity).toFixed(2),
       mat2Cost: (mat2CostBase * markup * quantity).toFixed(2),
@@ -432,7 +504,36 @@ export function calculatePricing(order: InsertOrder): PricingResult {
       shadowboxFittingCost: (shadowboxFittingCostBase * markup * quantity).toFixed(2),
       additionalLaborCost: (additionalLaborCostBase * markup * quantity).toFixed(2),
       extraMatOpeningsCost: (extraMatOpeningsCostBase * markup * quantity).toFixed(2),
-    },
+    };
+  } else {
+    // Apply tiered markup to each component
+    // Only apply minimum price floor to frame
+    breakdown = {
+      frameCost: (applyTieredMarkup(frameCost, config, true) * quantity).toFixed(2),
+      mat1Cost: (applyTieredMarkup(mat1CostBase, config) * quantity).toFixed(2),
+      mat2Cost: (applyTieredMarkup(mat2CostBase, config) * quantity).toFixed(2),
+      mat3Cost: (applyTieredMarkup(mat3CostBase, config) * quantity).toFixed(2),
+      acrylicCost: (applyTieredMarkup(acrylicCostBase, config) * quantity).toFixed(2),
+      backingCost: (applyTieredMarkup(backingCostBase, config) * quantity).toFixed(2),
+      printPaperCost: (applyTieredMarkup(printPaperCostBase, config) * quantity).toFixed(2),
+      dryMountCost: (applyTieredMarkup(dryMountCostBase, config) * quantity).toFixed(2),
+      printCanvasCost: (applyTieredMarkup(printCanvasCostBase, config) * quantity).toFixed(2),
+      canvasStretchingCost: (applyTieredMarkup(canvasStretchingCostBase, config) * quantity).toFixed(2),
+      engravedPlaqueCost: (applyTieredMarkup(engravedPlaqueCostBase, config) * quantity).toFixed(2),
+      ledsCost: (applyTieredMarkup(ledsCostBase, config) * quantity).toFixed(2),
+      shadowboxFittingCost: (applyTieredMarkup(shadowboxFittingCostBase, config) * quantity).toFixed(2),
+      additionalLaborCost: (applyTieredMarkup(additionalLaborCostBase, config) * quantity).toFixed(2),
+      extraMatOpeningsCost: (applyTieredMarkup(extraMatOpeningsCostBase, config) * quantity).toFixed(2),
+    };
+  }
+  
+  return {
+    itemTotal: itemTotal.toFixed(2),
+    shipping: shipping.toFixed(2),
+    salesTax: salesTax > 0 ? salesTax.toFixed(2) : "",
+    total: total.toFixed(2),
+    balance: balance.toFixed(2),
+    breakdown,
     bom,
   };
 }

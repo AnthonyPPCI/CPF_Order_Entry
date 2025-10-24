@@ -341,7 +341,7 @@ export class MemStorage implements IStorage {
 
 // Pricing configuration storage (in-memory)
 interface PricingConfig {
-  markup: number;
+  markup: number; // Global markup lever (e.g., 3.175)
   chopOnlyJoinFt: number;
   shippingRates: { min: number; max: number; rate: number }[];
   acrylicPrices: { type: string; pricePerSqIn: number }[];
@@ -350,6 +350,9 @@ interface PricingConfig {
   topperPieces: { sku: string; depth: number; pricePerFt: number }[];
   stackerAssemblyCharge: number;
   stackerMarkup: number;
+  // Tiered markup configuration
+  markupTiers: { minCost: number; maxCost: number; factor: number }[];
+  minimumPrice: number; // Minimum price floor for any component (e.g., $29)
   passwordHash: string; // SHA-256 hash of the password
 }
 
@@ -359,7 +362,7 @@ class PricingConfigStorage {
   constructor() {
     // Default configuration matching Google Sheets
     this.config = {
-      markup: 3.5,
+      markup: 3.175,
       chopOnlyJoinFt: 18,
       shippingRates: [
         { min: 1, max: 30, rate: 9 },
@@ -388,6 +391,16 @@ class PricingConfigStorage {
       ],
       stackerAssemblyCharge: 29.17,
       stackerMarkup: 2.5,
+      // Tiered markup tiers - factor is multiplied by global markup
+      // Example: $20 base cost in tier 2 (1.2×) with 3.175 global = $20 × (3.175 × 1.2) = $76.20
+      markupTiers: [
+        { minCost: 0, maxCost: 10, factor: 1.6 },      // Very low cost items get 60% higher markup
+        { minCost: 10, maxCost: 50, factor: 1.2 },     // Low cost items get 20% higher markup
+        { minCost: 50, maxCost: 150, factor: 1.0 },    // Mid-range items use baseline markup
+        { minCost: 150, maxCost: 300, factor: 0.85 },  // Higher cost items get 15% lower markup
+        { minCost: 300, maxCost: Infinity, factor: 0.7 }, // Very high cost items get 30% lower markup
+      ],
+      minimumPrice: 29, // Minimum price floor
       // SHA-256 hash of "2026DOG"
       passwordHash: '8a707e0ded3de11960657de67f2e66292900c86c1ecfe7e570167397943cdaf4',
     };

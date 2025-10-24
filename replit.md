@@ -31,7 +31,7 @@ Preferred communication style: Simple, everyday language.
 -   **Differential Markup**: Implemented 3.0× markup for standalone components (acrylic, backing, mats) when not ordered with a frame.
 -   **Itemized Component Pricing**: Expanded pricing result to include detailed breakdown of individual component costs in the order summary.
 -   **Form Flexibility**: All form fields are optional, and mat fields support fraction/decimal inputs. Autocomplete (combobox) inputs for mat SKUs with clear button functionality - users can easily remove selected mats by clicking the X icon that appears when a value is selected.
--   **Global Markup**: System uses 3.5× markup for all components (changed from 2.75× on October 24, 2025).
+-   **Tiered Markup System**: Implements cost-based markup tiers that automatically adjust pricing - lower-cost items get higher markups (ensuring profitability on small orders) while higher-cost items get lower markups (staying competitive on large orders). Global markup lever of 3.175× scales all tiers proportionally. Minimum price floor of $29 ensures small frames meet profitability thresholds. Markup tiers: $0-$10 (5.08×), $10-$50 (3.81×), $50-$150 (3.175×), $150-$300 (2.70×), $300+ (2.22×). Changed from flat 2.75× markup on October 24, 2025.
 
 ### System Design Choices
 -   **Server-Side Pricing**: All pricing calculations are performed on the server to ensure business logic integrity and prevent client manipulation.
