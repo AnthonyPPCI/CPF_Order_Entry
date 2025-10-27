@@ -27,7 +27,7 @@ Preferred communication style: Simple, everyday language.
 -   **Monorepo Structure**: `client/`, `server/`, and `shared/` directories.
 -   **Component Library Strategy**: shadcn/ui components copied into the project for full customization.
 -   **Multi-Item Order System**: Normalized database schema with `order_headers` and `order_items` tables, supporting orders with multiple frames or components through the unified order form's "Add Another Item" workflow.
--   **Stacker Frames (Deep Shadowbox)**: Custom-depth shadowbox system with dynamic algorithm for optimal layer combination, specific pricing, and BOM generation.
+-   **Stacker Frames (Deep Shadowbox)**: Custom-depth shadowbox system with dynamic algorithm for optimal layer combination, specific pricing, and BOM generation. Vendor pricing: 70% discount on materials (SKU 9531 @ $2.616/ft, SKU 9532 @ $3.543/ft, SKU 9533 @ $2.508/ft, SKU 9731 @ $2.700/ft), assembly charge $12.50 per frame. Uses flat 2.5× markup.
 -   **Differential Markup**: Implemented 3.0× markup for standalone components (acrylic, backing, mats) when not ordered with a frame.
 -   **Itemized Component Pricing**: Expanded pricing result to include detailed breakdown of individual component costs in the order summary.
 -   **Form Flexibility**: All form fields are optional, and mat fields support fraction/decimal inputs. Autocomplete (combobox) inputs for mat SKUs with clear button functionality - users can easily remove selected mats by clicking the X icon that appears when a value is selected.

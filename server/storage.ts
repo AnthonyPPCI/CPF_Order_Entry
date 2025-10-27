@@ -383,14 +383,14 @@ class PricingConfigStorage {
         { type: 'Acid Free', pricePerSqIn: 0.0095 },
       ],
       stackerFrames: [
-        { sku: '9532', depth: 2.5, pricePerFt: 11.81 },
-        { sku: '9533', depth: 1.5, pricePerFt: 8.36 },
+        { sku: '9532', depth: 2.5, pricePerFt: 3.543 },  // 70% vendor discount: $11.81 × 0.30
+        { sku: '9533', depth: 1.5, pricePerFt: 2.508 },  // 70% vendor discount: $8.36 × 0.30
       ],
       topperPieces: [
-        { sku: '9531', depth: 0.75, pricePerFt: 8.50 },
-        { sku: '9731', depth: 1.0, pricePerFt: 9.00 },
+        { sku: '9531', depth: 0.75, pricePerFt: 2.616 }, // 70% vendor discount: $8.72 × 0.30
+        { sku: '9731', depth: 1.0, pricePerFt: 2.700 },  // 70% vendor discount: $9.00 × 0.30
       ],
-      stackerAssemblyCharge: 29.17,
+      stackerAssemblyCharge: 12.50,  // Actual vendor assembly charge
       stackerMarkup: 2.5,
       // Tiered markup tiers - factor is multiplied by global markup
       // Example: $20 base cost in tier 2 (1.2×) with 3.175 global = $20 × (3.175 × 1.2) = $76.20
