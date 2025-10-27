@@ -38,8 +38,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       emailText += `View order: ${orderUrl || 'N/A'}\n`;
 
       // Send email using Resend
+      // Note: Using onboarding@resend.dev for testing. To use your custom domain,
+      // verify it in your Resend dashboard first.
       const data = await resend.emails.send({
-        from: 'CustomPictureFrames <orders@custompictureframes.com>',
+        from: 'CustomPictureFrames <onboarding@resend.dev>',
         to: [to],
         subject: subject,
         text: emailText,
