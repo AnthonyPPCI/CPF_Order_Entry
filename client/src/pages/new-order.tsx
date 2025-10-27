@@ -216,6 +216,20 @@ export default function NewOrder() {
     return () => clearTimeout(timer);
   }, [watchedValues]);
 
+  // Auto-populate Frame SKU with topper SKU when building stacker frames
+  useEffect(() => {
+    const stackerFrame = form.watch("stackerFrame");
+    const topperSku = form.watch("topperSku");
+    
+    if (stackerFrame && topperSku) {
+      // Only auto-populate if frameSku is empty or already contains a topper SKU
+      const currentFrameSku = form.getValues("frameSku");
+      if (!currentFrameSku || currentFrameSku === "9731" || currentFrameSku === "9531") {
+        form.setValue("frameSku", topperSku);
+      }
+    }
+  }, [form.watch("stackerFrame"), form.watch("topperSku")]);
+
   const onSubmit = (data: InsertOrder) => {
     // Remove pricing fields - server will calculate them
     const { itemTotal, shipping, salesTax, total, balance, ...orderData } = data as any;
