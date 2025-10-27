@@ -52,9 +52,23 @@ Preferred communication style: Simple, everyday language.
 -   **Email Service**: Resend API for transactional email delivery (order notifications, customer confirmations).
 -   **Fonts**: Google Fonts (Inter, Geist Mono, Fira Code, DM Sans, Architects Daughter).
 -   **Build Tools**: Vite (frontend), esbuild (production server), Drizzle Kit (migrations).
--   **Node.js Libraries**: Express.js, React, TypeScript, Radix UI, shadcn/ui, Tailwind CSS, Wouter, TanStack Query, React Hook Form, Zod, Drizzle ORM, `@neondatabase/serverless`, Resend, Stripe (ready for integration).
+-   **Node.js Libraries**: Express.js, React, TypeScript, Radix UI, shadcn/ui, Tailwind CSS, Wouter, TanStack Query, React Hook Form, Zod, Drizzle ORM, `@neondatabase/serverless`, Resend, Square SDK.
 
 ## Recent Changes
+
+### October 27, 2025 - Square Payment Integration (Backend Complete)
+-   **Square SDK Integration**: Integrated Square payment processing backend:
+    -   Installed Square SDK for Node.js with correct environment detection (Production/Sandbox)
+    -   Backend payment endpoint `/api/process-payment` processes credit card payments through Square API
+    -   Automatic order balance updates after successful payments
+    -   Supports both single-item and multi-item orders
+    -   Uses environment secrets: SQUARE_ACCESS_TOKEN, SQUARE_LOCATION_ID
+    -   Payment tokenization and frontend payment form implementation pending (requires Square Web Payments SDK)
+-   **Technical Details**:
+    -   Square client initialized with bearer auth credentials and environment detection
+    -   Payment amounts converted to cents for Square API compatibility
+    -   Idempotent payment processing using UUID-based idempotency keys
+    -   Order balance automatically reduced after successful payment completion
 
 ### October 27, 2025 - Email Integration & Order Recording Automation
 -   **Transactional Email System**: Integrated Resend API for professional email delivery:
