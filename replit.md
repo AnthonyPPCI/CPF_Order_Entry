@@ -49,11 +49,26 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 -   **Database Service**: Neon serverless PostgreSQL.
+-   **Email Service**: Resend API for transactional email delivery (order notifications, customer confirmations).
 -   **Fonts**: Google Fonts (Inter, Geist Mono, Fira Code, DM Sans, Architects Daughter).
 -   **Build Tools**: Vite (frontend), esbuild (production server), Drizzle Kit (migrations).
--   **Node.js Libraries**: Express.js, React, TypeScript, Radix UI, shadcn/ui, Tailwind CSS, Wouter, TanStack Query, React Hook Form, Zod, Drizzle ORM, `@neondatabase/serverless`.
+-   **Node.js Libraries**: Express.js, React, TypeScript, Radix UI, shadcn/ui, Tailwind CSS, Wouter, TanStack Query, React Hook Form, Zod, Drizzle ORM, `@neondatabase/serverless`, Resend, Stripe (ready for integration).
 
 ## Recent Changes
+
+### October 27, 2025 - Email Integration & Order Recording Automation
+-   **Transactional Email System**: Integrated Resend API for professional email delivery:
+    -   Backend endpoint `/api/send-order-email` handles email sending with order details
+    -   "Email Brian" button sends order details to brian@custompictureframes.com
+    -   "Email Customer" button sends order confirmation to customer email address
+    -   Replaces mailto: links with direct email sending through app
+    -   Provides success/error toast notifications for email delivery status
+    -   Uses environment secret RESEND_API_KEY for authentication
+-   **Automatic Order Recording**: Streamlined order creation workflow:
+    -   Removed "Record Order" button from order detail page (no longer needed)
+    -   Orders are automatically recorded in the database when created
+    -   Order creation confirmation now shows "Created & Recorded" message
+    -   Eliminates redundant manual step in order workflow
 
 ### October 27, 2025 - Margin Analysis System
 -   **Comprehensive Margin Calculator**: Built margin analysis tool to validate pricing strategy against real business metrics:
