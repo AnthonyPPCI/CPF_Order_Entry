@@ -5,6 +5,7 @@ import { insertOrderSchema, insertOrderHeaderSchema, insertOrderItemSchema } fro
 import { calculatePricing, calculateMultiItemPricing } from "./pricing";
 import { z } from "zod";
 import { Resend } from "resend";
+import { generateOrderPDF } from "./pdf-generator";
 
 // Initialize Resend for email sending
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -17,35 +18,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Email service not configured. Please add RESEND_API_KEY." });
       }
 
-      const { to, subject, orderId, customerName, isMultiItem, itemsCount, total, balance, orderUrl } = req.body;
+      const { 
+        to, 
+        subject, 
+        orderId, 
+        customerName, 
+        isMultiItem, 
+        itemsCount, 
+        total, 
+        balance, 
+        orderUrl,
+        isCustomer,
+        orderData
+      } = req.body;
 
       // Validate required fields
       if (!to || !subject || !orderId) {
         return res.status(400).json({ error: "Missing required fields: to, subject, orderId" });
       }
 
-      // Build email content
-      let emailText = `Order Details:\n\n`;
-      emailText += `Order #: ${orderId}\n`;
-      emailText += `Customer: ${customerName || 'N/A'}\n`;
-      
-      if (isMultiItem) {
-        emailText += `Items: ${itemsCount || 0}\n`;
+      let emailHtml = '';
+      let emailText = '';
+      let attachments: any[] = [];
+
+      // Build customer email with beautiful formatting and PDF
+      if (isCustomer && orderData) {
+        // Generate PDF attachment
+        const pdfBuffer = await generateOrderPDF({
+          orderId,
+          customerName,
+          email: orderData.email,
+          phone: orderData.phone,
+          frameSku: orderData.frameSku,
+          width: orderData.width,
+          height: orderData.height,
+          quantity: orderData.quantity,
+          mat1Sku: orderData.mat1Sku,
+          mat2Sku: orderData.mat2Sku,
+          mat3Sku: orderData.mat3Sku,
+          mat4Sku: orderData.mat4Sku,
+          acrylic: orderData.acrylic,
+          backing: orderData.backing,
+          description: orderData.description,
+          total,
+          balance,
+          orderDate: orderData.orderDate,
+          isMultiItem,
+          itemsCount,
+          items: orderData.items
+        });
+
+        attachments.push({
+          filename: `Order-${orderId}.pdf`,
+          content: pdfBuffer,
+        });
+
+        // Beautiful HTML email for customer
+        emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background-color: #1a5490; color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background-color: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
+    .total { background-color: #f5f5f5; padding: 15px; border-radius: 6px; margin: 20px 0; font-size: 18px; font-weight: 600; }
+    .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0; color: #666; font-size: 14px; text-align: center; }
+    .footer a { color: #1a5490; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 style="margin: 0; font-size: 28px;">Custom Picture Frames</h1>
+    <p style="margin: 10px 0 0 0; opacity: 0.9;">Your order is confirmed!</p>
+  </div>
+  <div class="content">
+    <p>Hi ${customerName || 'there'},</p>
+    
+    <p>Your frame is officially in the works — thanks for choosing Custom Picture Frames!</p>
+    
+    <p>We've attached your order sheet as a PDF for your records. It outlines exactly what we'll be crafting for you.</p>
+    
+    <div class="total">
+      • Order Total: $${total || 'N/A'}
+    </div>
+    
+    <p>Every piece we build is custom-made with care, so you can expect the perfect fit for your artwork or keepsake.</p>
+    
+    <p>We'll send you a note as soon as your frame is ready for pickup. In the meantime, feel free to reach out if you have any questions or last-minute tweaks.</p>
+    
+    <p>Thanks again for trusting us with what you love most — we can't wait to see how it looks hanging on your wall!</p>
+    
+    <p style="margin-top: 30px;">Warmly,<br>
+    <strong>The Custom Picture Frames Team</strong></p>
+  </div>
+  <div class="footer">
+    <p><strong>6 Shirley Ave | Somerset, NJ | (800) 916-8770</strong></p>
+    <p><a href="https://custompictureframes.com">CustomPictureFrames.com</a></p>
+  </div>
+</body>
+</html>`;
+
+        // Plain text version for email clients that don't support HTML
+        emailText = [
+          `Hi ${customerName || 'there'},`,
+          "",
+          "Your frame is officially in the works — thanks for choosing Custom Picture Frames!",
+          "",
+          "We've attached your order sheet as a PDF for your records. It outlines exactly what we'll be crafting for you.",
+          "",
+          `• Order Total: $${total || 'N/A'}`,
+          "",
+          "Every piece we build is custom-made with care, so you can expect the perfect fit for your artwork or keepsake.",
+          "",
+          "We'll send you a note as soon as your frame is ready for pickup. In the meantime, feel free to reach out if you have any questions or last-minute tweaks.",
+          "",
+          "Thanks again for trusting us with what you love most — we can't wait to see how it looks hanging on your wall!",
+          "",
+          "Warmly,",
+          "The Custom Picture Frames Team",
+          "6 Shirley Ave | Somerset, NJ | (800) 916-8770 | CustomPictureFrames.com"
+        ].join('\n');
+      } else {
+        // Simple text email for Brian (internal)
+        emailText = `Order Details:\n\n`;
+        emailText += `Order #: ${orderId}\n`;
+        emailText += `Customer: ${customerName || 'N/A'}\n`;
+        
+        if (isMultiItem) {
+          emailText += `Items: ${itemsCount || 0}\n`;
+        }
+        
+        emailText += `Total: $${total || '0.00'}\n`;
+        emailText += `Balance Due: $${balance || '0.00'}\n\n`;
+        emailText += `View order: ${orderUrl || 'N/A'}\n`;
       }
-      
-      emailText += `Total: $${total || '0.00'}\n`;
-      emailText += `Balance Due: $${balance || '0.00'}\n\n`;
-      emailText += `View order: ${orderUrl || 'N/A'}\n`;
 
       // Send email using Resend
       // Note: Using onboarding@resend.dev for testing. To use your custom domain,
       // verify it in your Resend dashboard first.
-      const data = await resend.emails.send({
+      const emailOptions: any = {
         from: 'CustomPictureFrames <onboarding@resend.dev>',
         to: [to],
         subject: subject,
         text: emailText,
-      });
+      };
+
+      if (emailHtml) {
+        emailOptions.html = emailHtml;
+      }
+
+      if (attachments.length > 0) {
+        emailOptions.attachments = attachments;
+      }
+
+      const data = await resend.emails.send(emailOptions);
 
       res.json({ success: true, emailId: data.id });
     } catch (error: any) {

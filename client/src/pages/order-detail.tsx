@@ -132,6 +132,13 @@ export default function OrderDetail() {
           total: multiOrder.total,
           balance: multiOrder.balance,
           orderUrl: window.location.href,
+          isCustomer: true,
+          orderData: {
+            email: multiOrder.email,
+            phone: multiOrder.phone,
+            orderDate: multiOrder.orderDate,
+            items: multiOrder.items,
+          },
         }),
       });
 
@@ -389,6 +396,23 @@ export default function OrderDetail() {
           total: parseFloat(order.total).toFixed(2),
           balance: parseFloat(order.balance).toFixed(2),
           orderUrl: window.location.href,
+          isCustomer: true,
+          orderData: {
+            email: order.email,
+            phone: order.phone,
+            frameSku: order.frameSku,
+            width: order.width,
+            height: order.height,
+            quantity: order.quantity,
+            mat1Sku: order.mat1Sku,
+            mat2Sku: order.mat2Sku,
+            mat3Sku: order.mat3Sku,
+            mat4Sku: order.mat4Sku,
+            acrylic: order.acrylic,
+            backing: order.backing,
+            description: order.description,
+            orderDate: order.orderDate,
+          },
         }),
       });
 
