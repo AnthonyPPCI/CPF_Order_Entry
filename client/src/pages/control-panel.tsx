@@ -10,15 +10,35 @@ import { queryClient } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PricingConfig {
-  markup: number;
-  standaloneComponentMarkup: number;
-  frameComponentMarkup: number;
-  frameOnlyMarkupFloor: number;
-  componentShiftPercent: number;
+  // Simple two-tier markup
+  fullFrameMarkup: number;
+  componentMarkup: number;
+  
+  // Basic settings
   chopOnlyJoinFt: number;
+  minimumPrice: number;
+  
+  // Shipping
   shippingRates: { min: number; max: number; rate: number }[];
+  
+  // Materials
   acrylicPrices: { type: string; pricePerSqIn: number }[];
   backingPrices: { type: string; pricePerSqIn: number }[];
+  
+  // Add-on services (per square inch)
+  printPaperPricePerSqIn: number;
+  dryMountPricePerSqIn: number;
+  printCanvasRolledPricePerSqIn: number;
+  printCanvasGalleryPricePerSqIn: number;
+  canvasStretchingPricePerSqIn: number;
+  
+  // Fixed-cost add-ons (retail prices)
+  engravedPlaquePrice: number;
+  ledsPrice: number;
+  shadowboxFittingPrice: number;
+  additionalLaborPrice: number;
+  
+  // Stacker frames
   stackerFrames: { sku: string; depth: number; pricePerFt: number }[];
   stackerAssemblyCharge: number;
   stackerMarkup: number;
@@ -243,71 +263,42 @@ export default function ControlPanel() {
             <CardContent>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="markup">Markup Multiplier</Label>
+                  <Label htmlFor="fullFrameMarkup">Full Frame Markup</Label>
                   <Input
-                    id="markup"
-                    type="number"
-                    step="0.01"
-                    value={currentConfig.markup}
-                    onChange={(e) => setConfig({ ...currentConfig, markup: parseFloat(e.target.value) })}
-                    disabled={!editMode}
-                    data-testid="input-markup"
-                  />
-                  <p className="text-sm text-muted-foreground">Current: {currentConfig.markup}×</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="standaloneComponentMarkup">Standalone Component Markup</Label>
-                  <Input
-                    id="standaloneComponentMarkup"
+                    id="fullFrameMarkup"
                     type="number"
                     step="0.1"
-                    value={currentConfig.standaloneComponentMarkup}
-                    onChange={(e) => setConfig({ ...currentConfig, standaloneComponentMarkup: parseFloat(e.target.value) })}
+                    value={currentConfig.fullFrameMarkup}
+                    onChange={(e) => setConfig({ ...currentConfig, fullFrameMarkup: parseFloat(e.target.value) })}
                     disabled={!editMode}
-                    data-testid="input-standalone-component-markup"
+                    data-testid="input-full-frame-markup"
                   />
-                  <p className="text-sm text-muted-foreground">Current: {currentConfig.standaloneComponentMarkup}× (components without frame)</p>
+                  <p className="text-sm text-muted-foreground">Current: {currentConfig.fullFrameMarkup}× (Frame + Acrylic + Backing + optional Mats)</p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="frameComponentMarkup">Frame Component Markup</Label>
+                  <Label htmlFor="componentMarkup">Component Markup</Label>
                   <Input
-                    id="frameComponentMarkup"
+                    id="componentMarkup"
                     type="number"
                     step="0.1"
-                    value={currentConfig.frameComponentMarkup}
-                    onChange={(e) => setConfig({ ...currentConfig, frameComponentMarkup: parseFloat(e.target.value) })}
+                    value={currentConfig.componentMarkup}
+                    onChange={(e) => setConfig({ ...currentConfig, componentMarkup: parseFloat(e.target.value) })}
                     disabled={!editMode}
-                    data-testid="input-frame-component-markup"
+                    data-testid="input-component-markup"
                   />
-                  <p className="text-sm text-muted-foreground">Current: {currentConfig.frameComponentMarkup}× (components with frame)</p>
+                  <p className="text-sm text-muted-foreground">Current: {currentConfig.componentMarkup}× (Any individual component)</p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="frameOnlyMarkupFloor">Frame-Only Markup Floor</Label>
+                  <Label htmlFor="minimumPrice">Minimum Price Floor</Label>
                   <Input
-                    id="frameOnlyMarkupFloor"
+                    id="minimumPrice"
                     type="number"
-                    step="0.05"
-                    value={currentConfig.frameOnlyMarkupFloor}
-                    onChange={(e) => setConfig({ ...currentConfig, frameOnlyMarkupFloor: parseFloat(e.target.value) })}
+                    value={currentConfig.minimumPrice}
+                    onChange={(e) => setConfig({ ...currentConfig, minimumPrice: parseFloat(e.target.value) })}
                     disabled={!editMode}
-                    data-testid="input-frame-only-markup-floor"
+                    data-testid="input-minimum-price"
                   />
-                  <p className="text-sm text-muted-foreground">Current: {currentConfig.frameOnlyMarkupFloor}× (minimum for frames without components)</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="componentShiftPercent">Component Cost Shift %</Label>
-                  <Input
-                    id="componentShiftPercent"
-                    type="number"
-                    step="1"
-                    min="0"
-                    max="100"
-                    value={currentConfig.componentShiftPercent}
-                    onChange={(e) => setConfig({ ...currentConfig, componentShiftPercent: parseFloat(e.target.value) })}
-                    disabled={!editMode}
-                    data-testid="input-component-shift-percent"
-                  />
-                  <p className="text-sm text-muted-foreground">Current: {currentConfig.componentShiftPercent}% (shift component cost to frame)</p>
+                  <p className="text-sm text-muted-foreground">Current: ${currentConfig.minimumPrice} (applies to orders with frames)</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="chopOnlyJoinFt">Chop Only Join Feet</Label>
@@ -432,6 +423,181 @@ export default function ControlPanel() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Add-On Pricing */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                <CardTitle>Add-On Services Pricing</CardTitle>
+              </div>
+              <CardDescription>Configurable pricing for additional services</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <Label className="text-sm font-medium">Per Square Inch Services (get markup treatment)</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="printPaperPricePerSqIn">Print Paper</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">$</span>
+                        <Input
+                          id="printPaperPricePerSqIn"
+                          type="number"
+                          step="0.001"
+                          value={currentConfig.printPaperPricePerSqIn}
+                          onChange={(e) => setConfig({ ...currentConfig, printPaperPricePerSqIn: parseFloat(e.target.value) })}
+                          disabled={!editMode}
+                          className="w-32"
+                          data-testid="input-print-paper-price"
+                        />
+                        <span className="text-sm text-muted-foreground">/sq in</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="dryMountPricePerSqIn">Dry Mount</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">$</span>
+                        <Input
+                          id="dryMountPricePerSqIn"
+                          type="number"
+                          step="0.001"
+                          value={currentConfig.dryMountPricePerSqIn}
+                          onChange={(e) => setConfig({ ...currentConfig, dryMountPricePerSqIn: parseFloat(e.target.value) })}
+                          disabled={!editMode}
+                          className="w-32"
+                          data-testid="input-dry-mount-price"
+                        />
+                        <span className="text-sm text-muted-foreground">/sq in</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="printCanvasRolledPricePerSqIn">Canvas (Rolled)</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">$</span>
+                        <Input
+                          id="printCanvasRolledPricePerSqIn"
+                          type="number"
+                          step="0.001"
+                          value={currentConfig.printCanvasRolledPricePerSqIn}
+                          onChange={(e) => setConfig({ ...currentConfig, printCanvasRolledPricePerSqIn: parseFloat(e.target.value) })}
+                          disabled={!editMode}
+                          className="w-32"
+                          data-testid="input-canvas-rolled-price"
+                        />
+                        <span className="text-sm text-muted-foreground">/sq in</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="printCanvasGalleryPricePerSqIn">Canvas (Gallery/Museum)</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">$</span>
+                        <Input
+                          id="printCanvasGalleryPricePerSqIn"
+                          type="number"
+                          step="0.001"
+                          value={currentConfig.printCanvasGalleryPricePerSqIn}
+                          onChange={(e) => setConfig({ ...currentConfig, printCanvasGalleryPricePerSqIn: parseFloat(e.target.value) })}
+                          disabled={!editMode}
+                          className="w-32"
+                          data-testid="input-canvas-gallery-price"
+                        />
+                        <span className="text-sm text-muted-foreground">/sq in</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="canvasStretchingPricePerSqIn">Canvas Stretching</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">$</span>
+                        <Input
+                          id="canvasStretchingPricePerSqIn"
+                          type="number"
+                          step="0.001"
+                          value={currentConfig.canvasStretchingPricePerSqIn}
+                          onChange={(e) => setConfig({ ...currentConfig, canvasStretchingPricePerSqIn: parseFloat(e.target.value) })}
+                          disabled={!editMode}
+                          className="w-32"
+                          data-testid="input-canvas-stretching-price"
+                        />
+                        <span className="text-sm text-muted-foreground">/sq in</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <Label className="text-sm font-medium">Fixed Cost Services (retail prices, no markup added)</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="engravedPlaquePrice">Engraved Plaque</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">$</span>
+                        <Input
+                          id="engravedPlaquePrice"
+                          type="number"
+                          step="0.50"
+                          value={currentConfig.engravedPlaquePrice}
+                          onChange={(e) => setConfig({ ...currentConfig, engravedPlaquePrice: parseFloat(e.target.value) })}
+                          disabled={!editMode}
+                          className="w-32"
+                          data-testid="input-plaque-price"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ledsPrice">LEDs</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">$</span>
+                        <Input
+                          id="ledsPrice"
+                          type="number"
+                          step="0.50"
+                          value={currentConfig.ledsPrice}
+                          onChange={(e) => setConfig({ ...currentConfig, ledsPrice: parseFloat(e.target.value) })}
+                          disabled={!editMode}
+                          className="w-32"
+                          data-testid="input-leds-price"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="shadowboxFittingPrice">Shadowbox Fitting</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">$</span>
+                        <Input
+                          id="shadowboxFittingPrice"
+                          type="number"
+                          step="0.50"
+                          value={currentConfig.shadowboxFittingPrice}
+                          onChange={(e) => setConfig({ ...currentConfig, shadowboxFittingPrice: parseFloat(e.target.value) })}
+                          disabled={!editMode}
+                          className="w-32"
+                          data-testid="input-shadowbox-fitting-price"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="additionalLaborPrice">Additional Labor</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">$</span>
+                        <Input
+                          id="additionalLaborPrice"
+                          type="number"
+                          step="0.50"
+                          value={currentConfig.additionalLaborPrice}
+                          onChange={(e) => setConfig({ ...currentConfig, additionalLaborPrice: parseFloat(e.target.value) })}
+                          disabled={!editMode}
+                          className="w-32"
+                          data-testid="input-additional-labor-price"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

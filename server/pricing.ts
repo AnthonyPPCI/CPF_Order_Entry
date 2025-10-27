@@ -349,15 +349,14 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   // Calculate add-on costs
   let addOnCosts = 0;
   
-  // Acrylic cost (per square inch) - use dynamic config
-  const acrylicType = order.acrylicType || 'Standard';
-  if (acrylicType !== 'None') {
-    const acrylicPrice = config.acrylicPrices.find(p => p.type === acrylicType);
+  // Acrylic cost (per square inch) - only if explicitly selected and not "None"
+  if (order.acrylicType && order.acrylicType !== 'None') {
+    const acrylicPrice = config.acrylicPrices.find(p => p.type === order.acrylicType);
     acrylicCostBase = (acrylicPrice?.pricePerSqIn || 0) * squareInches;
     addOnCosts += acrylicCostBase;
   }
   
-  // Backing cost (per square inch) - use dynamic config
+  // Backing cost (per square inch) - only if explicitly selected and not "None"
   if (order.backingSku && order.backingSku !== 'None') {
     const backingPrice = config.backingPrices.find(p => p.type === order.backingSku);
     backingCostBase = (backingPrice?.pricePerSqIn || 0) * squareInches;
@@ -386,95 +385,64 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   extraMatOpeningsCostBase = (order.extraMatOpenings || 0) * 2.5;
   addOnCosts += extraMatOpeningsCostBase;
   
-  // Print options (per square inch)
+  // Print options (per square inch) - use configurable pricing
   if (order.printPaper) {
-    printPaperCostBase = 0.05 * squareInches;
+    printPaperCostBase = config.printPaperPricePerSqIn * squareInches;
     addOnCosts += printPaperCostBase;
   }
   if (order.dryMount) {
-    dryMountCostBase = 0.03 * squareInches;
+    dryMountCostBase = config.dryMountPricePerSqIn * squareInches;
     addOnCosts += dryMountCostBase;
   }
   if (order.printCanvas) {
-    // Rolled canvas is 10% more than paper print ($0.05 × 1.10 = $0.055)
     if (order.printCanvasWrapStyle === "Rolled") {
-      printCanvasCostBase = 0.055 * squareInches;
+      printCanvasCostBase = config.printCanvasRolledPricePerSqIn * squareInches;
     } else {
-      // Gallery and Museum use standard canvas pricing
-      printCanvasCostBase = 0.08 * squareInches;
+      // Gallery and Museum
+      printCanvasCostBase = config.printCanvasGalleryPricePerSqIn * squareInches;
     }
     addOnCosts += printCanvasCostBase;
   }
   if (order.canvasStretching) {
-    // Canvas stretching is 10% below gallery canvas price ($0.08 × 0.90 = $0.072)
-    canvasStretchingCostBase = 0.072 * squareInches;
+    canvasStretchingCostBase = config.canvasStretchingPricePerSqIn * squareInches;
     addOnCosts += canvasStretchingCostBase;
   }
   
-  // Fixed-cost options
+  // Fixed-cost add-ons (these are RETAIL prices, no markup needed)
   if (order.engravedPlaque) {
-    engravedPlaqueCostBase = 30;
+    engravedPlaqueCostBase = config.engravedPlaquePrice;
     addOnCosts += engravedPlaqueCostBase;
   }
   if (order.leds) {
-    ledsCostBase = 45;
+    ledsCostBase = config.ledsPrice;
     addOnCosts += ledsCostBase;
   }
   if (order.shadowboxFitting) {
-    shadowboxFittingCostBase = 17.50;
+    shadowboxFittingCostBase = config.shadowboxFittingPrice;
     addOnCosts += shadowboxFittingCostBase;
   }
   if (order.additionalLabor) {
-    additionalLaborCostBase = 17.50;
+    additionalLaborCostBase = config.additionalLaborPrice;
     addOnCosts += additionalLaborCostBase;
   }
   
-  // Component cost redistribution: shift component cost to frame (if configured)
-  // This helps balance profit distribution and ensures frames carry appropriate margin
-  if (!isStandaloneOrder && config.componentShiftPercent > 0) {
-    // Calculate total component base cost (all components that would get flat markup)
-    const totalComponentCost = 
-      mat1CostBase + mat2CostBase + mat3CostBase +
-      acrylicCostBase + backingCostBase +
-      printPaperCostBase + dryMountCostBase +
-      printCanvasCostBase + canvasStretchingCostBase +
-      engravedPlaqueCostBase + ledsCostBase +
-      shadowboxFittingCostBase + additionalLaborCostBase +
-      extraMatOpeningsCostBase;
-    
-    // Only redistribute if there are components AND a frame
-    if (totalComponentCost > 0 && frameCost > 0) {
-      // Calculate shift amount (percentage of total component cost)
-      const shiftAmount = totalComponentCost * (config.componentShiftPercent / 100);
-      
-      // Calculate reduction factor for components
-      const reductionFactor = 1 - (config.componentShiftPercent / 100);
-      
-      // Increase frame cost by shift amount
-      frameCost += shiftAmount;
-      
-      // Reduce all component costs proportionally
-      mat1CostBase *= reductionFactor;
-      mat2CostBase *= reductionFactor;
-      mat3CostBase *= reductionFactor;
-      acrylicCostBase *= reductionFactor;
-      backingCostBase *= reductionFactor;
-      printPaperCostBase *= reductionFactor;
-      dryMountCostBase *= reductionFactor;
-      printCanvasCostBase *= reductionFactor;
-      canvasStretchingCostBase *= reductionFactor;
-      engravedPlaqueCostBase *= reductionFactor;
-      ledsCostBase *= reductionFactor;
-      shadowboxFittingCostBase *= reductionFactor;
-      additionalLaborCostBase *= reductionFactor;
-      extraMatOpeningsCostBase *= reductionFactor;
-    }
-  }
+  // =========================================================================
+  // NEW SIMPLIFIED PRICING SYSTEM
+  // =========================================================================
+  // Two order types:
+  // 1. Full Frame = Frame + Acrylic + Backing (+ optional Mats) → 4.5× markup
+  // 2. Component = Anything else → 5.5× markup
+  // Fixed-cost add-ons = retail price, no markup (1×)
+  // =========================================================================
   
-  // Calculate Item Total with Markup
-  // For standalone component orders: apply flat 3.5× markup
-  // For orders with frames: apply tiered markup to each component
-  let itemTotal: number;
+  // Detect "Full Frame" order
+  const hasFrame = frameCost > 0;
+  const hasAcrylic = acrylicCostBase > 0;
+  const hasBacking = backingCostBase > 0;
+  const isFullFrame = hasFrame && hasAcrylic && hasBacking;
+  
+  // Choose markup based on order type
+  const markup = isFullFrame ? config.fullFrameMarkup : config.componentMarkup;
   
   // Store retail prices for breakdown calculation
   let frameRetail: number, mat1Retail: number, mat2Retail: number, mat3Retail: number;
@@ -484,58 +452,24 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   let additionalLaborRetail: number, extraMatOpeningsRetail: number;
   let minimumApplied = false;
   
-  if (isStandaloneOrder) {
-    // Standalone component orders: apply configurable flat markup to all components
-    const standaloneMarkup = config.standaloneComponentMarkup;
-    frameRetail = frameCost * standaloneMarkup; // Should be 0 for standalone
-    mat1Retail = mat1CostBase * standaloneMarkup;
-    mat2Retail = mat2CostBase * standaloneMarkup;
-    mat3Retail = mat3CostBase * standaloneMarkup;
-    acrylicRetail = acrylicCostBase * standaloneMarkup;
-    backingRetail = backingCostBase * standaloneMarkup;
-    printPaperRetail = printPaperCostBase * standaloneMarkup;
-    dryMountRetail = dryMountCostBase * standaloneMarkup;
-    printCanvasRetail = printCanvasCostBase * standaloneMarkup;
-    canvasStretchingRetail = canvasStretchingCostBase * standaloneMarkup;
-    engravedPlaqueRetail = engravedPlaqueCostBase * standaloneMarkup;
-    ledsRetail = ledsCostBase * standaloneMarkup;
-    shadowboxFittingRetail = shadowboxFittingCostBase * standaloneMarkup;
-    additionalLaborRetail = additionalLaborCostBase * standaloneMarkup;
-    extraMatOpeningsRetail = extraMatOpeningsCostBase * standaloneMarkup;
-  } else {
-    // Orders with frames: frame uses tiered markup, components use configurable flat markup
-    const componentMarkup = config.frameComponentMarkup; // Lower than standalone to incentivize complete orders
-    
-    // Detect frame-only orders (frame but no components)
-    const isFrameOnly = frameCost > 0 && 
-                        acrylicCostBase === 0 && 
-                        backingCostBase === 0 && 
-                        mat1CostBase === 0 && 
-                        mat2CostBase === 0 && 
-                        mat3CostBase === 0;
-    
-    // Apply frame markup - use floor for frame-only orders if higher than tiered
-    const tieredFrameRetail = applyTieredMarkup(frameCost, config);
-    const floorFrameRetail = frameCost * config.frameOnlyMarkupFloor;
-    frameRetail = isFrameOnly && floorFrameRetail > tieredFrameRetail 
-                  ? floorFrameRetail 
-                  : tieredFrameRetail;
-    
-    mat1Retail = mat1CostBase * componentMarkup;
-    mat2Retail = mat2CostBase * componentMarkup;
-    mat3Retail = mat3CostBase * componentMarkup;
-    acrylicRetail = acrylicCostBase * componentMarkup;
-    backingRetail = backingCostBase * componentMarkup;
-    printPaperRetail = printPaperCostBase * componentMarkup;
-    dryMountRetail = dryMountCostBase * componentMarkup;
-    printCanvasRetail = printCanvasCostBase * componentMarkup;
-    canvasStretchingRetail = canvasStretchingCostBase * componentMarkup;
-    engravedPlaqueRetail = engravedPlaqueCostBase * componentMarkup;
-    ledsRetail = ledsCostBase * componentMarkup;
-    shadowboxFittingRetail = shadowboxFittingCostBase * componentMarkup;
-    additionalLaborRetail = additionalLaborCostBase * componentMarkup;
-    extraMatOpeningsRetail = extraMatOpeningsCostBase * componentMarkup;
-  }
+  // Apply markup to all material costs
+  frameRetail = frameCost * markup;
+  mat1Retail = mat1CostBase * markup;
+  mat2Retail = mat2CostBase * markup;
+  mat3Retail = mat3CostBase * markup;
+  acrylicRetail = acrylicCostBase * markup;
+  backingRetail = backingCostBase * markup;
+  printPaperRetail = printPaperCostBase * markup;
+  dryMountRetail = dryMountCostBase * markup;
+  printCanvasRetail = printCanvasCostBase * markup;
+  canvasStretchingRetail = canvasStretchingCostBase * markup;
+  extraMatOpeningsRetail = extraMatOpeningsCostBase * markup;
+  
+  // Fixed-cost add-ons are RETAIL prices - pass through at 1× (no markup)
+  engravedPlaqueRetail = engravedPlaqueCostBase; // Already retail
+  ledsRetail = ledsCostBase; // Already retail
+  shadowboxFittingRetail = shadowboxFittingCostBase; // Already retail
+  additionalLaborRetail = additionalLaborCostBase; // Already retail
   
   // Sum all retail prices
   let orderSubtotal = 
@@ -549,8 +483,8 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     extraMatOpeningsRetail;
   
   // Apply minimum price floor to the total order (before quantity multiplier)
-  // Only apply minimum to orders that include a frame (not standalone component orders)
-  if (!isStandaloneOrder && config.minimumPrice && orderSubtotal < config.minimumPrice) {
+  // Only apply minimum to orders that include a frame
+  if (hasFrame && config.minimumPrice && orderSubtotal < config.minimumPrice) {
     const scaleFactor = config.minimumPrice / orderSubtotal;
     // Scale all components proportionally
     frameRetail *= scaleFactor;
@@ -574,7 +508,7 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   }
   
   // Multiply by quantity
-  itemTotal = orderSubtotal * quantity;
+  const itemTotal = orderSubtotal * quantity;
   
   // Calculate Shipping - use dynamic config shipping rates
   let shipping: number;

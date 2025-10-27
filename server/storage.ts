@@ -341,22 +341,40 @@ export class MemStorage implements IStorage {
 
 // Pricing configuration storage (in-memory)
 interface PricingConfig {
-  markup: number; // Global markup lever (e.g., 3.175)
-  standaloneComponentMarkup: number; // Flat markup for components ordered without a frame (e.g., 3.5×)
-  frameComponentMarkup: number; // Flat markup for components ordered with a frame (e.g., 3.0×)
-  frameOnlyMarkupFloor: number; // Minimum markup for frame-only orders (e.g., 2.75×)
-  componentShiftPercent: number; // Percentage of component cost to shift to frame (0-100)
+  // Simple two-tier markup system
+  fullFrameMarkup: number; // Markup for complete frames (Frame + Acrylic + Backing + optional Mats) (e.g., 4.5×)
+  componentMarkup: number; // Markup for individual components (e.g., 5.5×)
+  
+  // Basic settings
   chopOnlyJoinFt: number;
+  minimumPrice: number; // Minimum price floor ($29)
+  
+  // Shipping configuration
   shippingRates: { min: number; max: number; rate: number }[];
+  
+  // Material pricing (per square inch)
   acrylicPrices: { type: string; pricePerSqIn: number }[];
   backingPrices: { type: string; pricePerSqIn: number }[];
+  
+  // Add-on services (per square inch) - get markup treatment
+  printPaperPricePerSqIn: number;
+  dryMountPricePerSqIn: number;
+  printCanvasRolledPricePerSqIn: number;
+  printCanvasGalleryPricePerSqIn: number;
+  canvasStretchingPricePerSqIn: number;
+  
+  // Fixed-cost add-ons (retail prices, no markup)
+  engravedPlaquePrice: number;
+  ledsPrice: number;
+  shadowboxFittingPrice: number;
+  additionalLaborPrice: number;
+  
+  // Stacker frame configuration (unchanged)
   stackerFrames: { sku: string; depth: number; pricePerFt: number }[];
   topperPieces: { sku: string; depth: number; pricePerFt: number }[];
   stackerAssemblyCharge: number;
   stackerMarkup: number;
-  // Tiered markup configuration
-  markupTiers: { minCost: number; maxCost: number; factor: number }[];
-  minimumPrice: number; // Minimum price floor for any component (e.g., $29)
+  
   passwordHash: string; // SHA-256 hash of the password
 }
 
@@ -364,23 +382,28 @@ class PricingConfigStorage {
   private config: PricingConfig;
 
   constructor() {
-    // Default configuration matching Google Sheets
+    // Simplified pricing configuration
     this.config = {
-      markup: 3.2,
-      standaloneComponentMarkup: 3.5, // Components without frames are more expensive
-      frameComponentMarkup: 3.0, // Components with frames are cheaper (incentive)
-      frameOnlyMarkupFloor: 2.75, // Minimum markup for frames without components (ensures profitability)
-      componentShiftPercent: 0, // Start at 0%, can increase to shift component cost into frame
+      // Simple two-tier markup
+      fullFrameMarkup: 4.5,     // Frame + Acrylic + Backing (+ optional Mats)
+      componentMarkup: 5.5,     // Any individual component
+      
+      // Basic settings
       chopOnlyJoinFt: 18,
+      minimumPrice: 29,
+      
+      // Shipping rates
       shippingRates: [
         { min: 1, max: 30, rate: 9 },
         { min: 31, max: 49, rate: 19 },
         { min: 50, max: 74, rate: 29 },
         { min: 75, max: 999, rate: 250 },
       ],
+      
+      // Material pricing (per square inch)
       acrylicPrices: [
-        { type: 'Standard', pricePerSqIn: 0.0168 }, // Updated to hit ~$46 target for 27×29 sheet with 3.5× markup
-        { type: 'Non-Glare', pricePerSqIn: 0.0336 }, // Doubled from Standard (same ratio as before)
+        { type: 'Standard', pricePerSqIn: 0.009 },
+        { type: 'Non-Glare', pricePerSqIn: 0.018 },
       ],
       backingPrices: [
         { type: 'None', pricePerSqIn: 0 },
@@ -388,26 +411,32 @@ class PricingConfigStorage {
         { type: 'Black Foam', pricePerSqIn: 0.0065 },
         { type: 'Acid Free', pricePerSqIn: 0.0095 },
       ],
+      
+      // Add-on services (per square inch) - get markup treatment
+      printPaperPricePerSqIn: 0.05,
+      dryMountPricePerSqIn: 0.03,
+      printCanvasRolledPricePerSqIn: 0.055,
+      printCanvasGalleryPricePerSqIn: 0.08,
+      canvasStretchingPricePerSqIn: 0.072,
+      
+      // Fixed-cost add-ons (retail prices, no markup)
+      engravedPlaquePrice: 30,
+      ledsPrice: 45,
+      shadowboxFittingPrice: 17.50,
+      additionalLaborPrice: 17.50,
+      
+      // Stacker frame configuration (unchanged)
       stackerFrames: [
-        { sku: '9532', depth: 2.5, pricePerFt: 3.543 },  // 70% vendor discount: $11.81 × 0.30
-        { sku: '9533', depth: 1.5, pricePerFt: 2.508 },  // 70% vendor discount: $8.36 × 0.30
+        { sku: '9532', depth: 2.5, pricePerFt: 3.543 },
+        { sku: '9533', depth: 1.5, pricePerFt: 2.508 },
       ],
       topperPieces: [
-        { sku: '9531', depth: 0.75, pricePerFt: 2.616 }, // 70% vendor discount: $8.72 × 0.30
-        { sku: '9731', depth: 1.0, pricePerFt: 2.700 },  // 70% vendor discount: $9.00 × 0.30
+        { sku: '9531', depth: 0.75, pricePerFt: 2.616 },
+        { sku: '9731', depth: 1.0, pricePerFt: 2.700 },
       ],
-      stackerAssemblyCharge: 12.50,  // Actual vendor assembly charge
+      stackerAssemblyCharge: 12.50,
       stackerMarkup: 2.5,
-      // Tiered markup tiers - factor is multiplied by global markup
-      // Example: $20 base cost in tier 2 (1.2×) with 3.175 global = $20 × (3.175 × 1.2) = $76.20
-      markupTiers: [
-        { minCost: 0, maxCost: 10, factor: 1.6 },      // Very low cost items get 60% higher markup
-        { minCost: 10, maxCost: 50, factor: 1.2 },     // Low cost items get 20% higher markup
-        { minCost: 50, maxCost: 150, factor: 1.0 },    // Mid-range items use baseline markup
-        { minCost: 150, maxCost: 300, factor: 0.85 },  // Higher cost items get 15% lower markup
-        { minCost: 300, maxCost: Infinity, factor: 0.7 }, // Very high cost items get 30% lower markup
-      ],
-      minimumPrice: 29, // Minimum price floor
+      
       // SHA-256 hash of "2026DOG"
       passwordHash: '8a707e0ded3de11960657de67f2e66292900c86c1ecfe7e570167397943cdaf4',
     };
