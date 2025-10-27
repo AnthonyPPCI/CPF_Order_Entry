@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,11 +30,14 @@ export function PaymentDialog({
   const { toast } = useToast();
   const [amount, setAmount] = useState(balance);
   const [processing, setProcessing] = useState(false);
-  const [card, setCard] = useState<any>(null);
-  const [payments, setPayments] = useState<any>(null);
+  const cardRef = useRef<any>(null);
+  const paymentsRef = useRef<any>(null);
 
   useEffect(() => {
     if (!open) return;
+
+    // Reset amount to current balance when dialog opens
+    setAmount(balance);
 
     const initializeSquare = async () => {
       if (!window.Square) {
@@ -51,11 +54,11 @@ export function PaymentDialog({
           import.meta.env.VITE_SQUARE_APPLICATION_ID,
           import.meta.env.VITE_SQUARE_LOCATION_ID
         );
-        setPayments(paymentsInstance);
+        paymentsRef.current = paymentsInstance;
 
         const cardInstance = await paymentsInstance.card();
         await cardInstance.attach('#card-container');
-        setCard(cardInstance);
+        cardRef.current = cardInstance;
       } catch (error) {
         console.error('Square initialization error:', error);
         toast({
@@ -69,14 +72,15 @@ export function PaymentDialog({
     initializeSquare();
 
     return () => {
-      if (card) {
-        card.destroy();
+      if (cardRef.current) {
+        cardRef.current.destroy();
+        cardRef.current = null;
       }
     };
   }, [open]);
 
   const handlePayment = async () => {
-    if (!card || !amount || parseFloat(amount) <= 0) {
+    if (!cardRef.current || !amount || parseFloat(amount) <= 0) {
       toast({
         title: "Invalid Amount",
         description: "Please enter a valid payment amount.",
@@ -89,7 +93,7 @@ export function PaymentDialog({
 
     try {
       // Tokenize card details
-      const result = await card.tokenize();
+      const result = await cardRef.current.tokenize();
       
       if (result.status === 'OK') {
         // Send payment to backend
