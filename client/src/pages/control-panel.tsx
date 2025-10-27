@@ -353,76 +353,74 @@ export default function ControlPanel() {
             </CardContent>
           </Card>
 
-          {/* Acrylic Prices */}
+          {/* Material Prices - Acrylic & Backing Combined */}
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                <CardTitle>Acrylic Prices</CardTitle>
+                <CardTitle>Material Prices</CardTitle>
               </div>
-              <CardDescription>Price per square inch</CardDescription>
+              <CardDescription>Price per square inch for acrylic and backing materials</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {currentConfig.acrylicPrices.map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-2 gap-4 items-center">
-                    <div className="text-sm font-medium">{item.type}</div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">$</span>
-                      <Input
-                        type="number"
-                        step="0.001"
-                        value={item.pricePerSqIn}
-                        onChange={(e) => {
-                          const newPrices = [...currentConfig.acrylicPrices];
-                          newPrices[idx].pricePerSqIn = parseFloat(e.target.value);
-                          setConfig({ ...currentConfig, acrylicPrices: newPrices });
-                        }}
-                        disabled={!editMode}
-                        className="w-32"
-                        data-testid={`input-acrylic-${idx}`}
-                      />
-                      <span className="text-sm text-muted-foreground">/sq in</span>
-                    </div>
+              <div className="space-y-6">
+                {/* Acrylic Section */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold">Acrylic</Label>
+                  <div className="space-y-3 pl-4 border-l-2 border-border">
+                    {currentConfig.acrylicPrices.map((item, idx) => (
+                      <div key={idx} className="grid grid-cols-2 gap-4 items-center">
+                        <div className="text-sm font-medium">{item.type}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">$</span>
+                          <Input
+                            type="number"
+                            step="0.001"
+                            value={item.pricePerSqIn}
+                            onChange={(e) => {
+                              const newPrices = [...currentConfig.acrylicPrices];
+                              newPrices[idx].pricePerSqIn = parseFloat(e.target.value);
+                              setConfig({ ...currentConfig, acrylicPrices: newPrices });
+                            }}
+                            disabled={!editMode}
+                            className="w-32"
+                            data-testid={`input-acrylic-${idx}`}
+                          />
+                          <span className="text-sm text-muted-foreground">/sq in</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
 
-          {/* Backing Prices */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                <CardTitle>Backing Prices</CardTitle>
-              </div>
-              <CardDescription>Price per square inch</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {currentConfig.backingPrices.map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-2 gap-4 items-center">
-                    <div className="text-sm font-medium">{item.type}</div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">$</span>
-                      <Input
-                        type="number"
-                        step="0.0001"
-                        value={item.pricePerSqIn}
-                        onChange={(e) => {
-                          const newPrices = [...currentConfig.backingPrices];
-                          newPrices[idx].pricePerSqIn = parseFloat(e.target.value);
-                          setConfig({ ...currentConfig, backingPrices: newPrices });
-                        }}
-                        disabled={!editMode}
-                        className="w-32"
-                        data-testid={`input-backing-${idx}`}
-                      />
-                      <span className="text-sm text-muted-foreground">/sq in</span>
-                    </div>
+                {/* Backing Section */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold">Backing</Label>
+                  <div className="space-y-3 pl-4 border-l-2 border-border">
+                    {currentConfig.backingPrices.map((item, idx) => (
+                      <div key={idx} className="grid grid-cols-2 gap-4 items-center">
+                        <div className="text-sm font-medium">{item.type}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">$</span>
+                          <Input
+                            type="number"
+                            step="0.0001"
+                            value={item.pricePerSqIn}
+                            onChange={(e) => {
+                              const newPrices = [...currentConfig.backingPrices];
+                              newPrices[idx].pricePerSqIn = parseFloat(e.target.value);
+                              setConfig({ ...currentConfig, backingPrices: newPrices });
+                            }}
+                            disabled={!editMode}
+                            className="w-32"
+                            data-testid={`input-backing-${idx}`}
+                          />
+                          <span className="text-sm text-muted-foreground">/sq in</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             </CardContent>
           </Card>
