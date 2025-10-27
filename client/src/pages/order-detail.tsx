@@ -71,22 +71,44 @@ export default function OrderDetail() {
     window.print();
   };
 
-  const handleEmailBrianMulti = () => {
+  const handleEmailBrianMulti = async () => {
     if (!multiOrder) return;
     
-    const subject = encodeURIComponent(`Multi-Item Order #${multiOrder.id.slice(0, 8).toUpperCase()} - ${multiOrder.customerName}`);
-    const body = encodeURIComponent(
-      `Multi-Item Order Details:\n\n` +
-      `Customer: ${multiOrder.customerName}\n` +
-      `Items: ${multiOrder.items.length}\n` +
-      `Total: $${multiOrder.total}\n\n` +
-      `View order: ${window.location.href}`
-    );
-    
-    window.location.href = `mailto:brian@custompictureframes.com?subject=${subject}&body=${body}`;
+    try {
+      const response = await fetch('/api/send-order-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: 'brian@custompictureframes.com',
+          subject: `Multi-Item Order #${multiOrder.id.slice(0, 8).toUpperCase()} - ${multiOrder.customerName}`,
+          orderId: multiOrder.id.slice(0, 8).toUpperCase(),
+          customerName: multiOrder.customerName,
+          isMultiItem: true,
+          itemsCount: multiOrder.items.length,
+          total: multiOrder.total,
+          balance: multiOrder.balance,
+          orderUrl: window.location.href,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send email');
+      }
+
+      toast({
+        title: "Email Sent",
+        description: "Order details have been emailed to Brian.",
+      });
+    } catch (error) {
+      toast({
+        title: "Email Failed",
+        description: "Failed to send email. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleEmailCustomerMulti = () => {
+  const handleEmailCustomerMulti = async () => {
     if (!multiOrder || !multiOrder.email) {
       toast({
         title: "No Email Address",
@@ -96,16 +118,38 @@ export default function OrderDetail() {
       return;
     }
     
-    const subject = encodeURIComponent(`Your Order #${multiOrder.id.slice(0, 8).toUpperCase()}`);
-    const body = encodeURIComponent(
-      `Thank you for your order!\n\n` +
-      `Order Number: ${multiOrder.id.slice(0, 8).toUpperCase()}\n` +
-      `Items: ${multiOrder.items.length}\n` +
-      `Total: $${multiOrder.total}\n\n` +
-      `We'll contact you when your order is ready.`
-    );
-    
-    window.location.href = `mailto:${multiOrder.email}?subject=${subject}&body=${body}`;
+    try {
+      const response = await fetch('/api/send-order-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: multiOrder.email,
+          subject: `Your Order #${multiOrder.id.slice(0, 8).toUpperCase()}`,
+          orderId: multiOrder.id.slice(0, 8).toUpperCase(),
+          customerName: multiOrder.customerName,
+          isMultiItem: true,
+          itemsCount: multiOrder.items.length,
+          total: multiOrder.total,
+          balance: multiOrder.balance,
+          orderUrl: window.location.href,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send email');
+      }
+
+      toast({
+        title: "Email Sent",
+        description: `Order confirmation has been sent to ${multiOrder.email}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Email Failed",
+        description: "Failed to send email. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // If it's a multi-item order, show simplified view for now
@@ -286,25 +330,43 @@ export default function OrderDetail() {
     window.print();
   };
 
-  const handleEmailBrian = () => {
+  const handleEmailBrian = async () => {
     if (!order) return;
     
-    const subject = encodeURIComponent(`Order #${order.id.slice(0, 8).toUpperCase()} - ${order.customerName}`);
-    const body = encodeURIComponent(
-      `Order Details:\n\n` +
-      `Customer: ${order.customerName}\n` +
-      `Frame: ${order.frameSku} (${order.width}" × ${order.height}")\n` +
-      `Quantity: ${order.quantity}\n` +
-      `Total: $${parseFloat(order.total).toFixed(2)}\n` +
-      `Balance Due: $${parseFloat(order.balance).toFixed(2)}\n\n` +
-      `Description: ${order.description || 'N/A'}\n\n` +
-      `View full order: ${window.location.href}`
-    );
-    
-    window.location.href = `mailto:brian@custompictureframes.com?subject=${subject}&body=${body}`;
+    try {
+      const response = await fetch('/api/send-order-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: 'brian@custompictureframes.com',
+          subject: `Order #${order.id.slice(0, 8).toUpperCase()} - ${order.customerName}`,
+          orderId: order.id.slice(0, 8).toUpperCase(),
+          customerName: order.customerName,
+          isMultiItem: false,
+          total: parseFloat(order.total).toFixed(2),
+          balance: parseFloat(order.balance).toFixed(2),
+          orderUrl: window.location.href,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send email');
+      }
+
+      toast({
+        title: "Email Sent",
+        description: "Order details have been emailed to Brian.",
+      });
+    } catch (error) {
+      toast({
+        title: "Email Failed",
+        description: "Failed to send email. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleEmailCustomer = () => {
+  const handleEmailCustomer = async () => {
     if (!order || !order.email) {
       toast({
         title: "No Email Address",
@@ -314,22 +376,37 @@ export default function OrderDetail() {
       return;
     }
     
-    const subject = encodeURIComponent(`Your Order from CustomPictureFrames.com`);
-    const body = encodeURIComponent(
-      `Dear ${order.customerName},\n\n` +
-      `Thank you for your order!\n\n` +
-      `Order #: ${order.id.slice(0, 8).toUpperCase()}\n` +
-      `Frame: ${order.frameSku} (${order.width}" × ${order.height}")\n` +
-      `Quantity: ${order.quantity}\n` +
-      `Total: $${parseFloat(order.total).toFixed(2)}\n` +
-      `Balance Due: $${parseFloat(order.balance).toFixed(2)}\n\n` +
-      `We will contact you when your order is ready.\n\n` +
-      `Best regards,\n` +
-      `CustomPictureFrames.com\n` +
-      `(800) 916-8770`
-    );
-    
-    window.location.href = `mailto:${order.email}?subject=${subject}&body=${body}`;
+    try {
+      const response = await fetch('/api/send-order-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: order.email,
+          subject: `Your Order from CustomPictureFrames.com`,
+          orderId: order.id.slice(0, 8).toUpperCase(),
+          customerName: order.customerName,
+          isMultiItem: false,
+          total: parseFloat(order.total).toFixed(2),
+          balance: parseFloat(order.balance).toFixed(2),
+          orderUrl: window.location.href,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send email');
+      }
+
+      toast({
+        title: "Email Sent",
+        description: `Order confirmation has been sent to ${order.email}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Email Failed",
+        description: "Failed to send email. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleOpenSquare = () => {

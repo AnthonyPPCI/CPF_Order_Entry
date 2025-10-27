@@ -4,8 +4,53 @@ import { storage, pricingConfigStorage } from "./storage";
 import { insertOrderSchema, insertOrderHeaderSchema, insertOrderItemSchema } from "@shared/schema";
 import { calculatePricing, calculateMultiItemPricing } from "./pricing";
 import { z } from "zod";
+import { Resend } from "resend";
+
+// Initialize Resend for email sending
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Send order email (to Brian or customer)
+  app.post("/api/send-order-email", async (req, res) => {
+    try {
+      if (!resend) {
+        return res.status(500).json({ error: "Email service not configured. Please add RESEND_API_KEY." });
+      }
+
+      const { to, subject, orderId, customerName, isMultiItem, itemsCount, total, balance, orderUrl } = req.body;
+
+      // Validate required fields
+      if (!to || !subject || !orderId) {
+        return res.status(400).json({ error: "Missing required fields: to, subject, orderId" });
+      }
+
+      // Build email content
+      let emailText = `Order Details:\n\n`;
+      emailText += `Order #: ${orderId}\n`;
+      emailText += `Customer: ${customerName || 'N/A'}\n`;
+      
+      if (isMultiItem) {
+        emailText += `Items: ${itemsCount || 0}\n`;
+      }
+      
+      emailText += `Total: $${total || '0.00'}\n`;
+      emailText += `Balance Due: $${balance || '0.00'}\n\n`;
+      emailText += `View order: ${orderUrl || 'N/A'}\n`;
+
+      // Send email using Resend
+      const data = await resend.emails.send({
+        from: 'CustomPictureFrames <orders@custompictureframes.com>',
+        to: [to],
+        subject: subject,
+        text: emailText,
+      });
+
+      res.json({ success: true, emailId: data.id });
+    } catch (error: any) {
+      console.error('Email send error:', error);
+      res.status(500).json({ error: "Failed to send email", details: error.message });
+    }
+  });
   // Get all orders (both single-item and multi-item)
   app.get("/api/orders", async (req, res) => {
     try {
