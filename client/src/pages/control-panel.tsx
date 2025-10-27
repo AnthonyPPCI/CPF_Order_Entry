@@ -435,163 +435,175 @@ export default function ControlPanel() {
               <CardDescription>Configurable pricing for additional services</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
+              <div className="space-y-8">
+                {/* Per Square Inch Services */}
                 <div className="space-y-4">
-                  <Label className="text-sm font-medium">Per Square Inch Services (get markup treatment)</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="printPaperPricePerSqIn">Print Paper</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">$</span>
-                        <Input
-                          id="printPaperPricePerSqIn"
-                          type="number"
-                          step="0.001"
-                          value={currentConfig.printPaperPricePerSqIn}
-                          onChange={(e) => setConfig({ ...currentConfig, printPaperPricePerSqIn: parseFloat(e.target.value) })}
-                          disabled={!editMode}
-                          className="w-32"
-                          data-testid="input-print-paper-price"
-                        />
-                        <span className="text-sm text-muted-foreground">/sq in</span>
+                  <div className="space-y-1">
+                    <Label className="text-sm font-semibold">Per Square Inch Services</Label>
+                    <p className="text-xs text-muted-foreground">These services receive markup treatment (4.5× or 5.5×)</p>
+                  </div>
+                  <div className="pl-4 border-l-2 border-border space-y-4">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <Label htmlFor="printPaperPricePerSqIn" className="text-sm font-medium whitespace-nowrap">Print Paper</Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">$</span>
+                          <Input
+                            id="printPaperPricePerSqIn"
+                            type="number"
+                            step="0.001"
+                            value={currentConfig.printPaperPricePerSqIn}
+                            onChange={(e) => setConfig({ ...currentConfig, printPaperPricePerSqIn: parseFloat(e.target.value) })}
+                            disabled={!editMode}
+                            className="w-24"
+                            data-testid="input-print-paper-price"
+                          />
+                          <span className="text-xs text-muted-foreground">/sq in</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="dryMountPricePerSqIn">Dry Mount</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">$</span>
-                        <Input
-                          id="dryMountPricePerSqIn"
-                          type="number"
-                          step="0.001"
-                          value={currentConfig.dryMountPricePerSqIn}
-                          onChange={(e) => setConfig({ ...currentConfig, dryMountPricePerSqIn: parseFloat(e.target.value) })}
-                          disabled={!editMode}
-                          className="w-32"
-                          data-testid="input-dry-mount-price"
-                        />
-                        <span className="text-sm text-muted-foreground">/sq in</span>
+                      <div className="flex items-center justify-between gap-4">
+                        <Label htmlFor="dryMountPricePerSqIn" className="text-sm font-medium whitespace-nowrap">Dry Mount</Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">$</span>
+                          <Input
+                            id="dryMountPricePerSqIn"
+                            type="number"
+                            step="0.001"
+                            value={currentConfig.dryMountPricePerSqIn}
+                            onChange={(e) => setConfig({ ...currentConfig, dryMountPricePerSqIn: parseFloat(e.target.value) })}
+                            disabled={!editMode}
+                            className="w-24"
+                            data-testid="input-dry-mount-price"
+                          />
+                          <span className="text-xs text-muted-foreground">/sq in</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="printCanvasRolledPricePerSqIn">Canvas (Rolled)</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">$</span>
-                        <Input
-                          id="printCanvasRolledPricePerSqIn"
-                          type="number"
-                          step="0.001"
-                          value={currentConfig.printCanvasRolledPricePerSqIn}
-                          onChange={(e) => setConfig({ ...currentConfig, printCanvasRolledPricePerSqIn: parseFloat(e.target.value) })}
-                          disabled={!editMode}
-                          className="w-32"
-                          data-testid="input-canvas-rolled-price"
-                        />
-                        <span className="text-sm text-muted-foreground">/sq in</span>
+                      <div className="flex items-center justify-between gap-4">
+                        <Label htmlFor="printCanvasRolledPricePerSqIn" className="text-sm font-medium whitespace-nowrap">Canvas (Rolled)</Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">$</span>
+                          <Input
+                            id="printCanvasRolledPricePerSqIn"
+                            type="number"
+                            step="0.001"
+                            value={currentConfig.printCanvasRolledPricePerSqIn}
+                            onChange={(e) => setConfig({ ...currentConfig, printCanvasRolledPricePerSqIn: parseFloat(e.target.value) })}
+                            disabled={!editMode}
+                            className="w-24"
+                            data-testid="input-canvas-rolled-price"
+                          />
+                          <span className="text-xs text-muted-foreground">/sq in</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="printCanvasGalleryPricePerSqIn">Canvas (Gallery/Museum)</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">$</span>
-                        <Input
-                          id="printCanvasGalleryPricePerSqIn"
-                          type="number"
-                          step="0.001"
-                          value={currentConfig.printCanvasGalleryPricePerSqIn}
-                          onChange={(e) => setConfig({ ...currentConfig, printCanvasGalleryPricePerSqIn: parseFloat(e.target.value) })}
-                          disabled={!editMode}
-                          className="w-32"
-                          data-testid="input-canvas-gallery-price"
-                        />
-                        <span className="text-sm text-muted-foreground">/sq in</span>
+                      <div className="flex items-center justify-between gap-4">
+                        <Label htmlFor="printCanvasGalleryPricePerSqIn" className="text-sm font-medium whitespace-nowrap">Canvas (Gallery/Museum)</Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">$</span>
+                          <Input
+                            id="printCanvasGalleryPricePerSqIn"
+                            type="number"
+                            step="0.001"
+                            value={currentConfig.printCanvasGalleryPricePerSqIn}
+                            onChange={(e) => setConfig({ ...currentConfig, printCanvasGalleryPricePerSqIn: parseFloat(e.target.value) })}
+                            disabled={!editMode}
+                            className="w-24"
+                            data-testid="input-canvas-gallery-price"
+                          />
+                          <span className="text-xs text-muted-foreground">/sq in</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="canvasStretchingPricePerSqIn">Canvas Stretching</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">$</span>
-                        <Input
-                          id="canvasStretchingPricePerSqIn"
-                          type="number"
-                          step="0.001"
-                          value={currentConfig.canvasStretchingPricePerSqIn}
-                          onChange={(e) => setConfig({ ...currentConfig, canvasStretchingPricePerSqIn: parseFloat(e.target.value) })}
-                          disabled={!editMode}
-                          className="w-32"
-                          data-testid="input-canvas-stretching-price"
-                        />
-                        <span className="text-sm text-muted-foreground">/sq in</span>
+                      <div className="flex items-center justify-between gap-4">
+                        <Label htmlFor="canvasStretchingPricePerSqIn" className="text-sm font-medium whitespace-nowrap">Canvas Stretching</Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">$</span>
+                          <Input
+                            id="canvasStretchingPricePerSqIn"
+                            type="number"
+                            step="0.001"
+                            value={currentConfig.canvasStretchingPricePerSqIn}
+                            onChange={(e) => setConfig({ ...currentConfig, canvasStretchingPricePerSqIn: parseFloat(e.target.value) })}
+                            disabled={!editMode}
+                            className="w-24"
+                            data-testid="input-canvas-stretching-price"
+                          />
+                          <span className="text-xs text-muted-foreground">/sq in</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
+                {/* Fixed Cost Services */}
                 <div className="space-y-4">
-                  <Label className="text-sm font-medium">Fixed Cost Services (retail prices, no markup added)</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="engravedPlaquePrice">Engraved Plaque</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">$</span>
-                        <Input
-                          id="engravedPlaquePrice"
-                          type="number"
-                          step="0.50"
-                          value={currentConfig.engravedPlaquePrice}
-                          onChange={(e) => setConfig({ ...currentConfig, engravedPlaquePrice: parseFloat(e.target.value) })}
-                          disabled={!editMode}
-                          className="w-32"
-                          data-testid="input-plaque-price"
-                        />
+                  <div className="space-y-1">
+                    <Label className="text-sm font-semibold">Fixed Cost Services</Label>
+                    <p className="text-xs text-muted-foreground">Retail prices with no markup applied (1×)</p>
+                  </div>
+                  <div className="pl-4 border-l-2 border-border space-y-4">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <Label htmlFor="engravedPlaquePrice" className="text-sm font-medium whitespace-nowrap">Engraved Plaque</Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">$</span>
+                          <Input
+                            id="engravedPlaquePrice"
+                            type="number"
+                            step="0.50"
+                            value={currentConfig.engravedPlaquePrice}
+                            onChange={(e) => setConfig({ ...currentConfig, engravedPlaquePrice: parseFloat(e.target.value) })}
+                            disabled={!editMode}
+                            className="w-24"
+                            data-testid="input-plaque-price"
+                          />
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="ledsPrice">LEDs</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">$</span>
-                        <Input
-                          id="ledsPrice"
-                          type="number"
-                          step="0.50"
-                          value={currentConfig.ledsPrice}
-                          onChange={(e) => setConfig({ ...currentConfig, ledsPrice: parseFloat(e.target.value) })}
-                          disabled={!editMode}
-                          className="w-32"
-                          data-testid="input-leds-price"
-                        />
+                      <div className="flex items-center justify-between gap-4">
+                        <Label htmlFor="ledsPrice" className="text-sm font-medium whitespace-nowrap">LEDs</Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">$</span>
+                          <Input
+                            id="ledsPrice"
+                            type="number"
+                            step="0.50"
+                            value={currentConfig.ledsPrice}
+                            onChange={(e) => setConfig({ ...currentConfig, ledsPrice: parseFloat(e.target.value) })}
+                            disabled={!editMode}
+                            className="w-24"
+                            data-testid="input-leds-price"
+                          />
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="shadowboxFittingPrice">Shadowbox Fitting</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">$</span>
-                        <Input
-                          id="shadowboxFittingPrice"
-                          type="number"
-                          step="0.50"
-                          value={currentConfig.shadowboxFittingPrice}
-                          onChange={(e) => setConfig({ ...currentConfig, shadowboxFittingPrice: parseFloat(e.target.value) })}
-                          disabled={!editMode}
-                          className="w-32"
-                          data-testid="input-shadowbox-fitting-price"
-                        />
+                      <div className="flex items-center justify-between gap-4">
+                        <Label htmlFor="shadowboxFittingPrice" className="text-sm font-medium whitespace-nowrap">Shadowbox Fitting</Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">$</span>
+                          <Input
+                            id="shadowboxFittingPrice"
+                            type="number"
+                            step="0.50"
+                            value={currentConfig.shadowboxFittingPrice}
+                            onChange={(e) => setConfig({ ...currentConfig, shadowboxFittingPrice: parseFloat(e.target.value) })}
+                            disabled={!editMode}
+                            className="w-24"
+                            data-testid="input-shadowbox-fitting-price"
+                          />
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="additionalLaborPrice">Additional Labor</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">$</span>
-                        <Input
-                          id="additionalLaborPrice"
-                          type="number"
-                          step="0.50"
-                          value={currentConfig.additionalLaborPrice}
-                          onChange={(e) => setConfig({ ...currentConfig, additionalLaborPrice: parseFloat(e.target.value) })}
-                          disabled={!editMode}
-                          className="w-32"
-                          data-testid="input-additional-labor-price"
-                        />
+                      <div className="flex items-center justify-between gap-4">
+                        <Label htmlFor="additionalLaborPrice" className="text-sm font-medium whitespace-nowrap">Additional Labor</Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">$</span>
+                          <Input
+                            id="additionalLaborPrice"
+                            type="number"
+                            step="0.50"
+                            value={currentConfig.additionalLaborPrice}
+                            onChange={(e) => setConfig({ ...currentConfig, additionalLaborPrice: parseFloat(e.target.value) })}
+                            disabled={!editMode}
+                            className="w-24"
+                            data-testid="input-additional-labor-price"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
