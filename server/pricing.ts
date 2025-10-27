@@ -327,7 +327,8 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   }
   
   // Determine if this is a standalone component order (no frame)
-  const isStandaloneOrder = !order.frameSku || order.frameSku.trim() === "" || order.frameSku === "None";
+  // Stacker frames are never considered standalone, even if frameSku is empty
+  const isStandaloneOrder = !order.stackerFrame && (!order.frameSku || order.frameSku.trim() === "" || order.frameSku === "None");
   // Standalone component markup multiplier (makes components more expensive when ordered alone)
   const standaloneMultiplier = isStandaloneOrder ? config.standaloneComponentMultiplier : 1.0;
   
@@ -431,8 +432,8 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   }
   
   // Calculate Item Total with Markup
-  // For stacker frames: use flat stacker markup (2.5)
-  // For regular orders: apply tiered markup to each component based on its cost
+  // Apply tiered markup to each component based on its cost
+  // This gives lower-cost items higher markups and higher-cost items lower markups
   let itemTotal: number;
   
   // Store retail prices for breakdown calculation
@@ -443,85 +444,61 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   let additionalLaborRetail: number, extraMatOpeningsRetail: number;
   let minimumApplied = false;
   
-  if (order.stackerFrame) {
-    // Stacker frames use flat markup (special pricing)
-    const markup = config.stackerMarkup;
-    itemTotal = (frameCost + addOnCosts) * markup * quantity;
+  // Apply tiered markup to each component individually (including stacker frames)
+  frameRetail = applyTieredMarkup(frameCost, config);
+  mat1Retail = applyTieredMarkup(mat1CostBase, config);
+  mat2Retail = applyTieredMarkup(mat2CostBase, config);
+  mat3Retail = applyTieredMarkup(mat3CostBase, config);
+  acrylicRetail = applyTieredMarkup(acrylicCostBase, config);
+  backingRetail = applyTieredMarkup(backingCostBase, config);
+  printPaperRetail = applyTieredMarkup(printPaperCostBase, config);
+  dryMountRetail = applyTieredMarkup(dryMountCostBase, config);
+  printCanvasRetail = applyTieredMarkup(printCanvasCostBase, config);
+  canvasStretchingRetail = applyTieredMarkup(canvasStretchingCostBase, config);
+  engravedPlaqueRetail = applyTieredMarkup(engravedPlaqueCostBase, config);
+  ledsRetail = applyTieredMarkup(ledsCostBase, config);
+  shadowboxFittingRetail = applyTieredMarkup(shadowboxFittingCostBase, config);
+  additionalLaborRetail = applyTieredMarkup(additionalLaborCostBase, config);
+  extraMatOpeningsRetail = applyTieredMarkup(extraMatOpeningsCostBase, config);
+  
+  // Sum all retail prices
+  let orderSubtotal = 
+    frameRetail + 
+    mat1Retail + mat2Retail + mat3Retail +
+    acrylicRetail + backingRetail +
+    printPaperRetail + dryMountRetail +
+    printCanvasRetail + canvasStretchingRetail +
+    engravedPlaqueRetail + ledsRetail +
+    shadowboxFittingRetail + additionalLaborRetail +
+    extraMatOpeningsRetail;
+  
+  // Apply minimum price floor to the total order (before quantity multiplier)
+  // Only apply minimum to orders that include a frame (not standalone component orders)
+  if (!isStandaloneOrder && config.minimumPrice && orderSubtotal < config.minimumPrice) {
+    const scaleFactor = config.minimumPrice / orderSubtotal;
+    // Scale all components proportionally
+    frameRetail *= scaleFactor;
+    mat1Retail *= scaleFactor;
+    mat2Retail *= scaleFactor;
+    mat3Retail *= scaleFactor;
+    acrylicRetail *= scaleFactor;
+    backingRetail *= scaleFactor;
+    printPaperRetail *= scaleFactor;
+    dryMountRetail *= scaleFactor;
+    printCanvasRetail *= scaleFactor;
+    canvasStretchingRetail *= scaleFactor;
+    engravedPlaqueRetail *= scaleFactor;
+    ledsRetail *= scaleFactor;
+    shadowboxFittingRetail *= scaleFactor;
+    additionalLaborRetail *= scaleFactor;
+    extraMatOpeningsRetail *= scaleFactor;
     
-    // Store retail values for breakdown
-    frameRetail = frameCost * markup;
-    mat1Retail = mat1CostBase * markup;
-    mat2Retail = mat2CostBase * markup;
-    mat3Retail = mat3CostBase * markup;
-    acrylicRetail = acrylicCostBase * markup;
-    backingRetail = backingCostBase * markup;
-    printPaperRetail = printPaperCostBase * markup;
-    dryMountRetail = dryMountCostBase * markup;
-    printCanvasRetail = printCanvasCostBase * markup;
-    canvasStretchingRetail = canvasStretchingCostBase * markup;
-    engravedPlaqueRetail = engravedPlaqueCostBase * markup;
-    ledsRetail = ledsCostBase * markup;
-    shadowboxFittingRetail = shadowboxFittingCostBase * markup;
-    additionalLaborRetail = additionalLaborCostBase * markup;
-    extraMatOpeningsRetail = extraMatOpeningsCostBase * markup;
-  } else {
-    // Apply tiered markup to each component individually
-    // This gives lower-cost items higher markups and higher-cost items lower markups
-    frameRetail = applyTieredMarkup(frameCost, config);
-    mat1Retail = applyTieredMarkup(mat1CostBase, config);
-    mat2Retail = applyTieredMarkup(mat2CostBase, config);
-    mat3Retail = applyTieredMarkup(mat3CostBase, config);
-    acrylicRetail = applyTieredMarkup(acrylicCostBase, config);
-    backingRetail = applyTieredMarkup(backingCostBase, config);
-    printPaperRetail = applyTieredMarkup(printPaperCostBase, config);
-    dryMountRetail = applyTieredMarkup(dryMountCostBase, config);
-    printCanvasRetail = applyTieredMarkup(printCanvasCostBase, config);
-    canvasStretchingRetail = applyTieredMarkup(canvasStretchingCostBase, config);
-    engravedPlaqueRetail = applyTieredMarkup(engravedPlaqueCostBase, config);
-    ledsRetail = applyTieredMarkup(ledsCostBase, config);
-    shadowboxFittingRetail = applyTieredMarkup(shadowboxFittingCostBase, config);
-    additionalLaborRetail = applyTieredMarkup(additionalLaborCostBase, config);
-    extraMatOpeningsRetail = applyTieredMarkup(extraMatOpeningsCostBase, config);
-    
-    // Sum all retail prices
-    let orderSubtotal = 
-      frameRetail + 
-      mat1Retail + mat2Retail + mat3Retail +
-      acrylicRetail + backingRetail +
-      printPaperRetail + dryMountRetail +
-      printCanvasRetail + canvasStretchingRetail +
-      engravedPlaqueRetail + ledsRetail +
-      shadowboxFittingRetail + additionalLaborRetail +
-      extraMatOpeningsRetail;
-    
-    // Apply minimum price floor to the total order (before quantity multiplier)
-    // Only apply minimum to orders that include a frame (not standalone component orders)
-    if (!isStandaloneOrder && config.minimumPrice && orderSubtotal < config.minimumPrice) {
-      const scaleFactor = config.minimumPrice / orderSubtotal;
-      // Scale all components proportionally
-      frameRetail *= scaleFactor;
-      mat1Retail *= scaleFactor;
-      mat2Retail *= scaleFactor;
-      mat3Retail *= scaleFactor;
-      acrylicRetail *= scaleFactor;
-      backingRetail *= scaleFactor;
-      printPaperRetail *= scaleFactor;
-      dryMountRetail *= scaleFactor;
-      printCanvasRetail *= scaleFactor;
-      canvasStretchingRetail *= scaleFactor;
-      engravedPlaqueRetail *= scaleFactor;
-      ledsRetail *= scaleFactor;
-      shadowboxFittingRetail *= scaleFactor;
-      additionalLaborRetail *= scaleFactor;
-      extraMatOpeningsRetail *= scaleFactor;
-      
-      orderSubtotal = config.minimumPrice;
-      minimumApplied = true;
-    }
-    
-    // Multiply by quantity
-    itemTotal = orderSubtotal * quantity;
+    orderSubtotal = config.minimumPrice;
+    minimumApplied = true;
   }
+  
+  // Multiply by quantity
+  itemTotal = orderSubtotal * quantity;
   
   // Calculate Shipping - use dynamic config shipping rates
   let shipping: number;
