@@ -429,6 +429,48 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     addOnCosts += additionalLaborCostBase;
   }
   
+  // Component cost redistribution: shift component cost to frame (if configured)
+  // This helps balance profit distribution and ensures frames carry appropriate margin
+  if (!isStandaloneOrder && config.componentShiftPercent > 0) {
+    // Calculate total component base cost (all components that would get flat markup)
+    const totalComponentCost = 
+      mat1CostBase + mat2CostBase + mat3CostBase +
+      acrylicCostBase + backingCostBase +
+      printPaperCostBase + dryMountCostBase +
+      printCanvasCostBase + canvasStretchingCostBase +
+      engravedPlaqueCostBase + ledsCostBase +
+      shadowboxFittingCostBase + additionalLaborCostBase +
+      extraMatOpeningsCostBase;
+    
+    // Only redistribute if there are components AND a frame
+    if (totalComponentCost > 0 && frameCost > 0) {
+      // Calculate shift amount (percentage of total component cost)
+      const shiftAmount = totalComponentCost * (config.componentShiftPercent / 100);
+      
+      // Calculate reduction factor for components
+      const reductionFactor = 1 - (config.componentShiftPercent / 100);
+      
+      // Increase frame cost by shift amount
+      frameCost += shiftAmount;
+      
+      // Reduce all component costs proportionally
+      mat1CostBase *= reductionFactor;
+      mat2CostBase *= reductionFactor;
+      mat3CostBase *= reductionFactor;
+      acrylicCostBase *= reductionFactor;
+      backingCostBase *= reductionFactor;
+      printPaperCostBase *= reductionFactor;
+      dryMountCostBase *= reductionFactor;
+      printCanvasCostBase *= reductionFactor;
+      canvasStretchingCostBase *= reductionFactor;
+      engravedPlaqueCostBase *= reductionFactor;
+      ledsCostBase *= reductionFactor;
+      shadowboxFittingCostBase *= reductionFactor;
+      additionalLaborCostBase *= reductionFactor;
+      extraMatOpeningsCostBase *= reductionFactor;
+    }
+  }
+  
   // Calculate Item Total with Markup
   // For standalone component orders: apply flat 3.5× markup
   // For orders with frames: apply tiered markup to each component
@@ -463,7 +505,22 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   } else {
     // Orders with frames: frame uses tiered markup, components use configurable flat markup
     const componentMarkup = config.frameComponentMarkup; // Lower than standalone to incentivize complete orders
-    frameRetail = applyTieredMarkup(frameCost, config);
+    
+    // Detect frame-only orders (frame but no components)
+    const isFrameOnly = frameCost > 0 && 
+                        acrylicCostBase === 0 && 
+                        backingCostBase === 0 && 
+                        mat1CostBase === 0 && 
+                        mat2CostBase === 0 && 
+                        mat3CostBase === 0;
+    
+    // Apply frame markup - use floor for frame-only orders if higher than tiered
+    const tieredFrameRetail = applyTieredMarkup(frameCost, config);
+    const floorFrameRetail = frameCost * config.frameOnlyMarkupFloor;
+    frameRetail = isFrameOnly && floorFrameRetail > tieredFrameRetail 
+                  ? floorFrameRetail 
+                  : tieredFrameRetail;
+    
     mat1Retail = mat1CostBase * componentMarkup;
     mat2Retail = mat2CostBase * componentMarkup;
     mat3Retail = mat3CostBase * componentMarkup;

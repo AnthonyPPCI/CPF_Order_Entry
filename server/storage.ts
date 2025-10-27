@@ -344,6 +344,8 @@ interface PricingConfig {
   markup: number; // Global markup lever (e.g., 3.175)
   standaloneComponentMarkup: number; // Flat markup for components ordered without a frame (e.g., 3.5×)
   frameComponentMarkup: number; // Flat markup for components ordered with a frame (e.g., 3.0×)
+  frameOnlyMarkupFloor: number; // Minimum markup for frame-only orders (e.g., 2.75×)
+  componentShiftPercent: number; // Percentage of component cost to shift to frame (0-100)
   chopOnlyJoinFt: number;
   shippingRates: { min: number; max: number; rate: number }[];
   acrylicPrices: { type: string; pricePerSqIn: number }[];
@@ -367,6 +369,8 @@ class PricingConfigStorage {
       markup: 3.2,
       standaloneComponentMarkup: 3.5, // Components without frames are more expensive
       frameComponentMarkup: 3.0, // Components with frames are cheaper (incentive)
+      frameOnlyMarkupFloor: 2.75, // Minimum markup for frames without components (ensures profitability)
+      componentShiftPercent: 0, // Start at 0%, can increase to shift component cost into frame
       chopOnlyJoinFt: 18,
       shippingRates: [
         { min: 1, max: 30, rate: 9 },

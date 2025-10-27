@@ -11,7 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PricingConfig {
   markup: number;
-  standaloneComponentMultiplier: number;
+  standaloneComponentMarkup: number;
+  frameComponentMarkup: number;
+  frameOnlyMarkupFloor: number;
+  componentShiftPercent: number;
   chopOnlyJoinFt: number;
   shippingRates: { min: number; max: number; rate: number }[];
   acrylicPrices: { type: string; pricePerSqIn: number }[];
@@ -253,17 +256,58 @@ export default function ControlPanel() {
                   <p className="text-sm text-muted-foreground">Current: {currentConfig.markup}×</p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="standaloneComponentMultiplier">Component Order Markup</Label>
+                  <Label htmlFor="standaloneComponentMarkup">Standalone Component Markup</Label>
                   <Input
-                    id="standaloneComponentMultiplier"
+                    id="standaloneComponentMarkup"
                     type="number"
                     step="0.1"
-                    value={currentConfig.standaloneComponentMultiplier}
-                    onChange={(e) => setConfig({ ...currentConfig, standaloneComponentMultiplier: parseFloat(e.target.value) })}
+                    value={currentConfig.standaloneComponentMarkup}
+                    onChange={(e) => setConfig({ ...currentConfig, standaloneComponentMarkup: parseFloat(e.target.value) })}
                     disabled={!editMode}
-                    data-testid="input-standalone-multiplier"
+                    data-testid="input-standalone-component-markup"
                   />
-                  <p className="text-sm text-muted-foreground">Current: {currentConfig.standaloneComponentMultiplier}× (components without frame)</p>
+                  <p className="text-sm text-muted-foreground">Current: {currentConfig.standaloneComponentMarkup}× (components without frame)</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="frameComponentMarkup">Frame Component Markup</Label>
+                  <Input
+                    id="frameComponentMarkup"
+                    type="number"
+                    step="0.1"
+                    value={currentConfig.frameComponentMarkup}
+                    onChange={(e) => setConfig({ ...currentConfig, frameComponentMarkup: parseFloat(e.target.value) })}
+                    disabled={!editMode}
+                    data-testid="input-frame-component-markup"
+                  />
+                  <p className="text-sm text-muted-foreground">Current: {currentConfig.frameComponentMarkup}× (components with frame)</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="frameOnlyMarkupFloor">Frame-Only Markup Floor</Label>
+                  <Input
+                    id="frameOnlyMarkupFloor"
+                    type="number"
+                    step="0.05"
+                    value={currentConfig.frameOnlyMarkupFloor}
+                    onChange={(e) => setConfig({ ...currentConfig, frameOnlyMarkupFloor: parseFloat(e.target.value) })}
+                    disabled={!editMode}
+                    data-testid="input-frame-only-markup-floor"
+                  />
+                  <p className="text-sm text-muted-foreground">Current: {currentConfig.frameOnlyMarkupFloor}× (minimum for frames without components)</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="componentShiftPercent">Component Cost Shift %</Label>
+                  <Input
+                    id="componentShiftPercent"
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="100"
+                    value={currentConfig.componentShiftPercent}
+                    onChange={(e) => setConfig({ ...currentConfig, componentShiftPercent: parseFloat(e.target.value) })}
+                    disabled={!editMode}
+                    data-testid="input-component-shift-percent"
+                  />
+                  <p className="text-sm text-muted-foreground">Current: {currentConfig.componentShiftPercent}% (shift component cost to frame)</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="chopOnlyJoinFt">Chop Only Join Feet</Label>
