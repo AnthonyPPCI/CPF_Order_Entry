@@ -50,6 +50,11 @@ export function PaymentDialog({
       }
 
       try {
+        console.log('Square env vars:', {
+          appId: import.meta.env.VITE_SQUARE_APPLICATION_ID,
+          locationId: import.meta.env.VITE_SQUARE_LOCATION_ID
+        });
+
         const paymentsInstance = window.Square.payments(
           import.meta.env.VITE_SQUARE_APPLICATION_ID,
           import.meta.env.VITE_SQUARE_LOCATION_ID
@@ -59,11 +64,16 @@ export function PaymentDialog({
         const cardInstance = await paymentsInstance.card();
         await cardInstance.attach('#card-container');
         cardRef.current = cardInstance;
-      } catch (error) {
+      } catch (error: any) {
         console.error('Square initialization error:', error);
+        console.error('Error details:', {
+          message: error?.message,
+          name: error?.name,
+          stack: error?.stack
+        });
         toast({
           title: "Error",
-          description: "Failed to initialize payment form.",
+          description: error?.message || "Failed to initialize payment form.",
           variant: "destructive",
         });
       }
