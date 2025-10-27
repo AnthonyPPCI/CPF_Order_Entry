@@ -373,8 +373,8 @@ class PricingConfigStorage {
         { min: 75, max: 999, rate: 250 },
       ],
       acrylicPrices: [
-        { type: 'Standard', pricePerSqIn: 0.009 },
-        { type: 'Non-Glare', pricePerSqIn: 0.018 },
+        { type: 'Standard', pricePerSqIn: 0.0168 }, // Updated to hit ~$46 target for 27×29 sheet with 3.5× markup
+        { type: 'Non-Glare', pricePerSqIn: 0.0336 }, // Doubled from Standard (same ratio as before)
       ],
       backingPrices: [
         { type: 'None', pricePerSqIn: 0 },

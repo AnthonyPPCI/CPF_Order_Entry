@@ -329,8 +329,6 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   // Determine if this is a standalone component order (no frame)
   // Stacker frames are never considered standalone, even if frameSku is empty
   const isStandaloneOrder = !order.stackerFrame && (!order.frameSku || order.frameSku.trim() === "" || order.frameSku === "None");
-  // Standalone component markup multiplier (makes components more expensive when ordered alone)
-  const standaloneMultiplier = isStandaloneOrder ? config.standaloneComponentMultiplier : 1.0;
   
   // Track individual component costs for breakdown
   let mat1CostBase = 0;
@@ -355,14 +353,14 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   const acrylicType = order.acrylicType || 'Standard';
   if (acrylicType !== 'None') {
     const acrylicPrice = config.acrylicPrices.find(p => p.type === acrylicType);
-    acrylicCostBase = (acrylicPrice?.pricePerSqIn || 0) * squareInches * standaloneMultiplier;
+    acrylicCostBase = (acrylicPrice?.pricePerSqIn || 0) * squareInches;
     addOnCosts += acrylicCostBase;
   }
   
   // Backing cost (per square inch) - use dynamic config
   if (order.backingSku && order.backingSku !== 'None') {
     const backingPrice = config.backingPrices.find(p => p.type === order.backingSku);
-    backingCostBase = (backingPrice?.pricePerSqIn || 0) * squareInches * standaloneMultiplier;
+    backingCostBase = (backingPrice?.pricePerSqIn || 0) * squareInches;
     addOnCosts += backingCostBase;
   }
   
@@ -370,17 +368,17 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   // Mat prices from Annie sheet will be marked up by the global markup (3.5×)
   if (order.mat1Sku) {
     const mat1 = getSupply(order.mat1Sku);
-    mat1CostBase = (mat1?.price || 15) * standaloneMultiplier;
+    mat1CostBase = (mat1?.price || 15);
     addOnCosts += mat1CostBase;
   }
   if (order.mat2Sku) {
     const mat2 = getSupply(order.mat2Sku);
-    mat2CostBase = (mat2?.price || 15) * standaloneMultiplier;
+    mat2CostBase = (mat2?.price || 15);
     addOnCosts += mat2CostBase;
   }
   if (order.mat3Sku) {
     const mat3 = getSupply(order.mat3Sku);
-    mat3CostBase = (mat3?.price || 15) * standaloneMultiplier;
+    mat3CostBase = (mat3?.price || 15);
     addOnCosts += mat3CostBase;
   }
   
@@ -432,8 +430,8 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   }
   
   // Calculate Item Total with Markup
-  // Apply tiered markup to each component based on its cost
-  // This gives lower-cost items higher markups and higher-cost items lower markups
+  // For standalone component orders: apply flat 3.5× markup
+  // For orders with frames: apply tiered markup to each component
   let itemTotal: number;
   
   // Store retail prices for breakdown calculation
@@ -444,22 +442,42 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   let additionalLaborRetail: number, extraMatOpeningsRetail: number;
   let minimumApplied = false;
   
-  // Apply tiered markup to each component individually (including stacker frames)
-  frameRetail = applyTieredMarkup(frameCost, config);
-  mat1Retail = applyTieredMarkup(mat1CostBase, config);
-  mat2Retail = applyTieredMarkup(mat2CostBase, config);
-  mat3Retail = applyTieredMarkup(mat3CostBase, config);
-  acrylicRetail = applyTieredMarkup(acrylicCostBase, config);
-  backingRetail = applyTieredMarkup(backingCostBase, config);
-  printPaperRetail = applyTieredMarkup(printPaperCostBase, config);
-  dryMountRetail = applyTieredMarkup(dryMountCostBase, config);
-  printCanvasRetail = applyTieredMarkup(printCanvasCostBase, config);
-  canvasStretchingRetail = applyTieredMarkup(canvasStretchingCostBase, config);
-  engravedPlaqueRetail = applyTieredMarkup(engravedPlaqueCostBase, config);
-  ledsRetail = applyTieredMarkup(ledsCostBase, config);
-  shadowboxFittingRetail = applyTieredMarkup(shadowboxFittingCostBase, config);
-  additionalLaborRetail = applyTieredMarkup(additionalLaborCostBase, config);
-  extraMatOpeningsRetail = applyTieredMarkup(extraMatOpeningsCostBase, config);
+  if (isStandaloneOrder) {
+    // Standalone component orders: apply flat 3.5× markup to all components
+    const standaloneMarkup = 3.5;
+    frameRetail = frameCost * standaloneMarkup; // Should be 0 for standalone
+    mat1Retail = mat1CostBase * standaloneMarkup;
+    mat2Retail = mat2CostBase * standaloneMarkup;
+    mat3Retail = mat3CostBase * standaloneMarkup;
+    acrylicRetail = acrylicCostBase * standaloneMarkup;
+    backingRetail = backingCostBase * standaloneMarkup;
+    printPaperRetail = printPaperCostBase * standaloneMarkup;
+    dryMountRetail = dryMountCostBase * standaloneMarkup;
+    printCanvasRetail = printCanvasCostBase * standaloneMarkup;
+    canvasStretchingRetail = canvasStretchingCostBase * standaloneMarkup;
+    engravedPlaqueRetail = engravedPlaqueCostBase * standaloneMarkup;
+    ledsRetail = ledsCostBase * standaloneMarkup;
+    shadowboxFittingRetail = shadowboxFittingCostBase * standaloneMarkup;
+    additionalLaborRetail = additionalLaborCostBase * standaloneMarkup;
+    extraMatOpeningsRetail = extraMatOpeningsCostBase * standaloneMarkup;
+  } else {
+    // Orders with frames: apply tiered markup to each component individually
+    frameRetail = applyTieredMarkup(frameCost, config);
+    mat1Retail = applyTieredMarkup(mat1CostBase, config);
+    mat2Retail = applyTieredMarkup(mat2CostBase, config);
+    mat3Retail = applyTieredMarkup(mat3CostBase, config);
+    acrylicRetail = applyTieredMarkup(acrylicCostBase, config);
+    backingRetail = applyTieredMarkup(backingCostBase, config);
+    printPaperRetail = applyTieredMarkup(printPaperCostBase, config);
+    dryMountRetail = applyTieredMarkup(dryMountCostBase, config);
+    printCanvasRetail = applyTieredMarkup(printCanvasCostBase, config);
+    canvasStretchingRetail = applyTieredMarkup(canvasStretchingCostBase, config);
+    engravedPlaqueRetail = applyTieredMarkup(engravedPlaqueCostBase, config);
+    ledsRetail = applyTieredMarkup(ledsCostBase, config);
+    shadowboxFittingRetail = applyTieredMarkup(shadowboxFittingCostBase, config);
+    additionalLaborRetail = applyTieredMarkup(additionalLaborCostBase, config);
+    extraMatOpeningsRetail = applyTieredMarkup(extraMatOpeningsCostBase, config);
+  }
   
   // Sum all retail prices
   let orderSubtotal = 
