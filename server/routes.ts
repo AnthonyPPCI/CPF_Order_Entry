@@ -6,16 +6,18 @@ import { calculatePricing, calculateMultiItemPricing } from "./pricing";
 import { z } from "zod";
 import { Resend } from "resend";
 import { generateOrderPDF } from "./pdf-generator";
-import { Client, Environment } from "square";
+import { SquareClient, SquareEnvironment } from "square";
 import { randomUUID } from "crypto";
 
 // Initialize Resend for email sending
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // Initialize Square client
-const squareClient = process.env.SQUARE_ACCESS_TOKEN ? new Client({
-  accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment: process.env.SQUARE_ACCESS_TOKEN?.startsWith('EAAAl') ? Environment.Production : Environment.Sandbox,
+const squareClient = process.env.SQUARE_ACCESS_TOKEN ? new SquareClient({
+  bearerAuthCredentials: {
+    accessToken: process.env.SQUARE_ACCESS_TOKEN,
+  },
+  environment: process.env.SQUARE_ACCESS_TOKEN?.startsWith('EAAAl') ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
 }) : null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
