@@ -163,7 +163,11 @@ function calculateStackerFrames(
 
   // Calculate total frame cost
   const frameCost = layers.reduce((sum, layer) => sum + layer.cost, 0);
-  const assemblyCharge = config.stackerAssemblyCharge;
+  
+  // Assembly charge is per piece (each layer + topper)
+  const totalPieces = layers.reduce((sum, layer) => sum + layer.quantity, 0) + (topperData ? 1 : 0);
+  const assemblyCharge = config.stackerAssemblyCharge * totalPieces;
+  
   const topperCost = topperData ? topperData.cost : 0;
   const totalCost = frameCost + topperCost + assemblyCharge;
 
