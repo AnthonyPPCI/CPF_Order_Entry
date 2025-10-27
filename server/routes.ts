@@ -6,9 +6,17 @@ import { calculatePricing, calculateMultiItemPricing } from "./pricing";
 import { z } from "zod";
 import { Resend } from "resend";
 import { generateOrderPDF } from "./pdf-generator";
+import { Client, Environment } from "square";
+import { randomUUID } from "crypto";
 
 // Initialize Resend for email sending
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+// Initialize Square client
+const squareClient = process.env.SQUARE_ACCESS_TOKEN ? new Client({
+  accessToken: process.env.SQUARE_ACCESS_TOKEN,
+  environment: process.env.SQUARE_ACCESS_TOKEN?.startsWith('EAAAl') ? Environment.Production : Environment.Sandbox,
+}) : null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Send order email (to Brian or customer)
@@ -180,6 +188,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to send email", details: error.message });
     }
   });
+
+  // Process Square payment
+  app.post("/api/process-payment", async (req, res) => {
+    try {
+      if (!squareClient) {
+        return res.status(500).json({ error: "Square payment not configured. Please add SQUARE_ACCESS_TOKEN." });
+      }
+
+      const { orderId, amount, sourceId } = req.body;
+
+      // Validate required fields
+      if (!orderId || !amount || !sourceId) {
+        return res.status(400).json({ error: "Missing required fields: orderId, amount, sourceId" });
+      }
+
+      // Convert amount to cents (Square uses smallest currency unit)
+      const amountInCents = Math.round(parseFloat(amount) * 100);
+
+      // Create payment using Square API
+      const { result } = await squareClient.paymentsApi.createPayment({
+        sourceId,
+        idempotencyKey: randomUUID(),
+        amountMoney: {
+          amount: BigInt(amountInCents),
+          currency: 'USD',
+        },
+        locationId: process.env.SQUARE_LOCATION_ID,
+      });
+
+      if (result.payment?.status === 'COMPLETED') {
+        // Fetch the order to update balance
+        let order = await storage.getOrderById(orderId);
+        let isMultiItem = false;
+        
+        if (!order) {
+          // Try multi-item order
+          const multiOrder = await storage.getMultiItemOrderById(orderId);
+          if (multiOrder) {
+            order = multiOrder as any;
+            isMultiItem = true;
+          }
+        }
+
+        if (order) {
+          const currentBalance = parseFloat(order.balance);
+          const newBalance = Math.max(0, currentBalance - parseFloat(amount));
+          
+          // Update order balance
+          const updateData = { balance: newBalance.toFixed(2) };
+          
+          if (isMultiItem) {
+            await storage.updateMultiItemOrder(orderId, updateData);
+          } else {
+            await storage.updateOrder(orderId, updateData);
+          }
+        }
+
+        res.json({ 
+          success: true, 
+          paymentId: result.payment.id,
+          newBalance: order ? Math.max(0, parseFloat(order.balance) - parseFloat(amount)).toFixed(2) : '0.00'
+        });
+      } else {
+        res.status(400).json({ error: "Payment failed", status: result.payment?.status });
+      }
+    } catch (error: any) {
+      console.error('Square payment error:', error);
+      res.status(500).json({ error: "Failed to process payment", details: error.message });
+    }
+  });
+
   // Get all orders (both single-item and multi-item)
   app.get("/api/orders", async (req, res) => {
     try {
