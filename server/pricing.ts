@@ -429,20 +429,32 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   // =========================================================================
   // NEW SIMPLIFIED PRICING SYSTEM
   // =========================================================================
-  // Two order types:
-  // 1. Full Frame = Frame + Acrylic + Backing (+ optional Mats) → 4.5× markup
-  // 2. Component = Anything else → 5.5× markup
+  // Three order types:
+  // 1. Stacker Frame = Use dedicated stackerMarkup (2.5×)
+  // 2. Full Frame = Frame + Acrylic + Backing (+ optional Mats) → 4.5× markup
+  // 3. Component = Anything else → 5.5× markup
   // Fixed-cost add-ons = retail price, no markup (1×)
   // =========================================================================
   
-  // Detect "Full Frame" order
-  const hasFrame = frameCost > 0;
-  const hasAcrylic = acrylicCostBase > 0;
-  const hasBacking = backingCostBase > 0;
-  const isFullFrame = hasFrame && hasAcrylic && hasBacking;
+  // Determine markup based on order type
+  let markup: number;
   
-  // Choose markup based on order type
-  const markup = isFullFrame ? config.fullFrameMarkup : config.componentMarkup;
+  if (order.stackerFrame && order.shadowDepth) {
+    // Stacker frames use their own dedicated markup
+    markup = config.stackerMarkup;
+  } else {
+    // Detect "Full Frame" order (non-stacker)
+    const hasFrame = frameCost > 0;
+    const hasAcrylic = acrylicCostBase > 0;
+    const hasBacking = backingCostBase > 0;
+    const isFullFrame = hasFrame && hasAcrylic && hasBacking;
+    
+    // Choose markup: Full Frame (4.5×) or Component (5.5×)
+    markup = isFullFrame ? config.fullFrameMarkup : config.componentMarkup;
+  }
+  
+  // Check if order has a frame (for minimum price logic)
+  const hasFrame = frameCost > 0;
   
   // Store retail prices for breakdown calculation
   let frameRetail: number, mat1Retail: number, mat2Retail: number, mat3Retail: number;
