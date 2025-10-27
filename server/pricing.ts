@@ -59,6 +59,46 @@ function parseFraction(input: string | number | null | undefined): number {
   return parseFloat(str) || 0;
 }
 
+// Helper function to format decimal as fraction string for BOM (e.g., 17.25 → "17-1/4", 19.5 → "19-1/2")
+function formatAsFraction(decimal: number): string {
+  const whole = Math.floor(decimal);
+  const fractional = decimal - whole;
+  
+  // If no fractional part, return whole number
+  if (fractional < 0.001) {
+    return whole.toString();
+  }
+  
+  // Common fractions used in framing (in order of precision)
+  const fractions = [
+    { decimal: 1/2, string: "1/2" },
+    { decimal: 1/4, string: "1/4" },
+    { decimal: 3/4, string: "3/4" },
+    { decimal: 1/8, string: "1/8" },
+    { decimal: 3/8, string: "3/8" },
+    { decimal: 5/8, string: "5/8" },
+    { decimal: 7/8, string: "7/8" },
+    { decimal: 1/16, string: "1/16" },
+    { decimal: 3/16, string: "3/16" },
+    { decimal: 5/16, string: "5/16" },
+    { decimal: 7/16, string: "7/16" },
+    { decimal: 9/16, string: "9/16" },
+    { decimal: 11/16, string: "11/16" },
+    { decimal: 13/16, string: "13/16" },
+    { decimal: 15/16, string: "15/16" },
+  ];
+  
+  // Find closest fraction match (within 0.01 tolerance)
+  for (const frac of fractions) {
+    if (Math.abs(fractional - frac.decimal) < 0.01) {
+      return whole > 0 ? `${whole}-${frac.string}` : frac.string;
+    }
+  }
+  
+  // If no close fraction match, format as decimal
+  return decimal.toFixed(2).replace(/\.?0+$/, '');
+}
+
 // Calculate optimal stacker frame combination for desired shadow depth
 // Uses dynamic programming to find minimum-cost combination that meets/exceeds desired depth
 function calculateStackerFrames(
@@ -522,8 +562,9 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   let bom: string[] | undefined;
   if (stackerFrameData && order.stackerFrame) {
     bom = [];
-    const interiorWidth = Math.round(width);
-    const interiorHeight = Math.round(height);
+    // Use actual dimensions with fractions for BOM
+    const interiorWidth = formatAsFraction(width);
+    const interiorHeight = formatAsFraction(height);
     
     // Add stacker frame layers
     for (const layer of stackerFrameData.layers) {
