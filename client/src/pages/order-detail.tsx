@@ -1,12 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import { type Order, type OrderHeader, type OrderItem } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Printer, Mail, Square } from "lucide-react";
+import { ArrowLeft, Printer, Mail, Square, CreditCard } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { PaymentDialog } from "@/components/PaymentDialog";
 import cpfLogo from "@assets/cpf-logo.webp";
 
 // Type for multi-item order response (header fields merged with items array)
@@ -18,6 +20,8 @@ export default function OrderDetail() {
   const [, params] = useRoute("/order/:id");
   const orderId = params?.id;
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
   const { data: orderData, isLoading } = useQuery<Order | MultiItemOrderResponse>({
     queryKey: ["/api/orders", orderId],
@@ -139,7 +143,7 @@ export default function OrderDetail() {
             </div>
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3 print:hidden">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 print:hidden">
               <Button 
                 variant="outline" 
                 onClick={handlePrintMulti} 
@@ -158,6 +162,17 @@ export default function OrderDetail() {
               >
                 <Mail className="h-6 w-6" />
                 <span className="font-semibold">Email Customer</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => setPaymentDialogOpen(true)} 
+                data-testid="button-collect-payment"
+                className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2"
+                disabled={parseFloat(multiOrder.balance) <= 0}
+              >
+                <CreditCard className="h-6 w-6" />
+                <span className="font-semibold">Collect Payment</span>
               </Button>
             </div>
 
@@ -281,6 +296,17 @@ export default function OrderDetail() {
               </CardContent>
             </Card>
           </div>
+          
+          {/* Payment Dialog */}
+          <PaymentDialog
+            open={paymentDialogOpen}
+            onOpenChange={setPaymentDialogOpen}
+            orderId={multiOrder.id}
+            balance={multiOrder.balance}
+            onPaymentSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ["/api/orders", multiOrder.id] });
+            }}
+          />
         </div>
       </div>
     );
@@ -403,12 +429,13 @@ export default function OrderDetail() {
             
             <Button 
               variant="outline" 
-              onClick={handleOpenSquare} 
-              data-testid="button-open-square"
+              onClick={() => setPaymentDialogOpen(true)} 
+              data-testid="button-collect-payment"
               className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2"
+              disabled={parseFloat(order.balance) <= 0}
             >
-              <Square className="h-6 w-6" />
-              <span className="font-semibold">Open Square</span>
+              <CreditCard className="h-6 w-6" />
+              <span className="font-semibold">Collect Payment</span>
             </Button>
           </div>
 
@@ -661,6 +688,17 @@ export default function OrderDetail() {
               </div>
             </CardContent>
           </Card>
+          
+          {/* Payment Dialog */}
+          <PaymentDialog
+            open={paymentDialogOpen}
+            onOpenChange={setPaymentDialogOpen}
+            orderId={order.id}
+            balance={order.balance}
+            onPaymentSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ["/api/orders", order.id] });
+            }}
+          />
         </div>
       </div>
     </div>
