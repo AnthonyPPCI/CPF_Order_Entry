@@ -342,7 +342,8 @@ export class MemStorage implements IStorage {
 // Pricing configuration storage (in-memory)
 interface PricingConfig {
   markup: number; // Global markup lever (e.g., 3.175)
-  standaloneComponentMultiplier: number; // Differential pricing for component-only orders (e.g., 3.0)
+  standaloneComponentMarkup: number; // Flat markup for components ordered without a frame (e.g., 3.5×)
+  frameComponentMarkup: number; // Flat markup for components ordered with a frame (e.g., 3.0×)
   chopOnlyJoinFt: number;
   shippingRates: { min: number; max: number; rate: number }[];
   acrylicPrices: { type: string; pricePerSqIn: number }[];
@@ -364,7 +365,8 @@ class PricingConfigStorage {
     // Default configuration matching Google Sheets
     this.config = {
       markup: 3.2,
-      standaloneComponentMultiplier: 3.0,
+      standaloneComponentMarkup: 3.5, // Components without frames are more expensive
+      frameComponentMarkup: 3.0, // Components with frames are cheaper (incentive)
       chopOnlyJoinFt: 18,
       shippingRates: [
         { min: 1, max: 30, rate: 9 },
