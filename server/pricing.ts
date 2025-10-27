@@ -8,8 +8,26 @@ interface PricingResult {
   salesTax: string;
   total: string;
   balance: string;
-  // Itemized component breakdown
+  // Itemized component breakdown (retail prices after markup)
   breakdown: {
+    frameCost: string;
+    mat1Cost: string;
+    mat2Cost: string;
+    mat3Cost: string;
+    acrylicCost: string;
+    backingCost: string;
+    printPaperCost: string;
+    dryMountCost: string;
+    printCanvasCost: string;
+    canvasStretchingCost: string;
+    engravedPlaqueCost: string;
+    ledsCost: string;
+    shadowboxFittingCost: string;
+    additionalLaborCost: string;
+    extraMatOpeningsCost: string;
+  };
+  // Base material costs (before markup) - for margin analysis
+  baseCosts: {
     frameCost: string;
     mat1Cost: string;
     mat2Cost: string;
@@ -31,7 +49,7 @@ interface PricingResult {
 }
 
 // Helper function to parse fractions and decimals (e.g., "16 1/2", "16-1/2", "16.5", "1/2")
-function parseFraction(input: string | number | null | undefined): number {
+export function parseFraction(input: string | number | null | undefined): number {
   if (!input) return 0;
   if (typeof input === 'number') return input;
   
@@ -596,6 +614,25 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     extraMatOpeningsCost: (extraMatOpeningsRetail * quantity).toFixed(2),
   };
   
+  // Base material costs (before markup) - for margin analysis
+  const baseCosts = {
+    frameCost: (frameCost * quantity).toFixed(2),
+    mat1Cost: (mat1CostBase * quantity).toFixed(2),
+    mat2Cost: (mat2CostBase * quantity).toFixed(2),
+    mat3Cost: (mat3CostBase * quantity).toFixed(2),
+    acrylicCost: (acrylicCostBase * quantity).toFixed(2),
+    backingCost: (backingCostBase * quantity).toFixed(2),
+    printPaperCost: (printPaperCostBase * quantity).toFixed(2),
+    dryMountCost: (dryMountCostBase * quantity).toFixed(2),
+    printCanvasCost: (printCanvasCostBase * quantity).toFixed(2),
+    canvasStretchingCost: (canvasStretchingCostBase * quantity).toFixed(2),
+    engravedPlaqueCost: (engravedPlaqueCostBase * quantity).toFixed(2),
+    ledsCost: (ledsCostBase * quantity).toFixed(2),
+    shadowboxFittingCost: (shadowboxFittingCostBase * quantity).toFixed(2),
+    additionalLaborCost: (additionalLaborCostBase * quantity).toFixed(2),
+    extraMatOpeningsCost: (extraMatOpeningsCostBase * quantity).toFixed(2),
+  };
+  
   return {
     itemTotal: itemTotal.toFixed(2),
     shipping: shipping.toFixed(2),
@@ -603,6 +640,7 @@ export function calculatePricing(order: InsertOrder): PricingResult {
     total: total.toFixed(2),
     balance: balance.toFixed(2),
     breakdown,
+    baseCosts,
     bom,
   };
 }

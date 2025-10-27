@@ -244,8 +244,9 @@ export default function ControlPanel() {
         </div>
 
         <Tabs defaultValue="config" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="config">Configuration</TabsTrigger>
+            <TabsTrigger value="margin">Margin Analysis</TabsTrigger>
             <TabsTrigger value="mouldings">Mouldings ({mouldings.length})</TabsTrigger>
             <TabsTrigger value="supplies">Supplies ({supplies.length})</TabsTrigger>
           </TabsList>
@@ -843,8 +844,337 @@ export default function ControlPanel() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="margin" className="space-y-6 mt-6">
+            <MarginAnalysisTab />
+          </TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
+
+// Margin Analysis Tab Component
+function MarginAnalysisTab() {
+  const { toast } = useToast();
+  const [businessMetrics, setBusinessMetrics] = useState({
+    marketingPercent: 25,
+    monthlyOverhead: 50000,
+    monthlyFrameVolume: 22000,
+  });
+  const [laborConfig, setLaborConfig] = useState({
+    smallFrameLabor: 7,
+    mediumFrameLabor: 10,
+    largeFrameLabor: 14,
+    matComplexityAdder: 2,
+    stackerComplexityAdder: 5,
+  });
+  
+  // Helper to safely parse numeric input
+  const parseNumericInput = (value: string, defaultValue: number): number => {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : defaultValue;
+  };
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const runAnalysis = async () => {
+    // Frontend validation before sending request
+    if (!Number.isFinite(businessMetrics.monthlyFrameVolume) || businessMetrics.monthlyFrameVolume <= 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Monthly frame volume must be a positive number",
+        variant: "destructive"
+      });
+      return;
+    }
+    if (!Number.isFinite(businessMetrics.marketingPercent) || businessMetrics.marketingPercent < 0 || businessMetrics.marketingPercent > 100) {
+      toast({
+        title: "Invalid Input",
+        description: "Marketing percent must be a number between 0 and 100",
+        variant: "destructive"
+      });
+      return;
+    }
+    if (!Number.isFinite(businessMetrics.monthlyOverhead) || businessMetrics.monthlyOverhead < 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Monthly overhead must be a non-negative number",
+        variant: "destructive"
+      });
+      return;
+    }
+    // Validate labor config
+    if (!Number.isFinite(laborConfig.smallFrameLabor) || laborConfig.smallFrameLabor < 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Small frame labor must be a non-negative number",
+        variant: "destructive"
+      });
+      return;
+    }
+    if (!Number.isFinite(laborConfig.mediumFrameLabor) || laborConfig.mediumFrameLabor < 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Medium frame labor must be a non-negative number",
+        variant: "destructive"
+      });
+      return;
+    }
+    if (!Number.isFinite(laborConfig.largeFrameLabor) || laborConfig.largeFrameLabor < 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Large frame labor must be a non-negative number",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/margin-analysis/scenarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ laborConfig, businessMetrics }),
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Analysis failed");
+      }
+      
+      const data = await res.json();
+      setAnalysis(data);
+      toast({ 
+        title: "Analysis Complete", 
+        description: `Analyzed ${data.scenarios.length} scenarios with ${data.healthyCount} healthy margins` 
+      });
+    } catch (error) {
+      toast({ 
+        title: "Analysis Failed", 
+        description: error instanceof Error ? error.message : "Failed to run margin analysis",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Business Metrics */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Business Metrics</CardTitle>
+          <CardDescription>Core financial assumptions for margin calculation</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="marketingPercent">Marketing % of Retail</Label>
+              <Input
+                id="marketingPercent"
+                type="number"
+                step="1"
+                value={businessMetrics.marketingPercent}
+                onChange={(e) => setBusinessMetrics({ ...businessMetrics, marketingPercent: parseFloat(e.target.value) })}
+                data-testid="input-marketing-percent"
+              />
+              <p className="text-sm text-muted-foreground">{businessMetrics.marketingPercent}% of every sale</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="monthlyOverhead">Monthly Overhead</Label>
+              <Input
+                id="monthlyOverhead"
+                type="number"
+                value={businessMetrics.monthlyOverhead}
+                onChange={(e) => setBusinessMetrics({ ...businessMetrics, monthlyOverhead: parseFloat(e.target.value) })}
+                data-testid="input-monthly-overhead"
+              />
+              <p className="text-sm text-muted-foreground">Rent, utilities, insurance, etc.</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="monthlyVolume">Monthly Frame Volume</Label>
+              <Input
+                id="monthlyVolume"
+                type="number"
+                value={businessMetrics.monthlyFrameVolume}
+                onChange={(e) => setBusinessMetrics({ ...businessMetrics, monthlyFrameVolume: parseFloat(e.target.value) })}
+                data-testid="input-monthly-volume"
+              />
+              <p className="text-sm text-muted-foreground">
+                ${(businessMetrics.monthlyOverhead / businessMetrics.monthlyFrameVolume).toFixed(2)} overhead per frame
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Labor Cost Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Labor Cost Model</CardTitle>
+          <CardDescription>Variable labor costs based on frame size and complexity</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="smallFrameLabor">Small Frame Labor (&lt;60 UI)</Label>
+              <Input
+                id="smallFrameLabor"
+                type="number"
+                step="0.5"
+                value={laborConfig.smallFrameLabor}
+                onChange={(e) => setLaborConfig({ ...laborConfig, smallFrameLabor: parseFloat(e.target.value) })}
+                data-testid="input-small-labor"
+              />
+              <p className="text-sm text-muted-foreground">Base cost for small frames</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mediumFrameLabor">Medium Frame Labor (60-120 UI)</Label>
+              <Input
+                id="mediumFrameLabor"
+                type="number"
+                step="0.5"
+                value={laborConfig.mediumFrameLabor}
+                onChange={(e) => setLaborConfig({ ...laborConfig, mediumFrameLabor: parseFloat(e.target.value) })}
+                data-testid="input-medium-labor"
+              />
+              <p className="text-sm text-muted-foreground">Base cost for medium frames</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="largeFrameLabor">Large Frame Labor (&gt;120 UI)</Label>
+              <Input
+                id="largeFrameLabor"
+                type="number"
+                step="0.5"
+                value={laborConfig.largeFrameLabor}
+                onChange={(e) => setLaborConfig({ ...laborConfig, largeFrameLabor: parseFloat(e.target.value) })}
+                data-testid="input-large-labor"
+              />
+              <p className="text-sm text-muted-foreground">Base cost for large frames</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="matComplexityAdder">Mat Complexity Adder</Label>
+              <Input
+                id="matComplexityAdder"
+                type="number"
+                step="0.5"
+                value={laborConfig.matComplexityAdder}
+                onChange={(e) => setLaborConfig({ ...laborConfig, matComplexityAdder: parseFloat(e.target.value) })}
+                data-testid="input-mat-adder"
+              />
+              <p className="text-sm text-muted-foreground">Additional cost per mat layer</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="stackerComplexityAdder">Stacker Assembly Adder</Label>
+              <Input
+                id="stackerComplexityAdder"
+                type="number"
+                step="0.5"
+                value={laborConfig.stackerComplexityAdder}
+                onChange={(e) => setLaborConfig({ ...laborConfig, stackerComplexityAdder: parseFloat(e.target.value) })}
+                data-testid="input-stacker-adder"
+              />
+              <p className="text-sm text-muted-foreground">Additional cost for stacker assembly</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Run Analysis Button */}
+      <div className="flex justify-center">
+        <Button 
+          onClick={runAnalysis} 
+          disabled={isLoading}
+          size="lg"
+          data-testid="button-run-analysis"
+        >
+          {isLoading ? "Running Analysis..." : "Run Margin Analysis"}
+        </Button>
+      </div>
+
+      {/* Analysis Results */}
+      {analysis && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Margin Analysis Results</CardTitle>
+            <CardDescription>
+              Average margin: <strong>{analysis.averageMargin.toFixed(1)}%</strong> | 
+              Healthy: {analysis.healthyCount}/{analysis.scenarios.length} | 
+              Warning: {analysis.warningCount}/{analysis.scenarios.length}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {analysis.scenarios.map((scenario: any, idx: number) => (
+                <div key={idx} className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-semibold">{scenario.name}</h4>
+                      <p className="text-sm text-muted-foreground">{scenario.description}</p>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      scenario.analysis.isHealthy 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                        : scenario.analysis.isWarning
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
+                    }`}>
+                      {scenario.analysis.contributionMarginPercent.toFixed(1)}% margin
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">Order Type</div>
+                      <div className="font-medium">{scenario.analysis.orderType}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Retail Price</div>
+                      <div className="font-medium">${scenario.analysis.retailPrice.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Material Cost</div>
+                      <div className="font-medium">${scenario.analysis.materialCost.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Gross Margin</div>
+                      <div className="font-medium">
+                        ${scenario.analysis.grossMargin.toFixed(2)} ({scenario.analysis.grossMarginPercent.toFixed(1)}%)
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Marketing ({businessMetrics.marketingPercent}%)</div>
+                      <div className="font-medium">-${scenario.analysis.marketingCost.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Labor</div>
+                      <div className="font-medium">-${scenario.analysis.laborCost.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Overhead</div>
+                      <div className="font-medium">-${scenario.analysis.overheadAllocation.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Net Contribution</div>
+                      <div className={`font-bold ${
+                        scenario.analysis.isHealthy 
+                          ? 'text-green-600 dark:text-green-400'
+                          : scenario.analysis.isWarning
+                          ? 'text-red-600 dark:text-red-400'
+                          : 'text-yellow-600 dark:text-yellow-400'
+                      }`}>
+                        ${scenario.analysis.contributionMargin.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -208,6 +208,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Margin Analysis Routes
+  
+  // Run scenario analysis
+  app.post("/api/margin-analysis/scenarios", async (req, res) => {
+    try {
+      const { runScenarioAnalysis } = await import("./margin-analysis");
+      const { laborConfig, businessMetrics } = req.body;
+      
+      const analysis = runScenarioAnalysis(laborConfig, businessMetrics);
+      res.json(analysis);
+    } catch (error) {
+      console.error("Scenario analysis error:", error);
+      res.status(500).json({ error: "Failed to run scenario analysis" });
+    }
+  });
+  
+  // Analyze margin for a specific order
+  app.post("/api/margin-analysis/order", async (req, res) => {
+    try {
+      const { analyzeMargin } = await import("./margin-analysis");
+      const { order, laborConfig, businessMetrics } = req.body;
+      
+      const analysis = analyzeMargin(order, laborConfig, businessMetrics);
+      res.json(analysis);
+    } catch (error) {
+      console.error("Order margin analysis error:", error);
+      res.status(500).json({ error: "Failed to analyze order margin" });
+    }
+  });
+
   // Multi-item Order Routes
   
   // Get all multi-item orders

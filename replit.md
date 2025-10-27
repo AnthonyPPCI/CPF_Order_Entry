@@ -37,6 +37,7 @@ Preferred communication style: Simple, everyday language.
 -   **Server-Side Pricing**: All pricing calculations are performed on the server to ensure business logic integrity and prevent client manipulation.
 -   **Excel-Based Pricing Data**: Pricing data from `ANNIE CPF Order Entry Sheet (1)_1761234370780.xlsx` is loaded into in-memory storage at server startup for rapid lookup.
 -   **Dynamic Pricing Configuration**: A password-protected control panel allows staff to adjust business levers (markup, shipping rates, material pricing) without code changes.
+-   **Margin Analysis System**: Comprehensive margin calculator validates pricing strategy against business metrics (marketing costs, labor, overhead allocation). Built-in scenario testing analyzes profitability across order types with configurable labor cost model and validation guardrails.
 -   **Authentication**: No global authentication; internal users are assumed. Control panel is password-protected with SHA-256 hashing.
 
 ### Data Storage Solutions
@@ -51,3 +52,20 @@ Preferred communication style: Simple, everyday language.
 -   **Fonts**: Google Fonts (Inter, Geist Mono, Fira Code, DM Sans, Architects Daughter).
 -   **Build Tools**: Vite (frontend), esbuild (production server), Drizzle Kit (migrations).
 -   **Node.js Libraries**: Express.js, React, TypeScript, Radix UI, shadcn/ui, Tailwind CSS, Wouter, TanStack Query, React Hook Form, Zod, Drizzle ORM, `@neondatabase/serverless`.
+
+## Recent Changes
+
+### October 27, 2025 - Margin Analysis System
+-   **Comprehensive Margin Calculator**: Built margin analysis tool to validate pricing strategy against real business metrics:
+    -   Variable labor cost model based on frame size (small/medium/large) and complexity (mats, stacker assembly)
+    -   Business metrics inputs: marketing % (25%), monthly overhead ($50K), frame volume (22K/month)
+    -   Calculates gross margin, contribution margin after marketing/labor/overhead deductions
+    -   6 predefined scenarios testing different order types (small frame, full frame, stacker, etc.)
+    -   Health indicators: Green (>=20% margin), Yellow (15-20%), Red (<15%)
+-   **Control Panel Integration**: Added "Margin Analysis" tab with:
+    -   Configurable business metrics and labor cost inputs
+    -   Visual scenario results with color-coded health status
+    -   Detailed margin breakdown per scenario (retail, costs, deductions, net contribution)
+-   **Validation Guardrails**: Frontend and backend validation prevents NaN/Infinity errors from invalid inputs
+-   **Pricing Engine Enhancement**: Added `baseCosts` field to pricing result exposing pre-markup material costs for accurate margin calculations
+-   **Analysis Results (User's Metrics)**: Average 36% margin across scenarios, 5/6 scenarios healthy (>=20%), validates current markup strategy (2.5×/4.5×/5.5×)

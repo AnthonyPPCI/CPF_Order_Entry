@@ -275,3 +275,62 @@ export const insertOrderItemSchema = createInsertSchema(orderItems, {
 
 export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
 export type OrderItem = typeof orderItems.$inferSelect;
+
+// ============================================================================
+// Margin Analysis Types
+// ============================================================================
+
+// Labor cost configuration - used for margin analysis
+export interface LaborCostConfig {
+  // Base labor by frame size (United Inches)
+  smallFrameLabor: number;      // < 60 UI (e.g., $7)
+  mediumFrameLabor: number;     // 60-120 UI (e.g., $10)
+  largeFrameLabor: number;      // > 120 UI (e.g., $14)
+  
+  // Complexity adders
+  matComplexityAdder: number;   // Additional cost per mat (e.g., $2)
+  stackerComplexityAdder: number; // Additional cost for stacker assembly (e.g., $5)
+}
+
+// Business metrics for margin analysis
+export interface BusinessMetrics {
+  marketingPercent: number;     // Marketing as % of retail (e.g., 25)
+  monthlyOverhead: number;      // Monthly fixed costs (e.g., $50,000)
+  monthlyFrameVolume: number;   // Average frames per month (e.g., 22,000)
+}
+
+// Margin analysis result for a single order
+export interface MarginAnalysis {
+  // Input order details
+  orderType: 'Stacker Frame' | 'Full Frame' | 'Component';
+  retailPrice: number;
+  
+  // Cost breakdown
+  materialCost: number;
+  marketingCost: number;
+  laborCost: number;
+  overheadAllocation: number;
+  
+  // Margin calculations
+  grossMargin: number;          // Retail - Materials
+  grossMarginPercent: number;   // (Gross Margin / Retail) × 100
+  
+  contributionMargin: number;   // Gross - Marketing - Labor - Overhead
+  contributionMarginPercent: number; // (Contribution / Retail) × 100
+  
+  // Health indicators
+  isHealthy: boolean;           // Contribution margin >= 20%
+  isWarning: boolean;           // Contribution margin < 15%
+}
+
+// Scenario analysis result with multiple test cases
+export interface ScenarioAnalysis {
+  scenarios: {
+    name: string;
+    description: string;
+    analysis: MarginAnalysis;
+  }[];
+  averageMargin: number;        // Blended average across scenarios
+  healthyCount: number;         // Number of scenarios with healthy margins
+  warningCount: number;         // Number of scenarios with warning margins
+}
