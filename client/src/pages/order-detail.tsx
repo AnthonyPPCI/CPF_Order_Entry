@@ -3,7 +3,7 @@ import { useRoute, Link } from "wouter";
 import { type Order, type OrderHeader, type OrderItem } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Printer, Mail, Mic, Square } from "lucide-react";
+import { ArrowLeft, Printer, Mail, Square } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -332,15 +332,6 @@ export default function OrderDetail() {
     window.location.href = `mailto:${order.email}?subject=${subject}&body=${body}`;
   };
 
-  const handleRecordOrder = () => {
-    if (!order) return;
-    
-    toast({
-      title: "Order Recorded",
-      description: `Order #${order.id.slice(0, 8).toUpperCase()} has been recorded in the system.`,
-    });
-  };
-
   const handleOpenSquare = () => {
     if (!order) return;
     
@@ -371,7 +362,7 @@ export default function OrderDetail() {
           </div>
 
           {/* Action Buttons - Google Sheets Style */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 print:hidden">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:hidden">
             <Button 
               variant="outline" 
               onClick={handlePrint} 
@@ -400,16 +391,6 @@ export default function OrderDetail() {
             >
               <Mail className="h-6 w-6" />
               <span className="font-semibold">Email Customer</span>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              onClick={handleRecordOrder} 
-              data-testid="button-record-order"
-              className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2"
-            >
-              <Mic className="h-6 w-6" />
-              <span className="font-semibold">Record Order</span>
             </Button>
             
             <Button 

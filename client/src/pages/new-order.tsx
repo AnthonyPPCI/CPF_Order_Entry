@@ -144,8 +144,8 @@ export default function NewOrder() {
     onSuccess: (createdOrder: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       toast({
-        title: "Order Created",
-        description: "Your custom frame order has been created successfully.",
+        title: "Order Created & Recorded",
+        description: `Order #${createdOrder.id?.slice(0, 8).toUpperCase()} has been created and recorded in the system.`,
       });
       // Navigate directly to the order detail page with action buttons
       setLocation(`/order/${createdOrder.id}`);
@@ -167,8 +167,8 @@ export default function NewOrder() {
     onSuccess: (createdOrder: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       toast({
-        title: "Multi-Item Order Created",
-        description: `Your order with ${createdOrder.items?.length || 0} items has been created successfully.`,
+        title: "Multi-Item Order Created & Recorded",
+        description: `Order #${createdOrder.id?.slice(0, 8).toUpperCase()} with ${createdOrder.items?.length || 0} items has been created and recorded in the system.`,
       });
       // Navigate to the order detail page
       setLocation(`/order/${createdOrder.id}`);
