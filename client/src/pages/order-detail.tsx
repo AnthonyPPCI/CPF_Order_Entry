@@ -71,43 +71,6 @@ export default function OrderDetail() {
     window.print();
   };
 
-  const handleEmailBrianMulti = async () => {
-    if (!multiOrder) return;
-    
-    try {
-      const response = await fetch('/api/send-order-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: 'brian@custompictureframes.com',
-          subject: `Multi-Item Order #${multiOrder.id.slice(0, 8).toUpperCase()} - ${multiOrder.customerName}`,
-          orderId: multiOrder.id.slice(0, 8).toUpperCase(),
-          customerName: multiOrder.customerName,
-          isMultiItem: true,
-          itemsCount: multiOrder.items.length,
-          total: multiOrder.total,
-          balance: multiOrder.balance,
-          orderUrl: window.location.href,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send email');
-      }
-
-      toast({
-        title: "Email Sent",
-        description: "Order details have been emailed to Brian.",
-      });
-    } catch (error) {
-      toast({
-        title: "Email Failed",
-        description: "Failed to send email. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleEmailCustomerMulti = async () => {
     if (!multiOrder || !multiOrder.email) {
       toast({
@@ -176,7 +139,7 @@ export default function OrderDetail() {
             </div>
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 print:hidden">
+            <div className="grid grid-cols-2 gap-3 print:hidden">
               <Button 
                 variant="outline" 
                 onClick={handlePrintMulti} 
@@ -185,16 +148,6 @@ export default function OrderDetail() {
               >
                 <Printer className="h-6 w-6" />
                 <span className="font-semibold">Print Order</span>
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                onClick={handleEmailBrianMulti} 
-                data-testid="button-email-brian"
-                className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2"
-              >
-                <Mail className="h-6 w-6" />
-                <span className="font-semibold">Email Brian</span>
               </Button>
               
               <Button 
@@ -337,42 +290,6 @@ export default function OrderDetail() {
     window.print();
   };
 
-  const handleEmailBrian = async () => {
-    if (!order) return;
-    
-    try {
-      const response = await fetch('/api/send-order-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: 'brian@custompictureframes.com',
-          subject: `Order #${order.id.slice(0, 8).toUpperCase()} - ${order.customerName}`,
-          orderId: order.id.slice(0, 8).toUpperCase(),
-          customerName: order.customerName,
-          isMultiItem: false,
-          total: parseFloat(order.total).toFixed(2),
-          balance: parseFloat(order.balance).toFixed(2),
-          orderUrl: window.location.href,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send email');
-      }
-
-      toast({
-        title: "Email Sent",
-        description: "Order details have been emailed to Brian.",
-      });
-    } catch (error) {
-      toast({
-        title: "Email Failed",
-        description: "Failed to send email. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleEmailCustomer = async () => {
     if (!order || !order.email) {
       toast({
@@ -463,7 +380,7 @@ export default function OrderDetail() {
           </div>
 
           {/* Action Buttons - Google Sheets Style */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:hidden">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 print:hidden">
             <Button 
               variant="outline" 
               onClick={handlePrint} 
@@ -472,16 +389,6 @@ export default function OrderDetail() {
             >
               <Printer className="h-6 w-6" />
               <span className="font-semibold">Print Order</span>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              onClick={handleEmailBrian} 
-              data-testid="button-email-brian"
-              className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2"
-            >
-              <Mail className="h-6 w-6" />
-              <span className="font-semibold">Email Brian</span>
             </Button>
             
             <Button 
