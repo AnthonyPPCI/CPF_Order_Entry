@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { ThemeToggle } from "./theme-toggle";
-import { Phone, Mail, Settings } from "lucide-react";
+import { Phone, Mail, Settings, Home } from "lucide-react";
 import cpfLogo from "@assets/cpf-logo.webp";
 import { Button } from "./ui/button";
 
@@ -37,6 +37,16 @@ export function Header() {
                 <span>hello@CustomPictureFrames.com</span>
               </a>
             </div>
+            <a 
+              href="https://framebox.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              data-testid="link-main-dashboard"
+            >
+              <Button variant="ghost" size="icon">
+                <Home className="h-5 w-5" />
+              </Button>
+            </a>
             <Link href="/control-panel">
               <Button variant="ghost" size="icon" data-testid="link-control-panel">
                 <Settings className="h-5 w-5" />
