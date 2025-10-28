@@ -8,6 +8,7 @@ import { Resend } from "resend";
 import { generateOrderPDF } from "./pdf-generator";
 import { SquareClient, SquareEnvironment } from "square";
 import { randomUUID, createHash } from "crypto";
+import { syncOrderToShipStation, syncMultiItemOrderToShipStation } from "./shipstation";
 
 // Initialize Resend for email sending
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -342,6 +343,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const order = await storage.createOrder(orderData);
+      
+      // Sync to ShipStation if requested
+      if (validatedData.syncToShipstation) {
+        try {
+          await syncOrderToShipStation(order);
+          console.log(`[ShipStation] Successfully synced order ${order.id} to ShipStation`);
+        } catch (shipStationError: any) {
+          console.error(`[ShipStation] Failed to sync order ${order.id}:`, shipStationError.message);
+          // Don't fail the order creation if ShipStation sync fails
+          // Just log the error and continue
+        }
+      }
+      
       res.status(201).json(order);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -370,6 +384,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create the order first
       const order = await storage.createOrder(completeOrderData);
+      
+      // Sync to ShipStation if requested
+      if (validatedData.syncToShipstation) {
+        try {
+          await syncOrderToShipStation(order);
+          console.log(`[ShipStation] Successfully synced order ${order.id} to ShipStation`);
+        } catch (shipStationError: any) {
+          console.error(`[ShipStation] Failed to sync order ${order.id}:`, shipStationError.message);
+          // Don't fail the order creation if ShipStation sync fails
+        }
+      }
       
       // If payment info provided, process the payment
       if (paymentData && paymentData.sourceId && paymentData.amount) {
@@ -681,6 +706,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }));
       
       const order = await storage.createMultiItemOrder(headerData, itemsData);
+      
+      // Sync to ShipStation if requested
+      if (validatedHeader.syncToShipstation) {
+        try {
+          await syncMultiItemOrderToShipStation(order, order.items);
+          console.log(`[ShipStation] Successfully synced multi-item order ${order.id} to ShipStation`);
+        } catch (shipStationError: any) {
+          console.error(`[ShipStation] Failed to sync multi-item order ${order.id}:`, shipStationError.message);
+          // Don't fail the order creation if ShipStation sync fails
+        }
+      }
+      
       res.status(201).json(order);
     } catch (error) {
       if (error instanceof z.ZodError) {

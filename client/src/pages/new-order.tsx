@@ -103,6 +103,7 @@ export default function NewOrder() {
       frameSku: "",
       chopOnly: false,
       sample: false,
+      syncToShipstation: false,
       width: 12,
       height: 16,
       matBorderAll: "",
@@ -817,6 +818,25 @@ export default function NewOrder() {
                         )}
                       />
                     </div>
+
+                    <FormField
+                      control={form.control}
+                      name="syncToShipstation"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0 pt-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              data-testid="checkbox-sync-shipstation"
+                            />
+                          </FormControl>
+                          <FormLabel className="font-normal cursor-pointer">
+                            Sync order to ShipStation
+                          </FormLabel>
+                        </FormItem>
+                      )}
+                    />
                   </CardContent>
                 </Card>
 
