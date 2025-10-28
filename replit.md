@@ -1,123 +1,60 @@
 # Custom Picture Frame Order Management System
 
 ## Overview
-
-This application is an end-to-end order management system for CustomPictureFrames.com. It facilitates the creation of detailed custom frame orders, including customer information, precise frame specifications, material selection, and automated pricing. The system supports various framing options like multiple mat configurations, special finishes, and calculates pricing based on materials, dimensions, and dynamic business rules. The ambition is to streamline the order process, enhance accuracy, and provide tools for managing pricing configurations.
+This application is an end-to-end order management system for CustomPictureFrames.com. It streamlines the creation of custom frame orders, managing customer information, precise frame specifications, material selection, and automated pricing. The system supports diverse framing options, including multiple mat configurations and special finishes. Its core purpose is to enhance accuracy, streamline the order process, and provide tools for managing dynamic pricing configurations. The business vision is to improve operational efficiency and profitability in the custom picture frame market.
 
 ## User Preferences
-
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
 ### UI/UX Decisions
 -   **Framework**: React 18 with TypeScript and Vite.
--   **Components**: Radix UI primitives wrapped with shadcn/ui ("new-york" style) for accessible and consistent styling via Tailwind CSS.
--   **Routing**: Wouter for client-side routing, including unified order creation (`/`), order list (`/orders`), individual order detail (`/order/:id`), and password-protected control panel (`/control-panel`).
--   **State Management**: TanStack Query for server state management.
+-   **Components**: Radix UI primitives wrapped with shadcn/ui for accessible styling via Tailwind CSS.
+-   **Routing**: Wouter for client-side routing, supporting order creation (`/`), order list (`/orders`), individual order detail (`/order/:id`), and a control panel (`/control-panel`).
+-   **State Management**: TanStack Query for server state.
 -   **Form Handling**: React Hook Form with Zod for type-safe validation.
--   **Unified Order Form**: Single form at `/` supports both single and multi-item orders with "Add Another Item" workflow - users fill out one item, click to add more, edit/remove accumulated items, then submit all at once. Form intelligently routes to `/api/orders` (single) or `/api/multi-orders` (multiple) based on pending items count.
--   **Styling**: Tailwind CSS with custom design tokens, supporting light/dark themes, following Material Design principles with a professional blue color palette (HSL 210 85% 45%).
+-   **Unified Order Form**: A single form at `/` handles both single and multi-item orders.
+-   **Styling**: Tailwind CSS with custom design tokens, supporting light/dark themes, using a professional blue color palette (HSL 210 85% 45%).
 -   **Typography**: Inter font for UI, JetBrains Mono for monospace content.
 
 ### Technical Implementations
--   **Backend**: Node.js with Express.js for RESTful JSON API.
--   **Business Logic**: Server-side pricing engine (`server/pricing.ts`) calculating costs based on Excel-derived formulas, dynamic markup, material upgrades, add-on services, mat configurations, tiered shipping, and sales tax.
--   **Data Validation**: Shared Zod schemas between frontend and backend for consistent validation.
--   **Monorepo Structure**: `client/`, `server/`, and `shared/` directories.
--   **Component Library Strategy**: shadcn/ui components copied into the project for full customization.
--   **Multi-Item Order System**: Normalized database schema with `order_headers` and `order_items` tables, supporting orders with multiple frames or components through the unified order form's "Add Another Item" workflow.
--   **Stacker Frames (Deep Shadowbox)**: Custom-depth shadowbox system with dynamic algorithm for optimal layer combination, specific pricing, and BOM generation. Vendor pricing: 70% discount on materials (SKU 9531 @ $2.616/ft, SKU 9532 @ $3.543/ft, SKU 9533 @ $2.508/ft, SKU 9731 @ $2.700/ft), assembly charge $12.50 per frame. Uses global tiered markup system (same as regular frames).
--   **Simplified Two-Tier Pricing**: System uses two simple markup rates: Full Frame orders (Frame + Acrylic + Backing + optional Mats) get 4.5× markup, all other Component orders (frame only, acrylic only, partial combinations) get 5.5× markup. This incentivizes customers to order complete frames. Fixed-cost add-ons (LEDs, plaques, shadowbox fitting, additional labor) pass through at retail price with no markup (1×). Per-square-inch add-ons (print services, canvas) receive the same markup treatment as materials.
--   **Itemized Component Pricing**: Expanded pricing result to include detailed breakdown of individual component costs in the order summary.
--   **Form Flexibility**: All form fields are optional, and mat fields support fraction/decimal inputs. Autocomplete (combobox) inputs for mat SKUs with clear button functionality - users can easily remove selected mats by clicking the X icon that appears when a value is selected.
--   **Pricing Configuration**: All add-on service pricing (print paper, dry mount, canvas printing/stretching, engraved plaques, LEDs, shadowbox fitting, additional labor) is configurable through the control panel. Per-square-inch services get markup treatment, fixed-cost services are retail prices. Minimum price floor of $29 applies to orders with frames. Simplified from complex tiered system on October 27, 2025.
+-   **Backend**: Node.js with Express.js for a RESTful JSON API.
+-   **Business Logic**: Server-side pricing engine calculates costs based on Excel-derived formulas, dynamic markup, material upgrades, add-on services, mat configurations, tiered shipping, and sales tax.
+-   **Data Validation**: Shared Zod schemas between frontend and backend.
+-   **Monorepo Structure**: Organized into `client/`, `server/`, and `shared/` directories.
+-   **Multi-Item Order System**: Supports orders with multiple frames or components via `order_headers` and `order_items` tables.
+-   **Stacker Frames**: Custom-depth shadowbox system with a dynamic algorithm for optimal layer combination and specific pricing.
+-   **Simplified Two-Tier Pricing**: Uses two simple markup rates: 4.5× for Full Frame orders and 5.5× for Component orders, incentivizing complete frame purchases.
+-   **Itemized Component Pricing**: Provides a detailed breakdown of individual component costs in the order summary.
+-   **Form Flexibility**: All form fields are optional, mat fields support fraction/decimal inputs, and autocomplete inputs have clear button functionality.
+-   **Pricing Configuration**: All add-on service pricing is configurable through the control panel. A minimum price floor of $29 applies to orders with frames.
+-   **Sample Order Implementation**: Allows ordering frame/mat samples with $0 item cost and delivery-method-aware shipping.
+-   **Stale Payment Prevention**: Multi-layered system to prevent stale payment data, including auto-clearing on amount/method changes and submit-time validation.
 
 ### System Design Choices
--   **Server-Side Pricing**: All pricing calculations are performed on the server to ensure business logic integrity and prevent client manipulation.
--   **Excel-Based Pricing Data**: Pricing data from `ANNIE CPF Order Entry Sheet (1)_1761234370780.xlsx` is loaded into in-memory storage at server startup for rapid lookup.
--   **Dynamic Pricing Configuration**: A password-protected control panel allows staff to adjust business levers (markup, shipping rates, material pricing) without code changes.
--   **Margin Analysis System**: Comprehensive margin calculator validates pricing strategy against business metrics (marketing costs, labor, overhead allocation). Built-in scenario testing analyzes profitability across order types with configurable labor cost model and validation guardrails.
--   **Authentication**: No global authentication; internal users are assumed. Control panel is password-protected with SHA-256 hashing.
+-   **Server-Side Pricing**: All pricing calculations are performed on the server.
+-   **Excel-Based Pricing Data**: Pricing data from a master Excel sheet is loaded into in-memory storage at server startup.
+-   **Dynamic Pricing Configuration**: A password-protected control panel allows staff to adjust business levers without code changes.
+-   **Margin Analysis System**: Comprehensive margin calculator validates pricing strategy, built-in scenario testing, and configurable labor cost model.
+-   **Authentication**: Control panel is password-protected with SHA-256 hashing.
+-   **Square Payment Integration**: Backend integration with Square SDK for processing credit card payments and automatic order balance updates.
+-   **Transactional Email System**: Integrated Resend API for sending order notifications and customer confirmations.
+-   **Automatic Order Recording**: Orders are automatically recorded in the database upon creation.
+-   **ShipStation Integration**: Fully integrated ShipStation V1 REST API for automatic order syncing, including optional sync, data mapping, and non-blocking synchronization.
 
 ### Data Storage Solutions
 -   **Database**: PostgreSQL via Drizzle ORM with Neon serverless driver.
--   **Schema**: `orders` table (legacy single-item orders) and new `order_headers`/`order_items` tables (multi-item orders) for comprehensive data storage.
+-   **Schema**: `orders` table (legacy single-item) and `order_headers`/`order_items` tables (multi-item).
 -   **ORM**: Drizzle ORM for type-safe database queries.
--   **In-Memory Storage**: `MemStorage` for development/testing and `PricingConfigStorage` for dynamic pricing configuration.
+-   **In-Memory Storage**: `MemStorage` and `PricingConfigStorage` for development/testing and dynamic pricing configuration.
 
 ## External Dependencies
 
 -   **Database Service**: Neon serverless PostgreSQL.
--   **Email Service**: Resend API for transactional email delivery (order notifications, customer confirmations).
+-   **Email Service**: Resend API.
+-   **Payment Gateway**: Square SDK.
+-   **Shipping Integration**: ShipStation V1 REST API.
 -   **Fonts**: Google Fonts (Inter, Geist Mono, Fira Code, DM Sans, Architects Daughter).
 -   **Build Tools**: Vite (frontend), esbuild (production server), Drizzle Kit (migrations).
--   **Node.js Libraries**: Express.js, React, TypeScript, Radix UI, shadcn/ui, Tailwind CSS, Wouter, TanStack Query, React Hook Form, Zod, Drizzle ORM, `@neondatabase/serverless`, Resend, Square SDK.
-
-## Recent Changes
-
-### October 28, 2025 - Sample Order Feature (Complete)
--   **Sample Order Implementation**: Fully implemented sample order system allowing customers to order frame/mat samples at minimal cost:
-    -   **Pricing Logic**: Sample orders have $0 item cost with delivery-method-aware shipping ($5 for "shipping", $0 for "pickup" at shop)
-    -   **Sales Tax**: NJ sales tax (7%) applies only to shipping cost when applicable (e.g., $0.35 on $5 shipping)
-    -   **UI Behavior**: Sample checkbox disables most fields (width, height, quantity, stacker, acrylic, backing, mats, print options, additional options) since only SKU is needed
-    -   **Display Consistency**: All views (order form, order detail, order list) display "Sample" instead of dimensions for sample orders
-    -   **Database Schema**: Added `sample` boolean field to orders/order_items tables
--   **Technical Fixes**:
-    -   Fixed deliveryMethod value mismatch: Changed backend check from "pick-up" to "pickup" to match frontend radio button value
-    -   Enhanced pricing useEffect: Modified to use `form.getValues()` inside useEffect to ensure fresh form state is sent to API
-    -   Added `cleanEmptyFields()` helper: Converts empty strings to null before database insertion, preventing PostgreSQL "invalid input syntax for type numeric" errors
-    -   Applied helper to all order creation endpoints: `/api/orders`, `/api/orders-with-payment`, `/api/multi-orders`
--   **Testing**: Comprehensive end-to-end tests verify pickup ($0.00 total) and shipping ($5.35 NJ total) scenarios work correctly
-
-### October 28, 2025 - Stale Payment Prevention System
--   **Comprehensive Payment Safety**: Implemented multi-layered system to prevent stale payment data from being processed:
-    -   **Auto-clearing on amount change**: React useEffect automatically clears processed payments when order total or cash amount changes, with toast notification to user
-    -   **Auto-clearing on method switch**: Switching between credit card and cash payment accordions automatically clears any processed payment from other method
-    -   **Submit-time validation**: Final safety check in onSubmit() compares processed payment amount with current total, blocks submission if mismatch detected
-    -   **Manual clear buttons**: Users can manually clear processed payments via "Clear" button next to payment buttons
--   **User Experience**: Toast notifications inform users when payments are cleared ("Order total changed. Please process payment again." / "Cash amount changed. Please record payment again." / "Switched payment method. Please process payment again.")
--   **Payment Workflow**: Separate "Process Credit Card Payment" and "Record Cash Payment" buttons inside payment accordions prevent confusion, ensure payment is processed before order creation
-
-### October 27, 2025 - Square Payment Integration (Backend Complete)
--   **Square SDK Integration**: Integrated Square payment processing backend:
-    -   Installed Square SDK for Node.js with correct environment detection (Production/Sandbox)
-    -   Backend payment endpoint `/api/process-payment` processes credit card payments through Square API
-    -   Automatic order balance updates after successful payments
-    -   Supports both single-item and multi-item orders
-    -   Uses environment secrets: SQUARE_ACCESS_TOKEN, SQUARE_LOCATION_ID
-    -   Payment tokenization and frontend payment form implementation pending (requires Square Web Payments SDK)
--   **Technical Details**:
-    -   Square client initialized with bearer auth credentials and environment detection
-    -   Payment amounts converted to cents for Square API compatibility
-    -   Idempotent payment processing using UUID-based idempotency keys
-    -   Order balance automatically reduced after successful payment completion
-
-### October 27, 2025 - Email Integration & Order Recording Automation
--   **Transactional Email System**: Integrated Resend API for professional email delivery:
-    -   Backend endpoint `/api/send-order-email` handles email sending with order details
-    -   "Email Brian" button sends order details to brian@custompictureframes.com
-    -   "Email Customer" button sends order confirmation to customer email address
-    -   Replaces mailto: links with direct email sending through app
-    -   Provides success/error toast notifications for email delivery status
-    -   Uses environment secret RESEND_API_KEY for authentication
--   **Automatic Order Recording**: Streamlined order creation workflow:
-    -   Removed "Record Order" button from order detail page (no longer needed)
-    -   Orders are automatically recorded in the database when created
-    -   Order creation confirmation now shows "Created & Recorded" message
-    -   Eliminates redundant manual step in order workflow
-
-### October 27, 2025 - Margin Analysis System
--   **Comprehensive Margin Calculator**: Built margin analysis tool to validate pricing strategy against real business metrics:
-    -   Variable labor cost model based on frame size (small/medium/large) and complexity (mats, stacker assembly)
-    -   Business metrics inputs: marketing % (25%), monthly overhead ($50K), frame volume (22K/month)
-    -   Calculates gross margin, contribution margin after marketing/labor/overhead deductions
-    -   6 predefined scenarios testing different order types (small frame, full frame, stacker, etc.)
-    -   Health indicators: Green (>=20% margin), Yellow (15-20%), Red (<15%)
--   **Control Panel Integration**: Added "Margin Analysis" tab with:
-    -   Configurable business metrics and labor cost inputs
-    -   Visual scenario results with color-coded health status
-    -   Detailed margin breakdown per scenario (retail, costs, deductions, net contribution)
--   **Validation Guardrails**: Frontend and backend validation prevents NaN/Infinity errors from invalid inputs
--   **Pricing Engine Enhancement**: Added `baseCosts` field to pricing result exposing pre-markup material costs for accurate margin calculations
--   **Analysis Results (User's Metrics)**: Average 36% margin across scenarios, 5/6 scenarios healthy (>=20%), validates current markup strategy (2.5×/4.5×/5.5×)
+-   **Node.js Libraries**: Express.js, React, TypeScript, Radix UI, shadcn/ui, Tailwind CSS, Wouter, TanStack Query, React Hook Form, Zod, Drizzle ORM, `@neondatabase/serverless`.
