@@ -38,7 +38,7 @@ Preferred communication style: Simple, everyday language.
 -   **Dynamic Pricing Configuration**: A password-protected control panel allows staff to adjust business levers without code changes.
 -   **Margin Analysis System**: Comprehensive margin calculator validates pricing strategy, built-in scenario testing, and configurable labor cost model.
 -   **Authentication**: Control panel is password-protected with SHA-256 hashing.
--   **Square Payment Integration**: Backend integration with Square SDK for processing credit card payments and automatic order balance updates.
+-   **Square Payment Integration**: Pre-charge payment flow with immediate card processing and status display BEFORE order creation. Cards are charged via `/api/process-payment` endpoint, status (Accepted/Declined) is shown with color-coded badges, then orders are created with pre-charged payment metadata to prevent duplicate charges. Supports partial/deposit payments without validation blocking. Square environment auto-detects production vs sandbox based on token prefix ('EAAA' prefix = production mode).
 -   **Transactional Email System**: Integrated Resend API for sending order notifications and customer confirmations.
 -   **Automatic Order Recording**: Orders are automatically recorded in the database upon creation.
 -   **ShipStation Integration**: Fully integrated ShipStation V1 REST API for automatic order syncing, including optional sync, data mapping, and non-blocking synchronization. For PayPal invoice orders, ShipStation sync is intelligently deferred until payment is confirmed via webhook to prevent shipping unpaid orders.

@@ -177,8 +177,8 @@ export default function NewOrder() {
   });
 
   const createOrderMutation = useMutation({
-    mutationFn: async (data: InsertOrder) => {
-      const response = await apiRequest("POST", "/api/orders", data);
+    mutationFn: async (payload: { orderData: InsertOrder, paymentData?: any }) => {
+      const response = await apiRequest("POST", "/api/orders-with-payment", payload);
       return await response.json();
     },
     onSuccess: (createdOrder: any) => {
