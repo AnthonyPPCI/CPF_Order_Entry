@@ -35,6 +35,24 @@ function cleanEmptyFields(data: any): any {
   return cleaned;
 }
 
+// Helper function to generate next sequential order number
+async function generateNextOrderNumber(): Promise<string> {
+  // Get the highest order number from both tables
+  const ordersMax = await storage.getMaxOrderNumber();
+  const headersMax = await storage.getMaxOrderHeaderNumber();
+  
+  // Extract the numeric part from both
+  const ordersNum = ordersMax ? parseInt(ordersMax.replace('Store_', '')) : 0;
+  const headersNum = headersMax ? parseInt(headersMax.replace('Store_', '')) : 0;
+  
+  // Get the highest number from both tables
+  const maxNum = Math.max(ordersNum, headersNum);
+  
+  // Generate next number with padding
+  const nextNum = maxNum + 1;
+  return `Store_${String(nextNum).padStart(5, '0')}`;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Send order email (to Brian or customer)
   app.post("/api/send-order-email", async (req, res) => {
@@ -385,11 +403,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentFields.paymentMethod = orderData.paymentMethod;
       }
       
-      // Merge pricing with validated data, then add payment fields
+      // Generate sequential order number
+      const orderNumber = await generateNextOrderNumber();
+      
+      // Merge pricing with validated data, then add payment fields and order number
       const completeOrderData = cleanEmptyFields({
         ...pricing,
         ...validatedData,
         ...paymentFields,  // Add payment fields last to ensure they're preserved
+        orderNumber,  // Add generated order number
       });
       
       // Create the order first

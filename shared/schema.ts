@@ -85,6 +85,7 @@ export const orders = pgTable("orders", {
   
   // ShipStation Integration
   syncToShipstation: boolean("sync_to_shipstation").notNull().default(false),
+  orderNumber: varchar("order_number").unique(),
 });
 
 export const insertOrderSchema = createInsertSchema(orders, {
@@ -117,6 +118,7 @@ export const insertOrderSchema = createInsertSchema(orders, {
   total: true,
   paidToDate: true,
   balance: true,
+  orderNumber: true,
 });
 
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
@@ -182,6 +184,7 @@ export const orderHeaders = pgTable("order_headers", {
   
   // ShipStation Integration
   syncToShipstation: boolean("sync_to_shipstation").notNull().default(false),
+  orderNumber: varchar("order_number").unique(),
 });
 
 export const insertOrderHeaderSchema = createInsertSchema(orderHeaders, {
@@ -198,6 +201,7 @@ export const insertOrderHeaderSchema = createInsertSchema(orderHeaders, {
   shipping: true,
   total: true,
   balance: true,
+  orderNumber: true,
 });
 
 export type InsertOrderHeader = z.infer<typeof insertOrderHeaderSchema>;

@@ -107,8 +107,8 @@ export default function OrderDetail() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: multiOrder.email,
-          subject: `Your Order #${multiOrder.id.slice(0, 8).toUpperCase()}`,
-          orderId: multiOrder.id.slice(0, 8).toUpperCase(),
+          subject: `Your Order #${multiOrder.orderNumber || multiOrder.id.slice(0, 8).toUpperCase()}`,
+          orderId: multiOrder.orderNumber || multiOrder.id.slice(0, 8).toUpperCase(),
           customerName: multiOrder.customerName,
           isMultiItem: true,
           itemsCount: multiOrder.items.length,
@@ -249,7 +249,7 @@ export default function OrderDetail() {
                   <div>
                     <CardTitle>Multi-Item Order</CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Order #{multiOrder.id?.slice(0, 8).toUpperCase()}
+                      Order #{multiOrder.orderNumber || multiOrder.id?.slice(0, 8).toUpperCase()}
                     </p>
                   </div>
                   <Badge variant="secondary">{multiOrder.items.length} Items</Badge>
@@ -584,7 +584,7 @@ export default function OrderDetail() {
                 <div className="text-right">
                   <h2 className="text-xl font-semibold">ORDER INVOICE</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Order #{order.id.slice(0, 8).toUpperCase()}
+                    Order #{order.orderNumber || order.id.slice(0, 8).toUpperCase()}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {new Date(order.orderDate).toLocaleDateString("en-US", {

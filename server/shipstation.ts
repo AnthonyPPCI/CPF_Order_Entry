@@ -243,7 +243,7 @@ function convertSingleOrderToShipStation(order: Order): ShipStationOrderRequest 
   const orderTotal = parseFloat(order.total.toString());
 
   return {
-    orderNumber: order.id,
+    orderNumber: order.orderNumber || order.id,
     orderKey: order.id,
     orderDate: order.orderDate.toISOString(),
     orderStatus: "awaiting_shipment",
@@ -325,7 +325,7 @@ function convertMultiItemOrderToShipStation(
   const orderTotal = parseFloat(header.total.toString());
 
   return {
-    orderNumber: header.id,
+    orderNumber: header.orderNumber || header.id,
     orderKey: header.id,
     orderDate: header.orderDate.toISOString(),
     orderStatus: "awaiting_shipment",

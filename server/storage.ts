@@ -45,6 +45,7 @@ export interface IStorage {
   createOrder(order: InsertOrderWithPricing): Promise<Order>;
   updateOrder(id: string, order: Partial<InsertOrderWithPricing>): Promise<Order | undefined>;
   deleteOrder(id: string): Promise<boolean>;
+  getMaxOrderNumber(): Promise<string | null>;
   
   // Multi-item order operations
   getAllMultiItemOrders(): Promise<MultiItemOrder[]>;
@@ -52,6 +53,7 @@ export interface IStorage {
   createMultiItemOrder(header: InsertOrderHeaderWithPricing, items: InsertOrderItemWithPricing[]): Promise<MultiItemOrder>;
   updateMultiItemOrder(id: string, header: Partial<InsertOrderHeaderWithPricing>, items?: InsertOrderItemWithPricing[]): Promise<MultiItemOrder | undefined>;
   deleteMultiItemOrder(id: string): Promise<boolean>;
+  getMaxOrderHeaderNumber(): Promise<string | null>;
 }
 
 export class MemStorage implements IStorage {
@@ -156,6 +158,18 @@ export class MemStorage implements IStorage {
 
   async deleteOrder(id: string): Promise<boolean> {
     return this.orders.delete(id);
+  }
+
+  async getMaxOrderNumber(): Promise<string | null> {
+    const allOrders = Array.from(this.orders.values());
+    if (allOrders.length === 0) return null;
+    
+    const orderNumbers = allOrders
+      .map(o => o.orderNumber)
+      .filter((num): num is string => num !== null && num !== undefined)
+      .sort();
+    
+    return orderNumbers.length > 0 ? orderNumbers[orderNumbers.length - 1] : null;
   }
 
   // Multi-item order operations
@@ -342,6 +356,18 @@ export class MemStorage implements IStorage {
     const headerDeleted = this.orderHeaders.delete(id);
     this.orderItems.delete(id);
     return headerDeleted;
+  }
+
+  async getMaxOrderHeaderNumber(): Promise<string | null> {
+    const allHeaders = Array.from(this.orderHeaders.values());
+    if (allHeaders.length === 0) return null;
+    
+    const orderNumbers = allHeaders
+      .map(h => h.orderNumber)
+      .filter((num): num is string => num !== null && num !== undefined)
+      .sort();
+    
+    return orderNumbers.length > 0 ? orderNumbers[orderNumbers.length - 1] : null;
   }
 }
 
@@ -640,6 +666,28 @@ export class DbStorage implements IStorage {
     await db.delete(orderItems).where(eq(orderItems.orderId, id));
     const result = await db.delete(orderHeaders).where(eq(orderHeaders.id, id)).returning();
     return result.length > 0;
+  }
+
+  async getMaxOrderNumber(): Promise<string | null> {
+    const result = await db
+      .select({ orderNumber: orders.orderNumber })
+      .from(orders)
+      .where(eq(orders.orderNumber, orders.orderNumber)) // Filter out nulls
+      .orderBy(desc(orders.orderNumber))
+      .limit(1);
+    
+    return result.length > 0 && result[0].orderNumber ? result[0].orderNumber : null;
+  }
+
+  async getMaxOrderHeaderNumber(): Promise<string | null> {
+    const result = await db
+      .select({ orderNumber: orderHeaders.orderNumber })
+      .from(orderHeaders)
+      .where(eq(orderHeaders.orderNumber, orderHeaders.orderNumber)) // Filter out nulls
+      .orderBy(desc(orderHeaders.orderNumber))
+      .limit(1);
+    
+    return result.length > 0 && result[0].orderNumber ? result[0].orderNumber : null;
   }
 }
 
