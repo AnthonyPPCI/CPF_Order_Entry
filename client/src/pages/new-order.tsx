@@ -21,7 +21,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { MatCombobox } from "@/components/mat-combobox";
 import { SquarePaymentForm, useSquarePaymentForm } from "@/components/SquarePaymentForm";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { X, Plus, ChevronDown, HelpCircle } from "lucide-react";
+import { X, Plus, ChevronDown, HelpCircle, Star } from "lucide-react";
 
 // Helper function to parse fractions and decimals
 function parseFraction(input: string): number {
@@ -1928,6 +1928,59 @@ export default function NewOrder() {
                       >
                         Sync order to ShipStation
                       </label>
+                    </div>
+                    
+                    <div className="pt-4 border-t">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-950/20 dark:hover:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800"
+                        size="lg"
+                        onClick={async () => {
+                          const customerName = form.getValues("customerName");
+                          const email = form.getValues("email");
+                          const phone = form.getValues("phone");
+                          
+                          if (!customerName) {
+                            toast({ title: "Customer name required", description: "Please enter a customer name first.", variant: "destructive" });
+                            return;
+                          }
+                          
+                          if (!email && !phone) {
+                            toast({ title: "Contact info required", description: "Please enter an email or phone number.", variant: "destructive" });
+                            return;
+                          }
+                          
+                          try {
+                            const response = await fetch("/api/send-review-request", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ customerName, email, phone }),
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (data.success) {
+                              toast({ 
+                                title: "Review request sent!", 
+                                description: data.message 
+                              });
+                            } else {
+                              throw new Error(data.error);
+                            }
+                          } catch (error: any) {
+                            toast({ 
+                              title: "Failed to send review request", 
+                              description: error.message, 
+                              variant: "destructive" 
+                            });
+                          }
+                        }}
+                        data-testid="button-request-review"
+                      >
+                        <Star className="h-4 w-4 mr-2 fill-yellow-400 text-yellow-400" />
+                        Request Google Review
+                      </Button>
                     </div>
                   </div>
                 </CardContent>

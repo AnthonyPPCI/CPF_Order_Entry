@@ -54,6 +54,99 @@ async function generateNextOrderNumber(): Promise<string> {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Send Google Review request
+  app.post("/api/send-review-request", async (req, res) => {
+    try {
+      const { customerName, email, phone } = req.body;
+
+      if (!customerName) {
+        return res.status(400).json({ error: "Customer name is required" });
+      }
+
+      if (!email && !phone) {
+        return res.status(400).json({ error: "Either email or phone number is required" });
+      }
+
+      const reviewUrl = "https://g.page/r/CYWvDmYp3xKEEBM/review";
+      const results = { email: null, sms: null };
+
+      // Send email if provided
+      if (email && resend) {
+        try {
+          const emailResult = await resend.emails.send({
+            from: "CustomPictureFrames.com <orders@custompictureframes.com>",
+            to: email,
+            subject: "We'd love your feedback!",
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>Hi ${customerName}!</h2>
+                <p>Thank you for choosing CustomPictureFrames.com for your framing needs!</p>
+                <p>We hope you're happy with your order. If you have a moment, we'd greatly appreciate it if you could share your experience by leaving us a review on Google.</p>
+                <p style="text-align: center; margin: 30px 0;">
+                  <a href="${reviewUrl}" style="background-color: #4285f4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">Leave a Review</a>
+                </p>
+                <p style="font-size: 14px; color: #666;">Your feedback helps us improve and helps other customers make informed decisions.</p>
+                <p>Thank you for your support!</p>
+                <p style="margin-top: 30px;">
+                  <strong>CustomPictureFrames.com</strong><br>
+                  6 Shirley Ave, Somerset, NJ 08873<br>
+                  (800) 916-8770
+                </p>
+              </div>
+            `,
+          });
+          results.email = "sent";
+        } catch (emailError: any) {
+          console.error("Failed to send review request email:", emailError);
+          results.email = "failed";
+        }
+      }
+
+      // Send SMS if phone provided and Twilio is configured
+      if (phone && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+        try {
+          const message = `Hi ${customerName}! Thanks for choosing CustomPictureFrames.com. We'd love your feedback! Please leave us a Google review: ${reviewUrl}`;
+          
+          const twilioResponse = await fetch(
+            `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                Authorization: `Basic ${Buffer.from(
+                  `${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`
+                ).toString("base64")}`,
+              },
+              body: new URLSearchParams({
+                To: phone,
+                From: process.env.TWILIO_PHONE_NUMBER,
+                Body: message,
+              }),
+            }
+          );
+
+          if (twilioResponse.ok) {
+            results.sms = "sent";
+          } else {
+            results.sms = "failed";
+          }
+        } catch (smsError: any) {
+          console.error("Failed to send review request SMS:", smsError);
+          results.sms = "failed";
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        results,
+        message: `Review request sent via ${results.email === 'sent' ? 'email' : ''}${results.email === 'sent' && results.sms === 'sent' ? ' and ' : ''}${results.sms === 'sent' ? 'SMS' : ''}`
+      });
+    } catch (error: any) {
+      console.error("Error sending review request:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Send order email (to Brian or customer)
   app.post("/api/send-order-email", async (req, res) => {
     try {

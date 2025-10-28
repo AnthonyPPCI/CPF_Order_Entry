@@ -42,6 +42,7 @@ Preferred communication style: Simple, everyday language.
 -   **Transactional Email System**: Integrated Resend API for sending order notifications and customer confirmations.
 -   **Automatic Order Recording**: Orders are automatically recorded in the database upon creation.
 -   **ShipStation Integration**: Fully integrated ShipStation V1 REST API for automatic order syncing, including optional sync, data mapping, and non-blocking synchronization.
+-   **Google Reviews Request System**: Prominent button on new order form and order detail page sends frictionless review requests via email (Resend) or SMS (optional Twilio), directing customers to Google Reviews page.
 
 ### Data Storage Solutions
 -   **Database**: PostgreSQL via Drizzle ORM with Neon serverless driver.
@@ -53,6 +54,7 @@ Preferred communication style: Simple, everyday language.
 
 -   **Database Service**: Neon serverless PostgreSQL.
 -   **Email Service**: Resend API.
+-   **SMS Service**: Twilio API (optional for Google Reviews SMS).
 -   **Payment Gateway**: Square SDK.
 -   **Shipping Integration**: ShipStation V1 REST API.
 -   **Fonts**: Google Fonts (Inter, Geist Mono, Fira Code, DM Sans, Architects Daughter).

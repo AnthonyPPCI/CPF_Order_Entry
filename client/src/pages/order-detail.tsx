@@ -4,7 +4,7 @@ import { useRoute, Link, useLocation } from "wouter";
 import { type Order, type OrderHeader, type OrderItem } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Printer, Mail, CreditCard, Trash2 } from "lucide-react";
+import { ArrowLeft, Printer, Mail, CreditCard, Trash2, Star } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -218,6 +218,46 @@ export default function OrderDetail() {
               >
                 <Mail className="h-6 w-6" />
                 <span className="font-semibold">Email Customer</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={async () => {
+                  try {
+                    const response = await fetch("/api/send-review-request", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        customerName: multiOrder.customerName,
+                        email: multiOrder.email,
+                        phone: multiOrder.phone,
+                      }),
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                      toast({ 
+                        title: "Review request sent!", 
+                        description: data.message 
+                      });
+                    } else {
+                      throw new Error(data.error);
+                    }
+                  } catch (error: any) {
+                    toast({ 
+                      title: "Failed to send review request", 
+                      description: error.message, 
+                      variant: "destructive" 
+                    });
+                  }
+                }} 
+                data-testid="button-request-review"
+                className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2 bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-950/20 dark:hover:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800"
+                disabled={!multiOrder.customerName || (!multiOrder.email && !multiOrder.phone)}
+              >
+                <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+                <span className="font-semibold">Request Review</span>
               </Button>
               
               <Button 
@@ -543,6 +583,46 @@ export default function OrderDetail() {
             >
               <Mail className="h-6 w-6" />
               <span className="font-semibold">Email Customer</span>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={async () => {
+                try {
+                  const response = await fetch("/api/send-review-request", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      customerName: order.customerName,
+                      email: order.email,
+                      phone: order.phone,
+                    }),
+                  });
+                  
+                  const data = await response.json();
+                  
+                  if (data.success) {
+                    toast({ 
+                      title: "Review request sent!", 
+                      description: data.message 
+                    });
+                  } else {
+                    throw new Error(data.error);
+                  }
+                } catch (error: any) {
+                  toast({ 
+                    title: "Failed to send review request", 
+                    description: error.message, 
+                    variant: "destructive" 
+                  });
+                }
+              }} 
+              data-testid="button-request-review"
+              className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2 bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-950/20 dark:hover:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800"
+              disabled={!order.customerName || (!order.email && !order.phone)}
+            >
+              <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+              <span className="font-semibold">Request Review</span>
             </Button>
             
             <Button 
