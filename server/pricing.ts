@@ -268,6 +268,59 @@ function applyTieredMarkup(baseCost: number, config: any, applyMinimum: boolean 
 }
 
 export function calculatePricing(order: InsertOrder): PricingResult {
+  // Handle sample orders - fixed $0 item cost + $5 shipping
+  if (order.sample) {
+    const shipping = 5.00;
+    // Calculate sales tax (7% if in NJ)
+    const cityStateZip = order.cityStateZip || "";
+    const isTaxable = /\bNJ\b/i.test(cityStateZip);
+    const salesTax = isTaxable ? shipping * 0.07 : 0;
+    const total = shipping + salesTax;
+    const balance = total; // For new orders, balance = total
+    
+    return {
+      itemTotal: "0.00",
+      shipping: shipping.toFixed(2),
+      salesTax: salesTax > 0 ? salesTax.toFixed(2) : "",
+      total: total.toFixed(2),
+      balance: balance.toFixed(2),
+      breakdown: {
+        frameCost: "0.00",
+        mat1Cost: "0.00",
+        mat2Cost: "0.00",
+        mat3Cost: "0.00",
+        acrylicCost: "0.00",
+        backingCost: "0.00",
+        printPaperCost: "0.00",
+        dryMountCost: "0.00",
+        printCanvasCost: "0.00",
+        canvasStretchingCost: "0.00",
+        engravedPlaqueCost: "0.00",
+        ledsCost: "0.00",
+        shadowboxFittingCost: "0.00",
+        additionalLaborCost: "0.00",
+        extraMatOpeningsCost: "0.00",
+      },
+      baseCosts: {
+        frameCost: "0.00",
+        mat1Cost: "0.00",
+        mat2Cost: "0.00",
+        mat3Cost: "0.00",
+        acrylicCost: "0.00",
+        backingCost: "0.00",
+        printPaperCost: "0.00",
+        dryMountCost: "0.00",
+        printCanvasCost: "0.00",
+        canvasStretchingCost: "0.00",
+        engravedPlaqueCost: "0.00",
+        ledsCost: "0.00",
+        shadowboxFittingCost: "0.00",
+        additionalLaborCost: "0.00",
+        extraMatOpeningsCost: "0.00",
+      },
+    };
+  }
+  
   // Load pricing data
   const pricingData = loadPricingData();
   
