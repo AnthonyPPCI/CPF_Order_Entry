@@ -126,7 +126,6 @@ export async function createPayPalInvoice(order: Order | OrderHeader, items: Pay
       phones: [{
         country_code: "001",
         national_number: "8009168770",
-        phone_type: "BUSINESS",
       }],
       address: {
         address_line_1: "6 Shirley Ave",
@@ -145,7 +144,6 @@ export async function createPayPalInvoice(order: Order | OrderHeader, items: Pay
         phones: order.phone ? [{
           country_code: "001",
           national_number: order.phone.replace(/\D/g, ''),
-          phone_type: "MOBILE",
         }] : undefined,
         address: order.address1 ? {
           address_line_1: order.address1,
