@@ -125,12 +125,13 @@ function convertSingleOrderToShipStation(order: Order): ShipStationOrderRequest 
   }
 
   // Create item entry
+  const quantity = order.quantity || 1;
   const items: ShipStationItem[] = [
     {
       sku: order.frameSku || undefined,
       name: itemDescription,
-      quantity: order.quantity || 1,
-      unitPrice: parseFloat(order.itemTotal.toString()),
+      quantity: quantity,
+      unitPrice: parseFloat(order.itemTotal.toString()) / quantity,
       taxAmount: order.salesTax ? parseFloat(order.salesTax.toString()) : undefined,
     },
   ];
@@ -194,12 +195,15 @@ function convertMultiItemOrderToShipStation(
       itemDescription += ` (${item.width}" × ${item.height}")`;
     }
 
+    const quantity = item.quantity || 1;
+    const itemTotal = parseFloat(item.itemTotal?.toString() || "0");
+    
     return {
       lineItemKey: item.id,
       sku: item.frameSku || undefined,
       name: itemDescription,
-      quantity: item.quantity || 1,
-      unitPrice: parseFloat(item.itemTotal?.toString() || "0"),
+      quantity: quantity,
+      unitPrice: itemTotal / quantity,
     };
   });
 
