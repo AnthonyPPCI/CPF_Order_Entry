@@ -2148,8 +2148,11 @@ export default function NewOrder() {
                       <AccordionTrigger data-testid="accordion-credit-card">
                         <div className="flex items-center gap-2">
                           Credit Card Payment
-                          {processedPayment?.type === 'credit_card' && (
-                            <Badge variant="default" className="ml-2">Ready: ${processedPayment.amount}</Badge>
+                          {processedPayment?.type === 'credit_card' && processedPayment.status === 'charged' && (
+                            <Badge variant="default" className="ml-2 bg-green-600 hover:bg-green-700">✓ Accepted: ${processedPayment.amount}</Badge>
+                          )}
+                          {processedPayment?.type === 'credit_card' && processedPayment.status === 'failed' && (
+                            <Badge variant="destructive" className="ml-2">✗ Declined: ${processedPayment.amount}</Badge>
                           )}
                         </div>
                       </AccordionTrigger>
@@ -2165,10 +2168,15 @@ export default function NewOrder() {
                               type="button"
                               onClick={handleProcessCreditCard}
                               className="flex-1"
-                              disabled={processedPayment?.type === 'credit_card'}
+                              disabled={processedPayment?.type === 'credit_card' && processedPayment.status === 'charged'}
                               data-testid="button-process-credit-card"
                             >
-                              {processedPayment?.type === 'credit_card' ? 'Payment Ready' : 'Process Credit Card Payment'}
+                              {processedPayment?.type === 'credit_card' && processedPayment.status === 'charged' 
+                                ? '✓ Card Charged Successfully' 
+                                : processedPayment?.type === 'credit_card' && processedPayment.status === 'failed'
+                                ? 'Try Again'
+                                : 'Process Credit Card Payment'
+                              }
                             </Button>
                             {processedPayment?.type === 'credit_card' && (
                               <Button
@@ -2182,7 +2190,12 @@ export default function NewOrder() {
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            Click the button above to prepare the payment, then click "Create Order"
+                            {processedPayment?.type === 'credit_card' && processedPayment.status === 'charged'
+                              ? `Card charged successfully. ${processedPayment.paymentId ? `Payment ID: ${processedPayment.paymentId.substring(0, 12)}...` : ''}`
+                              : processedPayment?.type === 'credit_card' && processedPayment.status === 'failed'
+                              ? `Payment declined. ${processedPayment.errorMessage || 'Please try again with a different card.'}`
+                              : 'Click the button above to charge the card immediately and see accepted/declined status.'
+                            }
                           </p>
                         </div>
                       </AccordionContent>
