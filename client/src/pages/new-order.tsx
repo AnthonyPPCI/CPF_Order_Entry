@@ -338,11 +338,14 @@ export default function NewOrder() {
     });
 
     try {
-      // Step 1: Tokenize the card
+      // Step 1: Tokenize the card (includes verification token for CVV)
       const result = await tokenize();
       if (!result.token) {
         throw new Error(result.error || "Card tokenization failed");
       }
+
+      // Get customer email for fraud prevention
+      const customerEmail = form.getValues("email");
 
       // Step 2: Charge the card immediately (without order ID)
       const response = await fetch('/api/process-payment', {
@@ -351,6 +354,8 @@ export default function NewOrder() {
         body: JSON.stringify({
           amount: parseFloat(paymentAmount).toFixed(2),
           sourceId: result.token,
+          verificationToken: result.verificationToken,
+          buyerEmailAddress: customerEmail || undefined,
         }),
       });
 

@@ -599,7 +599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Square payment not configured. Please add SQUARE_ACCESS_TOKEN." });
       }
 
-      const { orderId, amount, sourceId } = req.body;
+      const { orderId, amount, sourceId, verificationToken, buyerEmailAddress } = req.body;
 
       // Validate required fields (orderId is optional for pre-order payments)
       if (!amount || !sourceId) {
@@ -619,12 +619,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Square payment request:', {
         locationId,
         amount: amountInCents,
+        hasVerificationToken: !!verificationToken,
+        hasBuyerEmail: !!buyerEmailAddress,
         hasAccessToken: !!process.env.SQUARE_ACCESS_TOKEN,
         accessTokenPrefix: process.env.SQUARE_ACCESS_TOKEN?.substring(0, 10) + '...',
       });
 
-      // Create payment using Square API (v43+ syntax)
-      const response = await squareClient.payments.create({
+      // Build payment request with verification token for CVV verification
+      const paymentRequest: any = {
         sourceId,
         idempotencyKey: randomUUID(),
         amountMoney: {
@@ -632,7 +634,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currency: 'USD',
         },
         locationId,
-      });
+        autocomplete: true, // Complete payment immediately
+      };
+
+      // Add verification token if provided (for CVV verification)
+      if (verificationToken) {
+        paymentRequest.verificationToken = verificationToken;
+      }
+
+      // Add buyer email if provided (helps with fraud prevention)
+      if (buyerEmailAddress) {
+        paymentRequest.buyerEmailAddress = buyerEmailAddress;
+      }
+
+      // Create payment using Square API (v43+ syntax)
+      const response = await squareClient.payments.create(paymentRequest);
 
       if (response.result?.payment?.status === 'COMPLETED') {
         // If orderId provided, fetch the order to update balance

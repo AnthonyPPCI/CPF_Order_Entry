@@ -82,9 +82,9 @@ export function SquarePaymentForm({
 
   /**
    * Tokenize the card details
-   * @returns Promise<{token: string} | {error: string}>
+   * @returns Promise<{token: string, verificationToken?: string, details?: any} | {error: string}>
    */
-  const tokenize = async (): Promise<{ token?: string; error?: string }> => {
+  const tokenize = async (): Promise<{ token?: string; verificationToken?: string; details?: any; error?: string }> => {
     if (!cardRef.current) {
       return { error: "Payment form not initialized" };
     }
@@ -97,7 +97,12 @@ export function SquarePaymentForm({
       const result = await cardRef.current.tokenize();
       
       if (result.status === 'OK') {
-        return { token: result.token };
+        // Return both payment token and verification token (for CVV verification)
+        return { 
+          token: result.token,
+          verificationToken: result.details?.method === 'card' ? result.details.card?.verification_token : undefined,
+          details: result.details
+        };
       } else {
         return { error: result.errors?.[0]?.message || 'Card tokenization failed' };
       }
@@ -169,7 +174,7 @@ export function SquarePaymentForm({
 
 // Export a hook for easy access to tokenization
 export function useSquarePaymentForm() {
-  const tokenize = async (): Promise<{ token?: string; error?: string }> => {
+  const tokenize = async (): Promise<{ token?: string; verificationToken?: string; details?: any; error?: string }> => {
     // Find any square card container (works with unique IDs)
     const container = document.querySelector('[id^="square-card-"]');
     if (container && (container as any).tokenize) {
