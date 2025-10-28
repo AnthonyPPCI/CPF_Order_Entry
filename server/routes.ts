@@ -13,7 +13,7 @@ import { syncOrderToShipStation, syncMultiItemOrderToShipStation } from "./ships
 // Initialize Resend for email sending
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-// Initialize Square client
+// Initialize Square client (v43 API)
 const squareClient = process.env.SQUARE_ACCESS_TOKEN ? new SquareClient({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
   environment: process.env.SQUARE_ACCESS_TOKEN?.startsWith('EAAA') ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
@@ -655,8 +655,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         verificationToken: verificationToken ? verificationToken.substring(0, 10) + '...' : undefined,
       }, null, 2));
 
-      // Create payment using Square API (v43+ syntax)
-      const response = await squareClient.payments.createPayment(paymentRequest);
+      // Create payment using Square API (v43 syntax)
+      const response = await squareClient.payments.create(paymentRequest);
 
       console.log('Square API response status:', response.statusCode);
       console.log('Square API response:', JSON.stringify(response.result, null, 2));
@@ -892,7 +892,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Convert amount to cents
             const amountInCents = Math.round(parseFloat(paymentData.amount) * 100);
 
-            // Create payment using Square API
+            // Create payment using Square API (v43 syntax)
             const response = await squareClient.payments.create({
               sourceId: paymentData.sourceId,
               idempotencyKey: randomUUID(),
