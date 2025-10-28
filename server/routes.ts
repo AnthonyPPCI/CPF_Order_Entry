@@ -154,9 +154,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create and send PayPal invoice
   app.post("/api/create-paypal-invoice", async (req, res) => {
     try {
+      console.log('[PayPal Invoice] Starting invoice creation process');
       const { orderId, isMultiItem } = req.body;
+      console.log(`[PayPal Invoice] Order ID: ${orderId}, Multi-item: ${isMultiItem}`);
       
       if (!orderId) {
+        console.log('[PayPal Invoice] Error: Order ID missing');
         return res.status(400).json({ error: "Order ID is required" });
       }
 
@@ -252,17 +255,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate customer email
       if (!order.email) {
+        console.log('[PayPal Invoice] Error: Customer email missing');
         return res.status(400).json({ error: "Customer email is required to send PayPal invoice" });
       }
+      
+      console.log(`[PayPal Invoice] Creating invoice for customer: ${order.email}`);
+      console.log(`[PayPal Invoice] Invoice items:`, JSON.stringify(items, null, 2));
 
       // Create invoice
+      console.log('[PayPal Invoice] Calling createPayPalInvoice...');
       const invoice = await createPayPalInvoice(order, items);
+      console.log(`[PayPal Invoice] Invoice created successfully with ID: ${invoice.id}`);
       
       // Send invoice
+      console.log(`[PayPal Invoice] Sending invoice ${invoice.id} to customer...`);
       await sendPayPalInvoice(invoice.id);
+      console.log(`[PayPal Invoice] Invoice sent successfully`);
       
       // Get the payment URL from invoice links
       const paymentLink = invoice.links.find((link: any) => link.rel === "payer-view");
+      console.log(`[PayPal Invoice] Payment link: ${paymentLink?.href || 'NOT FOUND'}`);
       
       // Update order with PayPal invoice info
       const updateData = {
@@ -278,14 +290,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateOrder(orderId, updateData);
       }
 
+      console.log(`[PayPal Invoice] Updating order with invoice details...`);
       res.json({ 
         success: true, 
         invoiceId: invoice.id,
         invoiceUrl: paymentLink?.href,
         message: "PayPal invoice created and sent successfully" 
       });
+      console.log(`[PayPal Invoice] Process completed successfully`);
     } catch (error: any) {
-      console.error("Error creating PayPal invoice:", error);
+      console.error("[PayPal Invoice] ERROR occurred:", error);
+      console.error("[PayPal Invoice] Error message:", error.message);
+      console.error("[PayPal Invoice] Error stack:", error.stack);
       res.status(500).json({ error: error.message });
     }
   });

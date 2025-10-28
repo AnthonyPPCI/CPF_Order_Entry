@@ -170,24 +170,37 @@ export async function createPayPalInvoice(order: Order | OrderHeader, items: Pay
 }
 
 export async function sendPayPalInvoice(invoiceId: string): Promise<void> {
+  console.log(`[PayPal SDK] Getting access token...`);
   const token = await getPayPalAccessToken();
+  console.log(`[PayPal SDK] Access token obtained successfully`);
 
-  const response = await fetch(`${PAYPAL_API_BASE}/v2/invoicing/invoices/${invoiceId}/send`, {
+  const endpoint = `${PAYPAL_API_BASE}/v2/invoicing/invoices/${invoiceId}/send`;
+  console.log(`[PayPal SDK] Sending invoice to: ${endpoint}`);
+  
+  const requestBody = {
+    send_to_invoicer: true,
+    send_to_recipient: true,
+  };
+  console.log(`[PayPal SDK] Request body:`, JSON.stringify(requestBody, null, 2));
+
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`,
     },
-    body: JSON.stringify({
-      send_to_invoicer: true,
-      send_to_recipient: true,
-    }),
+    body: JSON.stringify(requestBody),
   });
+
+  console.log(`[PayPal SDK] Response status: ${response.status} ${response.statusText}`);
 
   if (!response.ok) {
     const error = await response.text();
+    console.error(`[PayPal SDK] Error response body:`, error);
     throw new Error(`Failed to send PayPal invoice: ${error}`);
   }
+  
+  console.log(`[PayPal SDK] Invoice sent successfully`);
 }
 
 export async function getPayPalInvoice(invoiceId: string): Promise<PayPalInvoice> {
