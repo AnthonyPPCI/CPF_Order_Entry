@@ -178,7 +178,9 @@ export async function createPayPalInvoice(order: Order | OrderHeader, items: Pay
     throw new Error(`Failed to create PayPal invoice: ${error}`);
   }
 
-  return await response.json();
+  const result = await response.json();
+  console.log('[PayPal SDK] Invoice creation response:', JSON.stringify(result, null, 2));
+  return result;
 }
 
 export async function sendPayPalInvoice(invoiceId: string): Promise<void> {
