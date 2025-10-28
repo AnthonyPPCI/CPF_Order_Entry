@@ -15,6 +15,7 @@ export const orders = pgTable("orders", {
   cityStateZip: text("city_state_zip"),
   phone: text("phone"),
   email: text("email"),
+  smsConsent: boolean("sms_consent").notNull().default(false),
   
   // Order Details
   deliveryMethod: text("delivery_method").notNull().default("shipping"),
@@ -171,6 +172,7 @@ export const orderHeaders = pgTable("order_headers", {
   cityStateZip: text("city_state_zip"),
   phone: text("phone"),
   email: text("email"),
+  smsConsent: boolean("sms_consent").notNull().default(false),
   
   // Delivery & Notes
   deliveryMethod: text("delivery_method").notNull().default("shipping"),
