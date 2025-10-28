@@ -329,9 +329,22 @@ async function subscribeToMarketingChannels(
       console.error(`[Klaviyo] Failed to subscribe: ${error}`);
       throw new Error(`Klaviyo subscription failed: ${error}`);
     } else {
-      const result = await subscriptionResponse.json();
-      console.log(`[Klaviyo] Successfully subscribed to ${channels.join(' and ')} marketing`);
-      console.log(`[Klaviyo] Job ID: ${result.data?.id || 'unknown'}`);
+      // Klaviyo subscription API returns 202 Accepted
+      // Try to parse JSON if present, otherwise just log success
+      const contentType = subscriptionResponse.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          const result = await subscriptionResponse.json();
+          console.log(`[Klaviyo] Successfully subscribed to ${channels.join(' and ')} marketing`);
+          console.log(`[Klaviyo] Job ID: ${result.data?.id || 'unknown'}`);
+        } catch (e) {
+          // Empty response is OK for async jobs
+          console.log(`[Klaviyo] Successfully submitted subscription job for ${channels.join(' and ')} marketing`);
+        }
+      } else {
+        // No JSON body (202 Accepted)
+        console.log(`[Klaviyo] Successfully submitted subscription job for ${channels.join(' and ')} marketing`);
+      }
     }
   } catch (error: any) {
     console.error("[Klaviyo] Error subscribing:", error.message);
