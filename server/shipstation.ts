@@ -136,23 +136,21 @@ function convertSingleOrderToShipStation(order: Order): ShipStationOrderRequest 
     },
   ];
 
-  // Determine order status based on payment
-  let orderStatus: ShipStationOrderRequest["orderStatus"] = "awaiting_shipment";
-  const balance = parseFloat(order.balance.toString());
-  if (balance > 0) {
-    orderStatus = "awaiting_payment";
-  }
+  // Always send orders to ShipStation as paid and ready to ship
+  // ShipStation is for shipping management, not payment tracking
+  const orderTotal = parseFloat(order.total.toString());
 
   return {
     orderNumber: order.id,
     orderKey: order.id,
     orderDate: order.orderDate.toISOString(),
-    orderStatus,
+    orderStatus: "awaiting_shipment",
+    paymentDate: order.orderDate.toISOString(),
     customerEmail: order.email || undefined,
     billTo: shipTo,
     shipTo,
     items,
-    amountPaid: parseFloat(order.paidToDate.toString()),
+    amountPaid: orderTotal,
     taxAmount: order.salesTax ? parseFloat(order.salesTax.toString()) : undefined,
     shippingAmount: parseFloat(order.shipping.toString()),
     customerNotes: order.specialRequests || undefined,
@@ -207,23 +205,21 @@ function convertMultiItemOrderToShipStation(
     };
   });
 
-  // Determine order status based on payment
-  let orderStatus: ShipStationOrderRequest["orderStatus"] = "awaiting_shipment";
-  const balance = parseFloat(header.balance.toString());
-  if (balance > 0) {
-    orderStatus = "awaiting_payment";
-  }
+  // Always send orders to ShipStation as paid and ready to ship
+  // ShipStation is for shipping management, not payment tracking
+  const orderTotal = parseFloat(header.total.toString());
 
   return {
     orderNumber: header.id,
     orderKey: header.id,
     orderDate: header.orderDate.toISOString(),
-    orderStatus,
+    orderStatus: "awaiting_shipment",
+    paymentDate: header.orderDate.toISOString(),
     customerEmail: header.email || undefined,
     billTo: shipTo,
     shipTo,
     items: shipStationItems,
-    amountPaid: parseFloat(header.paidToDate.toString()),
+    amountPaid: orderTotal,
     taxAmount: header.salesTax ? parseFloat(header.salesTax.toString()) : undefined,
     shippingAmount: parseFloat(header.shipping.toString()),
     customerNotes: header.specialRequests || undefined,
