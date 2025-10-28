@@ -107,13 +107,16 @@ export async function addCustomerToKlaviyo(order: Order | OrderHeader): Promise<
 
     if (!listResponse.ok) {
       const error = await listResponse.text();
-      // Don't throw error if profile already in list
-      if (!error.includes("already exists")) {
-        throw new Error(`Failed to add profile to Klaviyo list: ${error}`);
+      // Don't throw error if profile already in list or if list doesn't exist
+      if (error.includes("already exists")) {
+        console.log(`[Klaviyo] Profile ${profileId} already in list ${listId}`);
+      } else {
+        console.error(`[Klaviyo] Failed to add profile to list: ${error}`);
+        console.log(`[Klaviyo] Continuing with SMS subscription despite list add failure`);
       }
+    } else {
+      console.log(`[Klaviyo] Added profile ${profileId} to list ${listId}`);
     }
-
-    console.log(`[Klaviyo] Added profile ${profileId} to list ${listId}`);
     
     // Subscribe to SMS if customer consented
     if ((order as any).smsConsent && phone) {
