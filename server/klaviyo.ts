@@ -246,10 +246,6 @@ async function subscribeToMarketingChannels(
   }
 
   try {
-    const nameParts = customerName.split(" ");
-    const firstName = nameParts[0] || "";
-    const lastName = nameParts.slice(1).join(" ") || "";
-
     // Build subscription object based on what we're subscribing to
     const subscriptions: any = {};
     
@@ -269,10 +265,10 @@ async function subscribeToMarketingChannels(
       };
     }
 
-    // Build profile attributes
+    // Build profile attributes for subscription API
+    // NOTE: The subscription API only accepts email, phone_number, and subscriptions
+    // It does NOT accept first_name or last_name
     const profileAttributes: any = {
-      first_name: firstName || undefined,
-      last_name: lastName || undefined,
       subscriptions,
     };
     
