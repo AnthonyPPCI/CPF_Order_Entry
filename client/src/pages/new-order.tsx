@@ -20,7 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MatCombobox } from "@/components/mat-combobox";
 import { SquarePaymentForm, useSquarePaymentForm } from "@/components/SquarePaymentForm";
-import { X, Plus, ChevronDown } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { X, Plus, ChevronDown, HelpCircle } from "lucide-react";
 
 // Helper function to parse fractions and decimals
 function parseFraction(input: string): number {
@@ -101,6 +102,7 @@ export default function NewOrder() {
       specialRequests: "",
       frameSku: "",
       chopOnly: false,
+      sample: false,
       width: 12,
       height: 16,
       matBorderAll: "",
@@ -530,6 +532,7 @@ export default function NewOrder() {
       ...customerData,
       frameSku: "",
       chopOnly: false,
+      sample: false,
       width: 12,
       height: 16,
       matBorderAll: "",
@@ -851,12 +854,44 @@ export default function NewOrder() {
                               <Checkbox
                                 checked={field.value}
                                 onCheckedChange={field.onChange}
+                                disabled={form.watch("sample")}
                                 data-testid="checkbox-chop-only"
                               />
                             </FormControl>
                             <FormLabel className="font-normal cursor-pointer">
                               Chop Only
                             </FormLabel>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="sample"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center space-x-3 space-y-0 pt-8">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid="checkbox-sample"
+                              />
+                            </FormControl>
+                            <div className="flex items-center gap-2">
+                              <FormLabel className="font-normal cursor-pointer">
+                                Sample
+                              </FormLabel>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-xs">Sample orders are $0 for materials with $5 flat shipping. Only frame or mat SKU is required.</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
                           </FormItem>
                         )}
                       />
