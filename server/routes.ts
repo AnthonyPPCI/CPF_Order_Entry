@@ -636,7 +636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sourceId,
         idempotencyKey: randomUUID(),
         amountMoney: {
-          amount: BigInt(amountInCents),
+          amount: amountInCents.toString(),
           currency: 'USD',
         },
         locationId,
@@ -902,7 +902,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               sourceId: paymentData.sourceId,
               idempotencyKey: randomUUID(),
               amountMoney: {
-                amount: BigInt(amountInCents),
+                amount: amountInCents.toString(),
                 currency: 'USD',
               },
               locationId,
