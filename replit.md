@@ -56,6 +56,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 28, 2025 - Stale Payment Prevention System
+-   **Comprehensive Payment Safety**: Implemented multi-layered system to prevent stale payment data from being processed:
+    -   **Auto-clearing on amount change**: React useEffect automatically clears processed payments when order total or cash amount changes, with toast notification to user
+    -   **Auto-clearing on method switch**: Switching between credit card and cash payment accordions automatically clears any processed payment from other method
+    -   **Submit-time validation**: Final safety check in onSubmit() compares processed payment amount with current total, blocks submission if mismatch detected
+    -   **Manual clear buttons**: Users can manually clear processed payments via "Clear" button next to payment buttons
+-   **User Experience**: Toast notifications inform users when payments are cleared ("Order total changed. Please process payment again." / "Cash amount changed. Please record payment again." / "Switched payment method. Please process payment again.")
+-   **Payment Workflow**: Separate "Process Credit Card Payment" and "Record Cash Payment" buttons inside payment accordions prevent confusion, ensure payment is processed before order creation
+
 ### October 27, 2025 - Square Payment Integration (Backend Complete)
 -   **Square SDK Integration**: Integrated Square payment processing backend:
     -   Installed Square SDK for Node.js with correct environment detection (Production/Sandbox)
