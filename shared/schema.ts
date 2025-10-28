@@ -24,6 +24,7 @@ export const orders = pgTable("orders", {
   // Frame Details
   frameSku: text("frame_sku"),
   chopOnly: boolean("chop_only").notNull().default(false),
+  sample: boolean("sample").notNull().default(false),
   stackerFrame: boolean("stacker_frame").notNull().default(false),
   shadowDepth: text("shadow_depth"),
   topperSku: text("topper_sku"),
@@ -205,6 +206,7 @@ export const orderItems = pgTable("order_items", {
   // Frame Details
   frameSku: text("frame_sku"),
   chopOnly: boolean("chop_only").notNull().default(false),
+  sample: boolean("sample").notNull().default(false),
   stackerFrame: boolean("stacker_frame").notNull().default(false),
   shadowDepth: text("shadow_depth"),
   topperSku: text("topper_sku"),
