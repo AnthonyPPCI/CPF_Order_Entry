@@ -20,7 +20,6 @@ import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MatCombobox } from "@/components/mat-combobox";
 import { X, Plus, ChevronDown } from "lucide-react";
-import squareLogo from "@assets/image_1761242611311.png";
 
 // Helper function to parse fractions and decimals
 function parseFraction(input: string): number {
@@ -1688,20 +1687,6 @@ export default function NewOrder() {
                   )}
                 </CardContent>
               </Card>
-
-              <a 
-                href="https://squareup.com/dashboard" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block w-1/2 ml-auto"
-                data-testid="button-square-payment"
-              >
-                <img 
-                  src={squareLogo} 
-                  alt="Square Payment Processor" 
-                  className="w-full h-auto rounded-md hover-elevate"
-                />
-              </a>
 
             </div>
           </div>
