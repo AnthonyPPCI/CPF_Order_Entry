@@ -104,71 +104,12 @@ export function SquarePaymentForm({
 
       const paymentToken = tokenResult.token;
 
-      // Step 2: Verify buyer (for CVV verification and fraud prevention)
-      let verificationToken: string | undefined;
-      
-      try {
-        // Ensure amount is properly formatted as string with 2 decimal places
-        const formattedAmount = parseFloat(amount).toFixed(2);
-        
-        const verificationDetails: any = {
-          amount: formattedAmount,
-          currencyCode: 'USD',
-          intent: 'CHARGE',
-        };
-
-        // Add billing contact only if we have at least email or name
-        if (buyerDetails?.email || buyerDetails?.givenName) {
-          const billingContact: any = {};
-          
-          if (buyerDetails.email) {
-            billingContact.email = buyerDetails.email;
-          }
-          if (buyerDetails.givenName) {
-            billingContact.givenName = buyerDetails.givenName;
-          }
-          if (buyerDetails.familyName) {
-            billingContact.familyName = buyerDetails.familyName;
-          }
-          if (buyerDetails.phone) {
-            billingContact.phone = buyerDetails.phone;
-          }
-          
-          // Only add billingContact if it has at least one property
-          if (Object.keys(billingContact).length > 0) {
-            verificationDetails.billingContact = billingContact;
-          }
-        }
-
-        console.log('Attempting buyer verification with:', {
-          amount: formattedAmount,
-          hasBillingContact: !!verificationDetails.billingContact,
-          billingContactFields: verificationDetails.billingContact ? Object.keys(verificationDetails.billingContact) : []
-        });
-
-        const verifyResult = await paymentsRef.current.verifyBuyer(paymentToken, verificationDetails);
-        
-        if (verifyResult.token) {
-          verificationToken = verifyResult.token;
-          console.log('Buyer verification successful');
-        } else {
-          console.warn('Buyer verification returned no token');
-        }
-      } catch (verifyError: any) {
-        console.error('Buyer verification failed:', verifyError);
-        console.error('Verification error details:', {
-          name: verifyError?.name,
-          message: verifyError?.message,
-          errors: verifyError?.errors,
-          argumentErrors: verifyError?.argumentErrors
-        });
-        // Continue without verification token if this fails
-      }
-
-      // Return both payment token and verification token
+      // Buyer verification skipped for faster checkout
+      // Trade-off: Higher fraud risk and potentially lower approval rates
+      // Return payment token only (no verification token)
       return { 
         token: paymentToken,
-        verificationToken,
+        verificationToken: undefined,
         details: tokenResult.details
       };
     } catch (error: any) {
