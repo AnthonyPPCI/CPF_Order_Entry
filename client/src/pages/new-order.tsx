@@ -376,19 +376,8 @@ export default function NewOrder() {
     let orderDataWithPayment = { ...orderData };
     
     if (processedPayment) {
-      // Validate payment amount matches current total (for credit card)
+      // Use the already-processed payment (allows partial payments for deposits)
       if (processedPayment.type === 'credit_card') {
-        const currentTotal = calculatedPricing.total.toFixed(2);
-        if (processedPayment.amount !== currentTotal) {
-          toast({
-            title: "Payment Amount Mismatch",
-            description: `Order total changed to $${currentTotal}. Please process payment again.`,
-            variant: "destructive"
-          });
-          setProcessedPayment(null);
-          return;
-        }
-        
         paymentData = {
           sourceId: processedPayment.token,
           amount: processedPayment.amount
