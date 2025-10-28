@@ -127,10 +127,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log('[Google Reviews] Final results:', results);
+      
+      // Build message based on what was actually sent
+      let message = '';
+      if (results.email === 'sent' && results.sms === 'sent') {
+        message = 'Review request sent via email. SMS queued in Klaviyo (requires Flow setup to send automatically).';
+      } else if (results.email === 'sent') {
+        message = 'Review request sent via email.';
+      } else if (results.sms === 'sent') {
+        message = 'SMS queued in Klaviyo (requires Flow setup to send automatically).';
+      } else {
+        message = 'Review request processed.';
+      }
+      
       res.json({ 
         success: true, 
         results,
-        message: `Review request sent via ${results.email === 'sent' ? 'email' : ''}${results.email === 'sent' && results.sms === 'sent' ? ' and ' : ''}${results.sms === 'sent' ? 'SMS' : ''}`
+        message
       });
     } catch (error: any) {
       console.error("Error sending review request:", error);
