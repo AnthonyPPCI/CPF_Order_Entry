@@ -1780,24 +1780,17 @@ export default function NewOrder() {
                       <AccordionTrigger data-testid="accordion-cash">Cash Payment</AccordionTrigger>
                       <AccordionContent>
                         <div className="space-y-4">
-                          <FormField
-                            control={form.control}
-                            name="cashAmount"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Cash Amount Received</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    {...field}
-                                    data-testid="input-cash-amount"
-                                  />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Cash Amount Received</label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={form.watch("cashAmount") || ""}
+                              onChange={(e) => form.setValue("cashAmount", e.target.value)}
+                              data-testid="input-cash-amount"
+                            />
+                          </div>
                           <p className="text-sm text-muted-foreground">
                             Cash payment will be recorded with the order
                           </p>
