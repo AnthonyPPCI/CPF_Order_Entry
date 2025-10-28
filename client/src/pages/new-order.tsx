@@ -818,25 +818,6 @@ export default function NewOrder() {
                         )}
                       />
                     </div>
-
-                    <FormField
-                      control={form.control}
-                      name="syncToShipstation"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0 pt-4">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              data-testid="checkbox-sync-shipstation"
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal cursor-pointer">
-                            Sync order to ShipStation
-                          </FormLabel>
-                        </FormItem>
-                      )}
-                    />
                   </CardContent>
                 </Card>
 
@@ -1915,6 +1896,21 @@ export default function NewOrder() {
                       {(createOrderMutation.isPending || createMultiItemOrderMutation.isPending) ? "Creating Order..." : 
                         pendingItems.length > 0 ? `Submit Order (${pendingItems.length + 1} items)` : "Create Order"}
                     </Button>
+                    
+                    <div className="flex flex-row items-center justify-center space-x-3">
+                      <Checkbox
+                        checked={form.watch("syncToShipstation")}
+                        onCheckedChange={(checked) => form.setValue("syncToShipstation", checked as boolean)}
+                        data-testid="checkbox-sync-shipstation"
+                      />
+                      <label 
+                        htmlFor="syncToShipstation" 
+                        className="font-bold cursor-pointer"
+                        onClick={() => form.setValue("syncToShipstation", !form.watch("syncToShipstation"))}
+                      >
+                        Sync order to ShipStation
+                      </label>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
