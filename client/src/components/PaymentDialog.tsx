@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { CreditCard, Loader2 } from "lucide-react";
+import { SquarePaymentForm, useSquarePaymentForm } from "./SquarePaymentForm";
 
 interface PaymentDialogProps {
   open: boolean;
@@ -12,12 +11,6 @@ interface PaymentDialogProps {
   orderId: string;
   balance: string;
   onPaymentSuccess: () => void;
-}
-
-declare global {
-  interface Window {
-    Square?: any;
-  }
 }
 
 export function PaymentDialog({
@@ -30,67 +23,17 @@ export function PaymentDialog({
   const { toast } = useToast();
   const [amount, setAmount] = useState(balance);
   const [processing, setProcessing] = useState(false);
-  const cardRef = useRef<any>(null);
-  const paymentsRef = useRef<any>(null);
+  const { tokenize } = useSquarePaymentForm();
 
   useEffect(() => {
-    if (!open) return;
-
-    // Reset amount to current balance when dialog opens
-    setAmount(balance);
-
-    const initializeSquare = async () => {
-      if (!window.Square) {
-        toast({
-          title: "Error",
-          description: "Square payment form is not available.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      try {
-        console.log('Square env vars:', {
-          appId: import.meta.env.VITE_SQUARE_APPLICATION_ID,
-          locationId: import.meta.env.VITE_SQUARE_LOCATION_ID
-        });
-
-        const paymentsInstance = window.Square.payments(
-          import.meta.env.VITE_SQUARE_APPLICATION_ID,
-          import.meta.env.VITE_SQUARE_LOCATION_ID
-        );
-        paymentsRef.current = paymentsInstance;
-
-        const cardInstance = await paymentsInstance.card();
-        await cardInstance.attach('#card-container');
-        cardRef.current = cardInstance;
-      } catch (error: any) {
-        console.error('Square initialization error:', error);
-        console.error('Error details:', {
-          message: error?.message,
-          name: error?.name,
-          stack: error?.stack
-        });
-        toast({
-          title: "Error",
-          description: error?.message || "Failed to initialize payment form.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    initializeSquare();
-
-    return () => {
-      if (cardRef.current) {
-        cardRef.current.destroy();
-        cardRef.current = null;
-      }
-    };
-  }, [open]);
+    if (open) {
+      // Reset amount to current balance when dialog opens
+      setAmount(balance);
+    }
+  }, [open, balance]);
 
   const handlePayment = async () => {
-    if (!cardRef.current || !amount || parseFloat(amount) <= 0) {
+    if (!amount || parseFloat(amount) <= 0) {
       toast({
         title: "Invalid Amount",
         description: "Please enter a valid payment amount.",
@@ -103,9 +46,13 @@ export function PaymentDialog({
 
     try {
       // Tokenize card details
-      const result = await cardRef.current.tokenize();
+      const result = await tokenize();
       
-      if (result.status === 'OK') {
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      if (result.token) {
         // Send payment to backend
         const response = await fetch('/api/process-payment', {
           method: 'POST',
@@ -130,8 +77,6 @@ export function PaymentDialog({
 
         onOpenChange(false);
         onPaymentSuccess();
-      } else {
-        throw new Error(result.errors?.[0]?.message || 'Card tokenization failed');
       }
     } catch (error: any) {
       console.error('Payment error:', error);
@@ -159,39 +104,12 @@ export function PaymentDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="payment-amount">Amount to Charge</Label>
-            <div className="flex items-center gap-2">
-              <span className="text-lg text-muted-foreground">$</span>
-              <Input
-                id="payment-amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                max={parseFloat(balance)}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="text-lg font-medium"
-                data-testid="input-payment-amount"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Maximum: ${balance}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Credit Card Information</Label>
-            <div 
-              id="card-container" 
-              className="border rounded-md p-4 min-h-[120px] bg-muted/30"
-              data-testid="square-card-container"
-            />
-            <p className="text-xs text-muted-foreground">
-              Powered by Square · Secure payment processing
-            </p>
-          </div>
+          <SquarePaymentForm
+            amount={amount}
+            onAmountChange={setAmount}
+            maxAmount={balance}
+            showAmountInput={true}
+          />
 
           <div className="flex justify-end gap-2 pt-4">
             <Button

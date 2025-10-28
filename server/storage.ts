@@ -14,6 +14,7 @@ type InsertOrderWithPricing = InsertOrder & {
   shipping: string;
   salesTax?: string;
   total: string;
+  paidToDate?: string;
   balance: string;
 };
 
@@ -129,6 +130,7 @@ export class MemStorage implements IStorage {
       discount: insertOrder.discount || null,
       total: insertOrder.total,
       deposit: insertOrder.deposit || null,
+      paidToDate: "0",
       balance: insertOrder.balance,
     };
     this.orders.set(id, order);
@@ -202,6 +204,7 @@ export class MemStorage implements IStorage {
       discount: insertHeader.discount || null,
       total: insertHeader.total,
       deposit: insertHeader.deposit || null,
+      paidToDate: "0",
       balance: insertHeader.balance,
     };
     

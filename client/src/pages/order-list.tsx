@@ -132,8 +132,11 @@ export default function OrderList() {
                       </thead>
                       <tbody>
                         {filteredOrders.map((order, index) => {
-                          const hasDeposit = order.deposit && parseFloat(order.deposit) > 0;
-                          const isPaid = parseFloat(order.balance) === 0;
+                          const paidToDate = parseFloat(order.paidToDate || "0");
+                          const total = parseFloat(order.total);
+                          const isPaid = paidToDate >= total;
+                          const hasPartialPayment = paidToDate > 0 && paidToDate < total;
+                          const isUnpaid = paidToDate === 0;
                           const isMulti = isMultiItemOrder(order);
 
                           return (
@@ -168,20 +171,20 @@ export default function OrderList() {
                                 {order.description || "—"}
                               </td>
                               <td className="p-4 text-right">
-                                <div className="font-mono font-semibold">${parseFloat(order.total).toFixed(2)}</div>
-                                {hasDeposit && (
+                                <div className="font-mono font-semibold">${total.toFixed(2)}</div>
+                                {hasPartialPayment && (
                                   <div className="text-xs text-muted-foreground">
-                                    Balance: ${parseFloat(order.balance).toFixed(2)}
+                                    Paid: ${paidToDate.toFixed(2)}
                                   </div>
                                 )}
                               </td>
                               <td className="p-4 text-right">
                                 {isPaid ? (
-                                  <Badge variant="default" className="bg-chart-2 text-white">Paid</Badge>
-                                ) : hasDeposit ? (
-                                  <Badge variant="default" className="bg-chart-3 text-white">Deposit</Badge>
+                                  <Badge variant="default" className="bg-chart-2 text-white" data-testid={`badge-paid-${order.id}`}>Paid in Full</Badge>
+                                ) : hasPartialPayment ? (
+                                  <Badge variant="default" className="bg-chart-3 text-white" data-testid={`badge-partial-${order.id}`}>Partial Payment</Badge>
                                 ) : (
-                                  <Badge variant="secondary">Pending</Badge>
+                                  <Badge variant="secondary" data-testid={`badge-unpaid-${order.id}`}>Unpaid</Badge>
                                 )}
                               </td>
                               <td className="p-4 text-right">
@@ -203,8 +206,11 @@ export default function OrderList() {
               {/* Mobile Cards */}
               <div className="md:hidden space-y-4">
                 {filteredOrders.map((order) => {
-                  const hasDeposit = order.deposit && parseFloat(order.deposit) > 0;
-                  const isPaid = parseFloat(order.balance) === 0;
+                  const paidToDate = parseFloat(order.paidToDate || "0");
+                  const total = parseFloat(order.total);
+                  const isPaid = paidToDate >= total;
+                  const hasPartialPayment = paidToDate > 0 && paidToDate < total;
+                  const isUnpaid = paidToDate === 0;
                   const isMulti = isMultiItemOrder(order);
 
                   return (
@@ -218,11 +224,11 @@ export default function OrderList() {
                             </p>
                           </div>
                           {isPaid ? (
-                            <Badge variant="default" className="bg-chart-2 text-white">Paid</Badge>
-                          ) : hasDeposit ? (
-                            <Badge variant="default" className="bg-chart-3 text-white">Deposit</Badge>
+                            <Badge variant="default" className="bg-chart-2 text-white">Paid in Full</Badge>
+                          ) : hasPartialPayment ? (
+                            <Badge variant="default" className="bg-chart-3 text-white">Partial Payment</Badge>
                           ) : (
-                            <Badge variant="secondary">Pending</Badge>
+                            <Badge variant="secondary">Unpaid</Badge>
                           )}
                         </div>
                       </CardHeader>
@@ -255,11 +261,11 @@ export default function OrderList() {
                         <div className="flex justify-between items-center pt-2 border-t">
                           <div>
                             <div className="font-mono font-semibold text-lg">
-                              ${parseFloat(order.total).toFixed(2)}
+                              ${total.toFixed(2)}
                             </div>
-                            {hasDeposit && (
+                            {hasPartialPayment && (
                               <div className="text-xs text-muted-foreground">
-                                Balance: ${parseFloat(order.balance).toFixed(2)}
+                                Paid: ${paidToDate.toFixed(2)}
                               </div>
                             )}
                           </div>

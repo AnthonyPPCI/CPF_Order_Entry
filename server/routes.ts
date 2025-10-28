@@ -15,7 +15,7 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 // Initialize Square client
 const squareClient = process.env.SQUARE_ACCESS_TOKEN ? new SquareClient({
   bearerAuthCredentials: {
-    accessToken: process.env.SQUARE_ACCESS_TOKEN,
+    accessToken: process.env.SQUARE_ACCESS_TOKEN
   },
   environment: process.env.SQUARE_ACCESS_TOKEN?.startsWith('EAAA') ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
 }) : null;
@@ -182,7 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const data = await resend.emails.send(emailOptions);
 
-      res.json({ success: true, emailId: data.id });
+      res.json({ success: true, emailId: data.data?.id });
     } catch (error: any) {
       console.error('Email send error:', error);
       res.status(500).json({ error: "Failed to send email", details: error.message });
@@ -221,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Create payment using Square API (v43+ syntax)
-      const { result } = await squareClient.payments.create({
+      const response = await squareClient.payments.create({
         sourceId,
         idempotencyKey: randomUUID(),
         amountMoney: {
@@ -231,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         locationId,
       });
 
-      if (result.payment?.status === 'COMPLETED') {
+      if (response.result?.payment?.status === 'COMPLETED') {
         // Fetch the order to update balance
         let order = await storage.getOrderById(orderId);
         let isMultiItem = false;
@@ -261,11 +261,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json({ 
           success: true, 
-          paymentId: result.payment.id,
+          paymentId: response.result.payment.id,
           newBalance: order ? Math.max(0, parseFloat(order.balance) - parseFloat(amount)).toFixed(2) : '0.00'
         });
       } else {
-        res.status(400).json({ error: "Payment failed", status: result.payment?.status });
+        res.status(400).json({ error: "Payment failed", status: response.result?.payment?.status });
       }
     } catch (error: any) {
       console.error('Square payment error:', error);
@@ -333,6 +333,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Validation error", details: error.errors });
       }
+      res.status(500).json({ error: "Failed to create order" });
+    }
+  });
+
+  // Create order with optional payment processing
+  app.post("/api/orders-with-payment", async (req, res) => {
+    try {
+      const { orderData, paymentData } = req.body;
+      
+      // Validate order data
+      const validatedData = insertOrderSchema.parse(orderData);
+      
+      // Calculate pricing server-side
+      const pricing = calculatePricing(validatedData);
+      
+      // Merge validated data with calculated pricing
+      const completeOrderData = {
+        ...validatedData,
+        ...pricing,
+      };
+      
+      // Create the order first
+      const order = await storage.createOrder(completeOrderData);
+      
+      // If payment info provided, process the payment
+      if (paymentData && paymentData.sourceId && paymentData.amount) {
+        try {
+          if (!squareClient) {
+            throw new Error("Square payment not configured");
+          }
+
+          const locationId = process.env.VITE_SQUARE_LOCATION_ID || process.env.SQUARE_LOCATION_ID;
+          if (!locationId) {
+            throw new Error("Square Location ID not configured");
+          }
+
+          // Convert amount to cents
+          const amountInCents = Math.round(parseFloat(paymentData.amount) * 100);
+
+          // Create payment using Square API
+          const response = await squareClient.payments.create({
+            sourceId: paymentData.sourceId,
+            idempotencyKey: randomUUID(),
+            amountMoney: {
+              amount: BigInt(amountInCents),
+              currency: 'USD',
+            },
+            locationId,
+          });
+
+          if (response.result?.payment?.status === 'COMPLETED') {
+            // Update paidToDate and balance
+            const paidAmount = parseFloat(paymentData.amount);
+            const currentPaid = parseFloat(order.paidToDate);
+            const newPaidToDate = (currentPaid + paidAmount).toFixed(2);
+            const newBalance = Math.max(0, parseFloat(order.total) - parseFloat(newPaidToDate)).toFixed(2);
+            
+            const updatedOrder = await storage.updateOrder(order.id, { 
+              paidToDate: newPaidToDate,
+              balance: newBalance 
+            });
+            
+            return res.status(201).json({ 
+              order: updatedOrder,
+              payment: {
+                success: true,
+                paymentId: response.result.payment.id,
+                amount: paymentData.amount,
+                newBalance
+              }
+            });
+          } else {
+            // Payment failed - rollback order creation
+            await storage.deleteOrder(order.id);
+            return res.status(400).json({ 
+              error: "Payment failed", 
+              status: response.result?.payment?.status,
+              orderRolledBack: true
+            });
+          }
+        } catch (paymentError: any) {
+          // Payment processing failed - rollback order creation
+          await storage.deleteOrder(order.id);
+          console.error('Payment processing error:', paymentError);
+          return res.status(500).json({ 
+            error: "Payment processing failed", 
+            details: paymentError.message,
+            orderRolledBack: true
+          });
+        }
+      }
+      
+      // No payment requested - just return the created order
+      res.status(201).json({ order, payment: null });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error('Order creation error:', error);
       res.status(500).json({ error: "Failed to create order" });
     }
   });

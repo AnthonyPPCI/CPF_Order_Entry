@@ -78,6 +78,7 @@ export const orders = pgTable("orders", {
   discount: text("discount"),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
   deposit: text("deposit"),
+  paidToDate: decimal("paid_to_date", { precision: 10, scale: 2 }).notNull().default("0"),
   balance: decimal("balance", { precision: 10, scale: 2 }).notNull(),
 });
 
@@ -109,6 +110,7 @@ export const insertOrderSchema = createInsertSchema(orders, {
   itemTotal: true,
   shipping: true,
   total: true,
+  paidToDate: true,
   balance: true,
 });
 
@@ -169,6 +171,7 @@ export const orderHeaders = pgTable("order_headers", {
   discount: text("discount"),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
   deposit: text("deposit"),
+  paidToDate: decimal("paid_to_date", { precision: 10, scale: 2 }).notNull().default("0"),
   balance: decimal("balance", { precision: 10, scale: 2 }).notNull(),
 });
 

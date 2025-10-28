@@ -19,6 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MatCombobox } from "@/components/mat-combobox";
+import { SquarePaymentForm, useSquarePaymentForm } from "@/components/SquarePaymentForm";
 import { X, Plus, ChevronDown } from "lucide-react";
 
 // Helper function to parse fractions and decimals
@@ -55,6 +56,9 @@ export default function NewOrder() {
   const [heightText, setHeightText] = useState("16");
   const [pendingItems, setPendingItems] = useState<InsertOrder[]>([]);
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState("0.00");
+  const [skipPayment, setSkipPayment] = useState(false);
+  const { tokenize } = useSquarePaymentForm();
   const [calculatedPricing, setCalculatedPricing] = useState({
     itemTotal: 0,
     shipping: 0,
@@ -229,9 +233,33 @@ export default function NewOrder() {
     }
   }, [form.watch("stackerFrame"), form.watch("topperSku")]);
 
-  const onSubmit = (data: InsertOrder) => {
+  // Auto-update payment amount when total changes
+  useEffect(() => {
+    setPaymentAmount(calculatedPricing.total.toFixed(2));
+  }, [calculatedPricing.total]);
+
+  const onSubmit = async (data: InsertOrder) => {
     // Remove pricing fields - server will calculate them
     const { itemTotal, shipping, salesTax, total, balance, ...orderData } = data as any;
+    
+    // Handle payment processing if not skipped
+    let paymentData = null;
+    if (!skipPayment && parseFloat(paymentAmount) > 0) {
+      const result = await tokenize();
+      if (result.token) {
+        paymentData = {
+          sourceId: result.token,
+          amount: paymentAmount
+        };
+      } else {
+        toast({
+          title: "Payment Required",
+          description: result.error || "Please enter valid card details or skip payment.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
     
     if (pendingItems.length > 0) {
       // Multi-item order: combine pending items with current item
@@ -279,12 +307,54 @@ export default function NewOrder() {
           } = item;
           return itemData;
         }),
+        paymentData,
       };
       
-      createMultiItemOrderMutation.mutate(multiItemOrderData);
+      // For multi-item orders, use standard endpoint (payment not yet supported for multi-item)
+      try {
+        if (paymentData) {
+          toast({
+            title: "Note",
+            description: "Payment processing for multi-item orders will be available soon. Creating order without payment.",
+          });
+        }
+        
+        // Remove paymentData from multi-item order data
+        const { paymentData: _, ...multiItemOrderDataWithoutPayment } = multiItemOrderData;
+        
+        const response = await apiRequest('POST', '/api/multi-orders', multiItemOrderDataWithoutPayment);
+        const createdOrder = await response.json();
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+        toast({
+          title: "Multi-Item Order Created & Recorded",
+          description: `Order #${createdOrder.id?.slice(0, 8).toUpperCase()} with ${createdOrder.items?.length || 0} items has been created.`,
+        });
+        setLocation(`/order/${createdOrder.id}`);
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create multi-item order",
+          variant: "destructive",
+        });
+      }
     } else {
-      // Single-item order
-      createOrderMutation.mutate(orderData);
+      // Single-item order with payment
+      try {
+        const response = await apiRequest('POST', '/api/orders-with-payment', { orderData, paymentData });
+        const createdOrder = await response.json();
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+        toast({
+          title: "Order Created & Recorded",
+          description: `Order #${createdOrder.id?.slice(0, 8).toUpperCase()} has been created${paymentData ? ' and payment processed' : ''}.`,
+        });
+        setLocation(`/order/${createdOrder.id}`);
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create order",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -1659,31 +1729,26 @@ export default function NewOrder() {
                   <CardTitle className="text-lg">Payment</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <Label htmlFor="deposit-input">Deposit</Label>
-                    <Input 
-                      id="deposit-input"
-                      value={form.watch("deposit") || ""} 
-                      onChange={(e) => form.setValue("deposit", e.target.value)}
-                      placeholder="e.g., $100 or 50%" 
-                      data-testid="input-deposit-sidebar" 
+                  <SquarePaymentForm
+                    amount={paymentAmount}
+                    onAmountChange={setPaymentAmount}
+                    maxAmount={calculatedPricing.total.toFixed(2)}
+                  />
+                  
+                  <div className="mt-4 flex items-center gap-2">
+                    <Checkbox 
+                      id="skip-payment"
+                      checked={skipPayment}
+                      onCheckedChange={(checked) => setSkipPayment(!!checked)}
+                      data-testid="checkbox-skip-payment"
                     />
+                    <Label htmlFor="skip-payment">Skip payment for now</Label>
                   </div>
-                  {form.watch("deposit") && calculatedPricing.balance > 0 && (
-                    <div className="mt-4 pt-4 border-t space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Deposit:</span>
-                        <span className="font-mono">
-                          ${parseFloat(form.watch("deposit") || "0").toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-semibold">Balance Due:</span>
-                        <span className="font-mono font-bold" data-testid="text-balance">
-                          ${calculatedPricing.balance.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
+                  
+                  {!skipPayment && calculatedPricing.total > 0 && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Payment will be processed when you create the order
+                    </p>
                   )}
                 </CardContent>
               </Card>
