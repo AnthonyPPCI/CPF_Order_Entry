@@ -2090,56 +2090,6 @@ export default function NewOrder() {
                       </AccordionContent>
                     </AccordionItem>
 
-                    <AccordionItem value="cash">
-                      <AccordionTrigger data-testid="accordion-cash">
-                        <div className="flex items-center gap-2">
-                          Cash Payment
-                          {processedPayment?.type === 'cash' && (
-                            <Badge variant="default" className="ml-2">Ready: ${processedPayment.amount}</Badge>
-                          )}
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Cash Amount Received</label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
-                              value={form.watch("cashAmount") || ""}
-                              onChange={(e) => form.setValue("cashAmount", e.target.value)}
-                              data-testid="input-cash-amount"
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              type="button"
-                              onClick={handleRecordCash}
-                              className="flex-1"
-                              disabled={processedPayment?.type === 'cash'}
-                              data-testid="button-record-cash"
-                            >
-                              {processedPayment?.type === 'cash' ? 'Cash Payment Ready' : 'Record Cash Payment'}
-                            </Button>
-                            {processedPayment?.type === 'cash' && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setProcessedPayment(null)}
-                                data-testid="button-clear-cash"
-                              >
-                                Clear
-                              </Button>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Click the button above to prepare the cash payment, then click "Create Order"
-                          </p>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-
                     <AccordionItem value="paypal">
                       <AccordionTrigger data-testid="accordion-paypal">
                         <div className="flex items-center gap-2">
@@ -2191,6 +2141,56 @@ export default function NewOrder() {
                           )}
                           <p className="text-sm text-muted-foreground">
                             Click "Prepare PayPal Invoice" above, then "Create Order". The invoice will be sent automatically to the customer's email.
+                          </p>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    <AccordionItem value="cash">
+                      <AccordionTrigger data-testid="accordion-cash">
+                        <div className="flex items-center gap-2">
+                          Cash Payment
+                          {processedPayment?.type === 'cash' && (
+                            <Badge variant="default" className="ml-2">Ready: ${processedPayment.amount}</Badge>
+                          )}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Cash Amount Received</label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={form.watch("cashAmount") || ""}
+                              onChange={(e) => form.setValue("cashAmount", e.target.value)}
+                              data-testid="input-cash-amount"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              onClick={handleRecordCash}
+                              className="flex-1"
+                              disabled={processedPayment?.type === 'cash'}
+                              data-testid="button-record-cash"
+                            >
+                              {processedPayment?.type === 'cash' ? 'Cash Payment Ready' : 'Record Cash Payment'}
+                            </Button>
+                            {processedPayment?.type === 'cash' && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setProcessedPayment(null)}
+                                data-testid="button-clear-cash"
+                              >
+                                Clear
+                              </Button>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Click the button above to prepare the cash payment, then click "Create Order"
                           </p>
                         </div>
                       </AccordionContent>
