@@ -338,37 +338,20 @@ export default function NewOrder() {
     });
 
     try {
-      // Get customer details for verification
-      const customerEmail = form.getValues("email");
-      const customerName = form.getValues("customerName");
-      const phone = form.getValues("phone");
-
-      // Split customer name into first and last name for buyer verification
-      const nameParts = customerName?.split(" ") || [];
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.slice(1).join(" ") || "";
-
-      // Step 1: Tokenize the card with buyer verification (includes CVV verification)
-      const result = await tokenize({
-        email: customerEmail,
-        givenName: firstName,
-        familyName: lastName,
-        phone: phone,
-      });
+      // Step 1: Tokenize the card (no buyer verification)
+      const result = await tokenize();
       
       if (!result.token) {
         throw new Error(result.error || "Card tokenization failed");
       }
 
-      // Step 2: Charge the card immediately (without order ID)
+      // Step 2: Charge the card immediately
       const response = await fetch('/api/process-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: parseFloat(paymentAmount).toFixed(2),
           sourceId: result.token,
-          verificationToken: result.verificationToken,
-          buyerEmailAddress: customerEmail || undefined,
         }),
       });
 
