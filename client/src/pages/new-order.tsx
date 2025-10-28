@@ -58,6 +58,7 @@ export default function NewOrder() {
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("0.00");
   const [skipPayment, setSkipPayment] = useState(false);
+  const [activePaymentMethod, setActivePaymentMethod] = useState<string | undefined>(undefined);
   const { tokenize } = useSquarePaymentForm();
   const [calculatedPricing, setCalculatedPricing] = useState({
     itemTotal: 0,
@@ -85,8 +86,8 @@ export default function NewOrder() {
     bom: [] as string[],
   });
 
-  const form = useForm<InsertOrder>({
-    resolver: zodResolver(insertOrderSchema),
+  const form = useForm<InsertOrder & { cashAmount?: string }>({
+    resolver: zodResolver(insertOrderSchema.extend({ cashAmount: insertOrderSchema.shape.deposit })),
     defaultValues: {
       customerName: "",
       address1: "",
@@ -136,6 +137,7 @@ export default function NewOrder() {
       quantity: 1,
       discount: "",
       deposit: "",
+      cashAmount: "",
     },
   });
 
@@ -238,28 +240,44 @@ export default function NewOrder() {
     setPaymentAmount(calculatedPricing.total.toFixed(2));
   }, [calculatedPricing.total]);
 
-  const onSubmit = async (data: InsertOrder) => {
+  const onSubmit = async (data: InsertOrder & { cashAmount?: string }) => {
     // Remove pricing fields - server will calculate them
-    const { itemTotal, shipping, salesTax, total, balance, ...orderData } = data as any;
+    const { itemTotal, shipping, salesTax, total, balance, cashAmount, ...orderData } = data as any;
     
-    // Handle payment processing if not skipped
+    // Determine payment data and method
     let paymentData = null;
-    if (!skipPayment && parseFloat(paymentAmount) > 0) {
+    let paymentMethodValue = null;
+    let orderDataWithPayment = { ...orderData };
+    
+    // Check if credit card payment (user opened credit card accordion)
+    if (activePaymentMethod === 'credit-card' && paymentAmount && parseFloat(paymentAmount) > 0) {
       const result = await tokenize();
       if (result.token) {
         paymentData = {
           sourceId: result.token,
           amount: paymentAmount
         };
+        paymentMethodValue = "credit_card";
       } else {
+        // Show error if user selected credit card but form not ready
         toast({
-          title: "Payment Required",
+          title: "Payment Error",
           description: result.error || "Please enter valid card details or skip payment.",
           variant: "destructive"
         });
         return;
       }
     }
+    // Check if cash payment (user opened cash accordion)
+    else if (activePaymentMethod === 'cash' && cashAmount && parseFloat(cashAmount) > 0) {
+      paymentMethodValue = "cash";
+      // Set paidToDate for cash payments
+      orderDataWithPayment.paidToDate = cashAmount;
+    }
+    // No payment method selected - that's okay, create order without payment
+    
+    // Add payment method to order data
+    orderDataWithPayment.paymentMethod = paymentMethodValue;
     
     if (pendingItems.length > 0) {
       // Multi-item order: combine pending items with current item
@@ -340,12 +358,20 @@ export default function NewOrder() {
     } else {
       // Single-item order with payment
       try {
-        const response = await apiRequest('POST', '/api/orders-with-payment', { orderData, paymentData });
+        const response = await apiRequest('POST', '/api/orders-with-payment', { orderData: orderDataWithPayment, paymentData });
         const createdOrder = await response.json();
         queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+        
+        let description = `Order #${createdOrder.id?.slice(0, 8).toUpperCase()} has been created`;
+        if (paymentMethodValue === 'credit_card') {
+          description += ' and payment processed';
+        } else if (paymentMethodValue === 'cash') {
+          description += ' and cash payment recorded';
+        }
+        
         toast({
           title: "Order Created & Recorded",
-          description: `Order #${createdOrder.id?.slice(0, 8).toUpperCase()} has been created${paymentData ? ' and payment processed' : ''}.`,
+          description,
         });
         setLocation(`/order/${createdOrder.id}`);
       } catch (error: any) {
@@ -1726,30 +1752,63 @@ export default function NewOrder() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Payment</CardTitle>
+                  <CardTitle className="text-lg">Payment (Optional)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <SquarePaymentForm
-                    amount={paymentAmount}
-                    onAmountChange={setPaymentAmount}
-                    maxAmount={calculatedPricing.total.toFixed(2)}
-                  />
+                  <Accordion 
+                    type="single" 
+                    collapsible 
+                    className="w-full"
+                    value={activePaymentMethod}
+                    onValueChange={setActivePaymentMethod}
+                  >
+                    <AccordionItem value="credit-card">
+                      <AccordionTrigger data-testid="accordion-credit-card">Credit Card Payment</AccordionTrigger>
+                      <AccordionContent>
+                        <SquarePaymentForm
+                          amount={paymentAmount}
+                          onAmountChange={setPaymentAmount}
+                          maxAmount={calculatedPricing.total.toFixed(2)}
+                        />
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Payment will be processed when you create the order
+                        </p>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    <AccordionItem value="cash">
+                      <AccordionTrigger data-testid="accordion-cash">Cash Payment</AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="cashAmount"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Cash Amount Received</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    {...field}
+                                    data-testid="input-cash-amount"
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            Cash payment will be recorded with the order
+                          </p>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                   
-                  <div className="mt-4 flex items-center gap-2">
-                    <Checkbox 
-                      id="skip-payment"
-                      checked={skipPayment}
-                      onCheckedChange={(checked) => setSkipPayment(!!checked)}
-                      data-testid="checkbox-skip-payment"
-                    />
-                    <Label htmlFor="skip-payment">Skip payment for now</Label>
-                  </div>
-                  
-                  {!skipPayment && calculatedPricing.total > 0 && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Payment will be processed when you create the order
-                    </p>
-                  )}
+                  <p className="text-sm text-muted-foreground mt-4">
+                    Payment is optional. You can create the order now and process payment later.
+                  </p>
                 </CardContent>
               </Card>
 

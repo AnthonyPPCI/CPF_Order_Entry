@@ -465,6 +465,14 @@ class PricingConfigStorage {
 
 export const pricingConfigStorage = new PricingConfigStorage();
 
+// Helper to convert empty strings to null for numeric fields
+function cleanNumericField(value: any): string | null {
+  if (value === "" || value === undefined || value === null) {
+    return null;
+  }
+  return String(value);
+}
+
 // Database-backed storage implementation
 export class DbStorage implements IStorage {
   // Legacy single-item order operations
@@ -478,7 +486,22 @@ export class DbStorage implements IStorage {
   }
 
   async createOrder(insertOrder: InsertOrderWithPricing): Promise<Order> {
-    const result = await db.insert(orders).values(insertOrder).returning();
+    // Clean numeric fields to prevent empty string errors
+    const cleanedOrder = {
+      ...insertOrder,
+      width: cleanNumericField(insertOrder.width),
+      height: cleanNumericField(insertOrder.height),
+      matBorderAll: cleanNumericField(insertOrder.matBorderAll),
+      matBorderLeft: cleanNumericField(insertOrder.matBorderLeft),
+      matBorderRight: cleanNumericField(insertOrder.matBorderRight),
+      matBorderTop: cleanNumericField(insertOrder.matBorderTop),
+      matBorderBottom: cleanNumericField(insertOrder.matBorderBottom),
+      mat1Reveal: cleanNumericField(insertOrder.mat1Reveal),
+      mat2Reveal: cleanNumericField(insertOrder.mat2Reveal),
+      shadowDepth: cleanNumericField(insertOrder.shadowDepth),
+    };
+    
+    const result = await db.insert(orders).values(cleanedOrder).returning();
     return result[0];
   }
 
@@ -538,11 +561,21 @@ export class DbStorage implements IStorage {
       const headerResult = await tx.insert(orderHeaders).values(insertHeader).returning();
       const header = headerResult[0];
       
-      // Insert items with the header's ID
+      // Insert items with the header's ID, cleaning numeric fields
       const itemsWithOrderId = insertItems.map((item, index) => ({
         ...item,
         orderId: header.id,
         itemNumber: item.itemNumber || index + 1,
+        width: cleanNumericField(item.width),
+        height: cleanNumericField(item.height),
+        matBorderAll: cleanNumericField(item.matBorderAll),
+        matBorderLeft: cleanNumericField(item.matBorderLeft),
+        matBorderRight: cleanNumericField(item.matBorderRight),
+        matBorderTop: cleanNumericField(item.matBorderTop),
+        matBorderBottom: cleanNumericField(item.matBorderBottom),
+        mat1Reveal: cleanNumericField(item.mat1Reveal),
+        mat2Reveal: cleanNumericField(item.mat2Reveal),
+        shadowDepth: cleanNumericField(item.shadowDepth),
       }));
       
       const itemsResult = await tx.insert(orderItems).values(itemsWithOrderId).returning();

@@ -80,6 +80,7 @@ export const orders = pgTable("orders", {
   deposit: text("deposit"),
   paidToDate: decimal("paid_to_date", { precision: 10, scale: 2 }).notNull().default("0"),
   balance: decimal("balance", { precision: 10, scale: 2 }).notNull(),
+  paymentMethod: varchar("payment_method").$type<"credit_card" | "cash" | null>(),
 });
 
 export const insertOrderSchema = createInsertSchema(orders, {
@@ -173,6 +174,7 @@ export const orderHeaders = pgTable("order_headers", {
   deposit: text("deposit"),
   paidToDate: decimal("paid_to_date", { precision: 10, scale: 2 }).notNull().default("0"),
   balance: decimal("balance", { precision: 10, scale: 2 }).notNull(),
+  paymentMethod: varchar("payment_method").$type<"credit_card" | "cash" | null>(),
 });
 
 export const insertOrderHeaderSchema = createInsertSchema(orderHeaders, {

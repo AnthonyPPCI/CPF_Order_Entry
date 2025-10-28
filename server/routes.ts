@@ -395,15 +395,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               balance: newBalance 
             });
             
-            return res.status(201).json({ 
-              order: updatedOrder,
-              payment: {
-                success: true,
-                paymentId: response.result.payment.id,
-                amount: paymentData.amount,
-                newBalance
-              }
-            });
+            // Return just the order for consistency with cash/no payment responses
+            return res.status(201).json(updatedOrder);
           } else {
             // Payment failed - rollback order creation
             await storage.deleteOrder(order.id);
@@ -425,8 +418,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // No payment requested - just return the created order
-      res.status(201).json({ order, payment: null });
+      // No payment requested - return the order (cash payment or no payment)
+      // If it's a cash payment, paidToDate and paymentMethod are already in the order
+      res.status(201).json(order);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Validation error", details: error.errors });
