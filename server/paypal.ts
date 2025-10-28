@@ -71,7 +71,12 @@ export async function getPayPalAccessToken(): Promise<string> {
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Failed to get PayPal access token: ${error}`);
+    const environment = process.env.NODE_ENV === "production" ? "production" : "sandbox";
+    throw new Error(
+      `Failed to get PayPal access token from ${environment} environment: ${error}\n\n` +
+      `Make sure your PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET are for PayPal's ${environment} environment.\n` +
+      `${environment === "sandbox" ? "Get sandbox credentials from: https://developer.paypal.com/dashboard/" : ""}`
+    );
   }
 
   const data: PayPalAccessToken = await response.json();
