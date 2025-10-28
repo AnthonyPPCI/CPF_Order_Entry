@@ -38,7 +38,7 @@ export function Header() {
               </a>
             </div>
             <a 
-              href="https://framebox.com" 
+              href="https://framesbox.com" 
               target="_blank" 
               rel="noopener noreferrer"
               data-testid="link-main-dashboard"
