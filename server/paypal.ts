@@ -122,7 +122,7 @@ export async function createPayPalInvoice(order: Order | OrderHeader, items: Pay
       name: {
         given_name: "CustomPictureFrames.com",
       },
-      email_address: "orders@custompictureframes.com",
+      email_address: "hello@custompictureframes.com",
       phones: [{
         country_code: "001",
         national_number: "8009168770",
