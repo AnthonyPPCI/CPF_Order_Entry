@@ -14,10 +14,15 @@ import { syncOrderToShipStation, syncMultiItemOrderToShipStation } from "./ships
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // Initialize Square client (v43 API)
+const squareEnvironment = process.env.SQUARE_ACCESS_TOKEN?.startsWith('EAAA') ? SquareEnvironment.Production : SquareEnvironment.Sandbox;
 const squareClient = process.env.SQUARE_ACCESS_TOKEN ? new SquareClient({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment: process.env.SQUARE_ACCESS_TOKEN?.startsWith('EAAA') ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
+  environment: squareEnvironment,
 }) : null;
+
+if (squareClient) {
+  console.log(`[Square] Initialized in ${squareEnvironment === SquareEnvironment.Production ? 'PRODUCTION' : 'SANDBOX'} mode (token prefix: ${process.env.SQUARE_ACCESS_TOKEN?.substring(0, 4)})`);
+}
 
 // Helper function to clean empty strings from numeric/text fields
 function cleanEmptyFields(data: any): any {
