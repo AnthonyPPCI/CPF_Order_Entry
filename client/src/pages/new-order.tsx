@@ -1905,7 +1905,7 @@ export default function NewOrder() {
                     
                     <Button
                       type="submit"
-                      className="w-full"
+                      className="w-full font-bold"
                       size="lg"
                       disabled={createOrderMutation.isPending || createMultiItemOrderMutation.isPending}
                       onClick={form.handleSubmit(onSubmit)}
