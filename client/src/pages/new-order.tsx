@@ -241,6 +241,48 @@ export default function NewOrder() {
     setPaymentAmount(calculatedPricing.total.toFixed(2));
   }, [calculatedPricing.total]);
 
+  // Clear processed payment if amounts change (prevents stale payment data)
+  useEffect(() => {
+    if (processedPayment) {
+      // Clear credit card payment if amount changed
+      if (processedPayment.type === 'credit_card' && processedPayment.amount !== paymentAmount) {
+        setProcessedPayment(null);
+        toast({
+          title: "Payment Cleared",
+          description: "Order total changed. Please process payment again.",
+          variant: "default"
+        });
+      }
+      // Clear cash payment if amount changed
+      if (processedPayment.type === 'cash' && processedPayment.amount !== form.watch("cashAmount")) {
+        setProcessedPayment(null);
+        toast({
+          title: "Payment Cleared",
+          description: "Cash amount changed. Please record payment again.",
+          variant: "default"
+        });
+      }
+    }
+  }, [paymentAmount, form.watch("cashAmount"), processedPayment]);
+
+  // Clear processed payment when accordion changes (switching payment methods)
+  useEffect(() => {
+    if (processedPayment && activePaymentMethod) {
+      const isWrongMethod = 
+        (processedPayment.type === 'credit_card' && activePaymentMethod !== 'credit-card') ||
+        (processedPayment.type === 'cash' && activePaymentMethod !== 'cash');
+      
+      if (isWrongMethod) {
+        setProcessedPayment(null);
+        toast({
+          title: "Payment Cleared",
+          description: "Switched payment method. Please process payment again.",
+          variant: "default"
+        });
+      }
+    }
+  }, [activePaymentMethod, processedPayment]);
+
   // Handler to process credit card payment
   const handleProcessCreditCard = async () => {
     if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
@@ -304,7 +346,19 @@ export default function NewOrder() {
     let orderDataWithPayment = { ...orderData };
     
     if (processedPayment) {
+      // Validate payment amount matches current total (for credit card)
       if (processedPayment.type === 'credit_card') {
+        const currentTotal = calculatedPricing.total.toFixed(2);
+        if (processedPayment.amount !== currentTotal) {
+          toast({
+            title: "Payment Amount Mismatch",
+            description: `Order total changed to $${currentTotal}. Please process payment again.`,
+            variant: "destructive"
+          });
+          setProcessedPayment(null);
+          return;
+        }
+        
         paymentData = {
           sourceId: processedPayment.token,
           amount: processedPayment.amount
@@ -1818,15 +1872,27 @@ export default function NewOrder() {
                             onAmountChange={setPaymentAmount}
                             maxAmount={calculatedPricing.total.toFixed(2)}
                           />
-                          <Button
-                            type="button"
-                            onClick={handleProcessCreditCard}
-                            className="w-full"
-                            disabled={processedPayment?.type === 'credit_card'}
-                            data-testid="button-process-credit-card"
-                          >
-                            {processedPayment?.type === 'credit_card' ? 'Payment Ready' : 'Process Credit Card Payment'}
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              onClick={handleProcessCreditCard}
+                              className="flex-1"
+                              disabled={processedPayment?.type === 'credit_card'}
+                              data-testid="button-process-credit-card"
+                            >
+                              {processedPayment?.type === 'credit_card' ? 'Payment Ready' : 'Process Credit Card Payment'}
+                            </Button>
+                            {processedPayment?.type === 'credit_card' && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setProcessedPayment(null)}
+                                data-testid="button-clear-credit-card"
+                              >
+                                Clear
+                              </Button>
+                            )}
+                          </div>
                           <p className="text-sm text-muted-foreground">
                             Click the button above to prepare the payment, then click "Create Order"
                           </p>
@@ -1856,15 +1922,27 @@ export default function NewOrder() {
                               data-testid="input-cash-amount"
                             />
                           </div>
-                          <Button
-                            type="button"
-                            onClick={handleRecordCash}
-                            className="w-full"
-                            disabled={processedPayment?.type === 'cash'}
-                            data-testid="button-record-cash"
-                          >
-                            {processedPayment?.type === 'cash' ? 'Cash Payment Ready' : 'Record Cash Payment'}
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              onClick={handleRecordCash}
+                              className="flex-1"
+                              disabled={processedPayment?.type === 'cash'}
+                              data-testid="button-record-cash"
+                            >
+                              {processedPayment?.type === 'cash' ? 'Cash Payment Ready' : 'Record Cash Payment'}
+                            </Button>
+                            {processedPayment?.type === 'cash' && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setProcessedPayment(null)}
+                                data-testid="button-clear-cash"
+                              >
+                                Clear
+                              </Button>
+                            )}
+                          </div>
                           <p className="text-sm text-muted-foreground">
                             Click the button above to prepare the cash payment, then click "Create Order"
                           </p>
