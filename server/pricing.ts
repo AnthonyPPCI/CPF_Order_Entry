@@ -77,6 +77,31 @@ export function parseFraction(input: string | number | null | undefined): number
   return parseFloat(str) || 0;
 }
 
+// Helper function to parse discount values (e.g., "10%", "$10", "10", "$10.50")
+export function parseDiscount(discountInput: string | number | null | undefined, subtotal: number): number {
+  if (!discountInput) return 0;
+  
+  const str = discountInput.toString().trim();
+  if (str === "") return 0;
+  
+  // Check if it's a percentage (e.g., "10%", "15%")
+  if (str.includes('%')) {
+    const percentValue = parseFloat(str.replace('%', '').trim());
+    if (isNaN(percentValue)) return 0;
+    return (percentValue / 100) * subtotal;
+  }
+  
+  // Check if it's a dollar amount (e.g., "$10", "$10.50")
+  if (str.includes('$')) {
+    const dollarValue = parseFloat(str.replace('$', '').trim());
+    return isNaN(dollarValue) ? 0 : dollarValue;
+  }
+  
+  // Otherwise treat as plain number (assume dollar amount)
+  const value = parseFloat(str);
+  return isNaN(value) ? 0 : value;
+}
+
 // Helper function to format decimal as fraction string for BOM (e.g., 17.25 → "17-1/4", 19.5 → "19-1/2")
 function formatAsFraction(decimal: number): string {
   const whole = Math.floor(decimal);
@@ -623,8 +648,12 @@ export function calculatePricing(order: InsertOrder): PricingResult {
   const isTaxable = /\bNJ\b/i.test(cityStateZip);
   const salesTax = isTaxable ? itemTotal * 0.07 : 0;
   
-  // Calculate Total (discount is now a text field, not applied in calculation)
-  const total = itemTotal + shipping + salesTax;
+  // Calculate subtotal before discount
+  const subtotal = itemTotal + shipping + salesTax;
+  
+  // Apply discount (supports "$10", "10%", or "10")
+  const discountAmount = parseDiscount(order.discount, subtotal);
+  const total = Math.max(0, subtotal - discountAmount);
   
   // Calculate Balance (deposit is now a text field, parse it)
   const deposit = parseFraction(order.deposit);
@@ -769,8 +798,12 @@ export function calculateMultiItemPricing(input: MultiItemPricingInput): MultiIt
   const isTaxable = /\bNJ\b/i.test(cityStateZip);
   const salesTaxNum = isTaxable ? subtotalNum * 0.07 : 0;
 
-  // Calculate total (discount is text field, not applied in calculation)
-  const totalNum = subtotalNum + shippingNum + salesTaxNum;
+  // Calculate subtotal before discount
+  const beforeDiscountTotal = subtotalNum + shippingNum + salesTaxNum;
+  
+  // Apply discount (supports "$10", "10%", or "10")
+  const discountAmount = parseDiscount(input.discount, beforeDiscountTotal);
+  const totalNum = Math.max(0, beforeDiscountTotal - discountAmount);
 
   // Calculate balance (deposit is text field, parse it)
   const depositNum = parseFraction(input.deposit);
