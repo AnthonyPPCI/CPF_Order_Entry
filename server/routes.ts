@@ -57,9 +57,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Send Google Review request
   app.post("/api/send-review-request", async (req, res) => {
     try {
-      console.log('[Google Reviews] Received review request:', { customerName: req.body.customerName, email: req.body.email, phone: req.body.phone });
+      console.log('[Google Reviews] Received review request:', { customerName: req.body.customerName, email: req.body.email, phone: req.body.phone, smsConsent: req.body.smsConsent });
       
-      const { customerName, email, phone } = req.body;
+      const { customerName, email, phone, smsConsent } = req.body;
 
       if (!customerName) {
         console.log('[Google Reviews] Error: Customer name missing');
@@ -69,6 +69,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!email && !phone) {
         console.log('[Google Reviews] Error: No contact info provided');
         return res.status(400).json({ error: "Either email or phone number is required" });
+      }
+
+      // Subscribe to SMS marketing if consent is given
+      if (smsConsent && phone && process.env.KLAVIYO_API_KEY) {
+        console.log(`[Google Reviews] SMS consent provided, subscribing ${phone} to Klaviyo SMS`);
+        try {
+          const { subscribeToKlaviyoSMS } = await import("./klaviyo.js");
+          await subscribeToKlaviyoSMS(phone, customerName, email);
+          console.log(`[Google Reviews] Successfully subscribed ${phone} to SMS marketing`);
+        } catch (error: any) {
+          console.error("[Google Reviews] Failed to subscribe to SMS:", error);
+          // Don't fail the entire request if SMS subscription fails
+        }
       }
 
       const reviewUrl = "https://g.page/r/CYWvDmYp3xKEEBM/review";

@@ -111,7 +111,7 @@ export default function NewOrder() {
     bom: [] as string[],
   });
 
-  const form = useForm<InsertOrder & { cashAmount?: string }>({
+  const form = useForm<InsertOrder & { cashAmount?: string, smsConsent?: boolean }>({
     resolver: zodResolver(insertOrderSchema.extend({ cashAmount: insertOrderSchema.shape.deposit })),
     defaultValues: {
       customerName: "",
@@ -123,6 +123,7 @@ export default function NewOrder() {
       deliveryMethod: "shipping",
       description: "",
       specialRequests: "",
+      smsConsent: true,
       frameSku: "",
       chopOnly: false,
       sample: false,
@@ -2029,6 +2030,7 @@ export default function NewOrder() {
                           const customerName = form.getValues("customerName");
                           const email = form.getValues("email");
                           const phone = form.getValues("phone");
+                          const smsConsent = form.getValues("smsConsent") ?? true;
                           
                           if (!customerName) {
                             toast({ title: "Customer name required", description: "Please enter a customer name first.", variant: "destructive" });
@@ -2044,7 +2046,7 @@ export default function NewOrder() {
                             const response = await fetch("/api/send-review-request", {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ customerName, email, phone }),
+                              body: JSON.stringify({ customerName, email, phone, smsConsent }),
                             });
                             
                             const data = await response.json();
@@ -2070,6 +2072,21 @@ export default function NewOrder() {
                         <Star className="h-4 w-4 mr-2 fill-yellow-400 text-yellow-400" />
                         Request Google Review
                       </Button>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                        <Checkbox 
+                          id="sms-consent" 
+                          defaultChecked={true}
+                          checked={form.watch("smsConsent") ?? true}
+                          onCheckedChange={(checked) => form.setValue("smsConsent", checked as boolean)}
+                          data-testid="checkbox-sms-consent"
+                        />
+                        <label 
+                          htmlFor="sms-consent" 
+                          className="cursor-pointer select-none"
+                        >
+                          Send me order updates and review requests via text
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
