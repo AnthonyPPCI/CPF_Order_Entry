@@ -85,47 +85,24 @@ export async function addCustomerToKlaviyo(order: Order | OrderHeader): Promise<
 
     console.log(`[Klaviyo] Created/updated profile ${profileId} for ${email || phone}`);
 
-    // Add profile to list
-    const listRelationship: KlaviyoListRelationship = {
-      data: [
-        {
-          type: "profile",
-          id: profileId,
-        },
-      ],
-    };
-
-    const listResponse = await fetch(`${KLAVIYO_API_BASE}/lists/${listId}/relationships/profiles/`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Klaviyo-API-Key ${apiKey}`,
-        "revision": KLAVIYO_REVISION,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(listRelationship),
-    });
-
-    if (!listResponse.ok) {
-      const error = await listResponse.text();
-      // Don't throw error if profile already in list or if list doesn't exist
-      if (error.includes("already exists")) {
-        console.log(`[Klaviyo] Profile ${profileId} already in list ${listId}`);
-      } else {
-        console.error(`[Klaviyo] Failed to add profile to list: ${error}`);
-        console.log(`[Klaviyo] Continuing with SMS subscription despite list add failure`);
-      }
-    } else {
-      console.log(`[Klaviyo] Added profile ${profileId} to list ${listId}`);
-    }
+    // Subscribe to marketing based on customer's consent
+    const smsConsent = (order as any).smsConsent;
     
-    // Subscribe to SMS if customer consented
-    if ((order as any).smsConsent && phone) {
-      console.log(`[Klaviyo] Customer consented to SMS, subscribing ${phone}...`);
+    if (smsConsent && phone) {
+      // Customer consented to SMS - subscribe to both SMS and Email
+      console.log(`[Klaviyo] Customer consented to SMS, subscribing to SMS and Email marketing...`);
       try {
-        await subscribeToKlaviyoSMS(phone, order.customerName || '', email);
-      } catch (smsError: any) {
-        console.error("[Klaviyo] Error subscribing to SMS:", smsError.message);
-        // Don't throw - profile was created, just SMS subscription failed
+        await subscribeToMarketingChannels(phone, order.customerName || '', email, true, true);
+      } catch (error: any) {
+        console.error("[Klaviyo] Error subscribing to marketing:", error.message);
+      }
+    } else if (email) {
+      // No SMS consent, but we have email - subscribe to Email only
+      console.log(`[Klaviyo] Subscribing to Email marketing only...`);
+      try {
+        await subscribeToMarketingChannels(phone || '', order.customerName || '', email, false, true);
+      } catch (error: any) {
+        console.error("[Klaviyo] Error subscribing to email:", error.message);
       }
     }
   } catch (error: any) {
@@ -246,54 +223,101 @@ export async function sendGoogleReviewRequestViaSMS(phone: string, customerName:
   }
 }
 
-// Subscribe user to SMS marketing in Klaviyo
-export async function subscribeToKlaviyoSMS(phone: string, customerName: string, email?: string): Promise<void> {
+// Subscribe user to SMS and/or Email marketing in Klaviyo
+async function subscribeToMarketingChannels(
+  phone: string,
+  customerName: string,
+  email: string | undefined,
+  subscribeSMS: boolean,
+  subscribeEmail: boolean
+): Promise<void> {
   const apiKey = process.env.KLAVIYO_API_KEY;
   const listId = process.env.KLAVIYO_LIST_ID;
 
   if (!apiKey || !listId) {
-    console.log("[Klaviyo SMS] Skipping - API key or List ID not configured");
+    console.log("[Klaviyo] Skipping subscription - API key or List ID not configured");
+    return;
+  }
+
+  // Need at least email or phone to subscribe
+  if (!email && !phone) {
+    console.log("[Klaviyo] Skipping subscription - No email or phone provided");
     return;
   }
 
   try {
-    const formattedPhone = formatPhoneForKlaviyo(phone);
     const nameParts = customerName.split(" ");
     const firstName = nameParts[0] || "";
     const lastName = nameParts.slice(1).join(" ") || "";
 
-    // Create or update profile with SMS consent
-    const profileData: KlaviyoProfile = {
-      type: "profile",
-      attributes: {
-        phone_number: formattedPhone,
-        email: email || undefined,
-        first_name: firstName || undefined,
-        last_name: lastName || undefined,
+    // Build subscription object based on what we're subscribing to
+    const subscriptions: any = {};
+    
+    if (subscribeSMS && phone) {
+      subscriptions.sms = {
+        marketing: {
+          consent: "SUBSCRIBED",
+        },
+      };
+    }
+    
+    if (subscribeEmail && email) {
+      subscriptions.email = {
+        marketing: {
+          consent: "SUBSCRIBED",
+        },
+      };
+    }
+
+    // Build profile attributes
+    const profileAttributes: any = {
+      first_name: firstName || undefined,
+      last_name: lastName || undefined,
+      subscriptions,
+    };
+    
+    // Add email if provided
+    if (email) {
+      profileAttributes.email = email;
+    }
+    
+    // Add phone if provided (and format it)
+    if (phone) {
+      profileAttributes.phone_number = formatPhoneForKlaviyo(phone);
+    }
+
+    // Subscribe profile using subscription API
+    const subscriptionPayload = {
+      data: {
+        type: "profile-subscription-bulk-create-job",
+        attributes: {
+          profiles: {
+            data: [
+              {
+                type: "profile",
+                attributes: profileAttributes,
+              },
+            ],
+          },
+        },
+        relationships: {
+          list: {
+            data: {
+              type: "list",
+              id: listId,
+            },
+          },
+        },
       },
     };
 
-    const profileResponse = await fetch(`${KLAVIYO_API_BASE}/profiles/`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Klaviyo-API-Key ${apiKey}`,
-        "revision": KLAVIYO_REVISION,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ data: profileData }),
-    });
+    const channels = [];
+    if (subscribeSMS) channels.push('SMS');
+    if (subscribeEmail) channels.push('Email');
+    
+    console.log(`[Klaviyo] Subscribing ${email || phone} to ${channels.join(' and ')} marketing...`);
+    console.log(`[Klaviyo] Payload:`, JSON.stringify(subscriptionPayload, null, 2));
 
-    if (!profileResponse.ok) {
-      const error = await profileResponse.text();
-      throw new Error(`Failed to create Klaviyo profile: ${error}`);
-    }
-
-    const profile = await profileResponse.json();
-    const profileId = profile.data.id;
-
-    console.log(`[Klaviyo SMS] Created/updated profile ${profileId} for ${formattedPhone}`);
-
-    // Subscribe profile to SMS marketing using subscription API
     const subscriptionResponse = await fetch(`${KLAVIYO_API_BASE}/profile-subscription-bulk-create-jobs/`, {
       method: "POST",
       headers: {
@@ -301,51 +325,27 @@ export async function subscribeToKlaviyoSMS(phone: string, customerName: string,
         "revision": KLAVIYO_REVISION,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        data: {
-          type: "profile-subscription-bulk-create-job",
-          attributes: {
-            profiles: {
-              data: [
-                {
-                  type: "profile",
-                  id: profileId,
-                  attributes: {
-                    subscriptions: {
-                      sms: {
-                        marketing: {
-                          consent: "SUBSCRIBED",
-                        },
-                      },
-                    },
-                  },
-                },
-              ],
-            },
-          },
-          relationships: {
-            list: {
-              data: {
-                type: "list",
-                id: listId,
-              },
-            },
-          },
-        },
-      }),
+      body: JSON.stringify(subscriptionPayload),
     });
 
     if (!subscriptionResponse.ok) {
       const error = await subscriptionResponse.text();
-      console.error(`[Klaviyo SMS] Failed to subscribe to SMS: ${error}`);
-      // Don't throw - profile was created, just subscription failed
+      console.error(`[Klaviyo] Failed to subscribe: ${error}`);
+      throw new Error(`Klaviyo subscription failed: ${error}`);
     } else {
-      console.log(`[Klaviyo SMS] Successfully subscribed ${formattedPhone} to SMS marketing`);
+      const result = await subscriptionResponse.json();
+      console.log(`[Klaviyo] Successfully subscribed to ${channels.join(' and ')} marketing`);
+      console.log(`[Klaviyo] Job ID: ${result.data?.id || 'unknown'}`);
     }
   } catch (error: any) {
-    console.error("[Klaviyo SMS] Error subscribing to SMS:", error.message);
-    // Don't throw - we don't want SMS subscription failures to break the flow
+    console.error("[Klaviyo] Error subscribing:", error.message);
+    throw error;
   }
+}
+
+// Legacy function name for backwards compatibility
+export async function subscribeToKlaviyoSMS(phone: string, customerName: string, email?: string): Promise<void> {
+  return subscribeToMarketingChannels(phone, customerName, email, true, !!email);
 }
 
 // Helper to format phone number for Klaviyo (E.164 format)
