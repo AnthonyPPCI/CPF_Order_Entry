@@ -108,37 +108,60 @@ export function SquarePaymentForm({
       let verificationToken: string | undefined;
       
       try {
+        // Ensure amount is properly formatted as string with 2 decimal places
+        const formattedAmount = parseFloat(amount).toFixed(2);
+        
         const verificationDetails: any = {
-          amount: amount,
+          amount: formattedAmount,
           currencyCode: 'USD',
           intent: 'CHARGE',
         };
 
-        // Add billing contact if provided
-        if (buyerDetails?.email || buyerDetails?.givenName || buyerDetails?.phone) {
-          verificationDetails.billingContact = {};
+        // Add billing contact only if we have at least email or name
+        if (buyerDetails?.email || buyerDetails?.givenName) {
+          const billingContact: any = {};
           
           if (buyerDetails.email) {
-            verificationDetails.billingContact.email = buyerDetails.email;
+            billingContact.email = buyerDetails.email;
           }
           if (buyerDetails.givenName) {
-            verificationDetails.billingContact.givenName = buyerDetails.givenName;
+            billingContact.givenName = buyerDetails.givenName;
           }
           if (buyerDetails.familyName) {
-            verificationDetails.billingContact.familyName = buyerDetails.familyName;
+            billingContact.familyName = buyerDetails.familyName;
           }
           if (buyerDetails.phone) {
-            verificationDetails.billingContact.phone = buyerDetails.phone;
+            billingContact.phone = buyerDetails.phone;
+          }
+          
+          // Only add billingContact if it has at least one property
+          if (Object.keys(billingContact).length > 0) {
+            verificationDetails.billingContact = billingContact;
           }
         }
+
+        console.log('Attempting buyer verification with:', {
+          amount: formattedAmount,
+          hasBillingContact: !!verificationDetails.billingContact,
+          billingContactFields: verificationDetails.billingContact ? Object.keys(verificationDetails.billingContact) : []
+        });
 
         const verifyResult = await paymentsRef.current.verifyBuyer(paymentToken, verificationDetails);
         
         if (verifyResult.token) {
           verificationToken = verifyResult.token;
+          console.log('Buyer verification successful');
+        } else {
+          console.warn('Buyer verification returned no token');
         }
       } catch (verifyError: any) {
-        console.warn('Buyer verification failed:', verifyError);
+        console.error('Buyer verification failed:', verifyError);
+        console.error('Verification error details:', {
+          name: verifyError?.name,
+          message: verifyError?.message,
+          errors: verifyError?.errors,
+          argumentErrors: verifyError?.argumentErrors
+        });
         // Continue without verification token if this fails
       }
 
