@@ -77,7 +77,8 @@ export function parseFraction(input: string | number | null | undefined): number
   return parseFloat(str) || 0;
 }
 
-// Helper function to parse discount values (e.g., "10%", "$10", "10", "$10.50")
+// Helper function to parse discount values (e.g., "10%", "$10", "$10.50")
+// Only accepts values with $ or % - rejects plain numbers
 export function parseDiscount(discountInput: string | number | null | undefined, subtotal: number): number {
   if (!discountInput) return 0;
   
@@ -97,9 +98,8 @@ export function parseDiscount(discountInput: string | number | null | undefined,
     return isNaN(dollarValue) ? 0 : dollarValue;
   }
   
-  // Otherwise treat as plain number (assume dollar amount)
-  const value = parseFloat(str);
-  return isNaN(value) ? 0 : value;
+  // Reject plain numbers - must have $ or %
+  return 0;
 }
 
 // Helper function to format decimal as fraction string for BOM (e.g., 17.25 → "17-1/4", 19.5 → "19-1/2")

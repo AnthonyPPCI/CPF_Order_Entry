@@ -69,9 +69,8 @@ function parseDiscount(discountInput: string, subtotal: number): number {
     return isNaN(dollarValue) ? 0 : dollarValue;
   }
   
-  // Otherwise treat as plain number (assume dollar amount)
-  const value = parseFloat(str);
-  return isNaN(value) ? 0 : value;
+  // Reject plain numbers - must have $ or %
+  return 0;
 }
 
 export default function NewOrder() {
