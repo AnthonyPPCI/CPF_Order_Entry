@@ -17,7 +17,7 @@ const squareClient = process.env.SQUARE_ACCESS_TOKEN ? new SquareClient({
   bearerAuthCredentials: {
     accessToken: process.env.SQUARE_ACCESS_TOKEN,
   },
-  environment: process.env.SQUARE_ACCESS_TOKEN?.startsWith('EAAAl') ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
+  environment: process.env.SQUARE_ACCESS_TOKEN?.startsWith('EAAA') ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
 }) : null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -206,8 +206,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert amount to cents (Square uses smallest currency unit)
       const amountInCents = Math.round(parseFloat(amount) * 100);
 
-      // Create payment using Square API
-      const { result } = await squareClient.paymentsApi.createPayment({
+      // Create payment using Square API (v43+ syntax)
+      const { result } = await squareClient.payments.create({
         sourceId,
         idempotencyKey: randomUUID(),
         amountMoney: {
