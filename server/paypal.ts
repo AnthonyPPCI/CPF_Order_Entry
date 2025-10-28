@@ -58,7 +58,19 @@ export async function getPayPalAccessToken(): Promise<string> {
     throw new Error("PayPal credentials not configured. Please add PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET.");
   }
 
-  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  // Trim whitespace from credentials (common issue)
+  const trimmedClientId = clientId.trim();
+  const trimmedSecret = clientSecret.trim();
+  
+  // Debug info (without exposing actual values)
+  const environment = process.env.NODE_ENV === "production" ? "production" : "sandbox";
+  console.log(`[PayPal SDK] Attempting to get access token for ${environment} environment`);
+  console.log(`[PayPal SDK] Client ID length: ${trimmedClientId.length} characters`);
+  console.log(`[PayPal SDK] Client ID starts with: ${trimmedClientId.substring(0, 4)}...`);
+  console.log(`[PayPal SDK] Secret length: ${trimmedSecret.length} characters`);
+  console.log(`[PayPal SDK] API URL: ${PAYPAL_API_BASE}/v1/oauth2/token`);
+
+  const auth = Buffer.from(`${trimmedClientId}:${trimmedSecret}`).toString("base64");
   
   const response = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
     method: "POST",
