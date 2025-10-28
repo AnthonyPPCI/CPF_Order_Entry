@@ -373,6 +373,8 @@ export default function NewOrder() {
       } else if (processedPayment.type === 'cash') {
         paymentMethodValue = "cash";
         orderDataWithPayment.paidToDate = processedPayment.amount;
+      } else if (processedPayment.type === 'paypal') {
+        paymentMethodValue = "paypal";
       }
     }
     
@@ -443,10 +445,39 @@ export default function NewOrder() {
         const response = await apiRequest('POST', '/api/multi-orders', multiItemOrderDataWithoutPayment);
         const createdOrder = await response.json();
         queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-        toast({
-          title: "Multi-Item Order Created & Recorded",
-          description: `Order #${createdOrder.id?.slice(0, 8).toUpperCase()} with ${createdOrder.items?.length || 0} items has been created.`,
-        });
+        
+        // Send PayPal invoice if payment method is PayPal
+        if (paymentMethodValue === 'paypal') {
+          try {
+            const paypalResponse = await fetch('/api/create-paypal-invoice', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: createdOrder.id, isMultiItem: true }),
+            });
+            
+            if (paypalResponse.ok) {
+              const paypalData = await paypalResponse.json();
+              toast({
+                title: "Multi-Item Order Created & PayPal Invoice Sent",
+                description: `Order #${createdOrder.id?.slice(0, 8).toUpperCase()} created. PayPal invoice sent to ${orderData.email}.`,
+              });
+            } else {
+              throw new Error('Failed to send PayPal invoice');
+            }
+          } catch (paypalError: any) {
+            toast({
+              title: "Order Created, but PayPal Invoice Failed",
+              description: `Order created successfully, but couldn't send PayPal invoice: ${paypalError.message}`,
+              variant: "destructive",
+            });
+          }
+        } else {
+          toast({
+            title: "Multi-Item Order Created & Recorded",
+            description: `Order #${createdOrder.id?.slice(0, 8).toUpperCase()} with ${createdOrder.items?.length || 0} items has been created.`,
+          });
+        }
+        
         setLocation(`/order/${createdOrder.id}`);
       } catch (error: any) {
         toast({
@@ -467,6 +498,23 @@ export default function NewOrder() {
           description += ' and payment processed';
         } else if (paymentMethodValue === 'cash') {
           description += ' and cash payment recorded';
+        } else if (paymentMethodValue === 'paypal') {
+          // Send PayPal invoice
+          try {
+            const paypalResponse = await fetch('/api/create-paypal-invoice', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: createdOrder.id, isMultiItem: false }),
+            });
+            
+            if (paypalResponse.ok) {
+              description = `Order #${createdOrder.id?.slice(0, 8).toUpperCase()} created and PayPal invoice sent to ${orderDataWithPayment.email}`;
+            } else {
+              throw new Error('Failed to send PayPal invoice');
+            }
+          } catch (paypalError: any) {
+            description = `Order created but PayPal invoice failed: ${paypalError.message}`;
+          }
         }
         
         toast({
@@ -2087,6 +2135,62 @@ export default function NewOrder() {
                           </div>
                           <p className="text-sm text-muted-foreground">
                             Click the button above to prepare the cash payment, then click "Create Order"
+                          </p>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    <AccordionItem value="paypal">
+                      <AccordionTrigger data-testid="accordion-paypal">
+                        <div className="flex items-center gap-2">
+                          PayPal Invoice
+                          {processedPayment?.type === 'paypal' && (
+                            <Badge variant="default" className="ml-2">Invoice Ready</Badge>
+                          )}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-4">
+                          <p className="text-sm text-muted-foreground">
+                            Creates a PayPal invoice and emails it to the customer. Payment is tracked automatically.
+                          </p>
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              if (!form.watch("email")) {
+                                toast({
+                                  title: "Customer email required",
+                                  description: "Please enter the customer's email address to send a PayPal invoice.",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              setProcessedPayment({ type: 'paypal', amount: '0.00' });
+                              setActivePaymentMethod('');
+                              toast({
+                                title: "PayPal invoice ready",
+                                description: "A PayPal invoice will be created and sent after the order is created."
+                              });
+                            }}
+                            className="w-full"
+                            disabled={processedPayment?.type === 'paypal'}
+                            data-testid="button-prepare-paypal"
+                          >
+                            {processedPayment?.type === 'paypal' ? 'PayPal Invoice Ready' : 'Prepare PayPal Invoice'}
+                          </Button>
+                          {processedPayment?.type === 'paypal' && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => setProcessedPayment(null)}
+                              className="w-full"
+                              data-testid="button-clear-paypal"
+                            >
+                              Clear
+                            </Button>
+                          )}
+                          <p className="text-sm text-muted-foreground">
+                            Click "Prepare PayPal Invoice" above, then "Create Order". The invoice will be sent automatically to the customer's email.
                           </p>
                         </div>
                       </AccordionContent>

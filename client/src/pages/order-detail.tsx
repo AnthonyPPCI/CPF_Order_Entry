@@ -399,6 +399,30 @@ export default function OrderDetail() {
                       <span className="text-muted-foreground">Balance Due:</span>
                       <span className="font-semibold">${multiOrder.balance}</span>
                     </div>
+                    
+                    {multiOrder.paypalInvoiceId && (
+                      <>
+                        <Separator />
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium">PayPal Invoice:</span>
+                            <Badge variant={multiOrder.paypalInvoiceStatus === 'PAID' ? 'default' : 'secondary'}>
+                              {multiOrder.paypalInvoiceStatus || 'SENT'}
+                            </Badge>
+                          </div>
+                          {multiOrder.paypalInvoiceUrl && (
+                            <a
+                              href={multiOrder.paypalInvoiceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline"
+                            >
+                              View PayPal Invoice →
+                            </a>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -885,6 +909,30 @@ export default function OrderDetail() {
                         <span className="font-mono font-bold" data-testid="text-invoice-balance">
                           ${parseFloat(order.balance).toFixed(2)}
                         </span>
+                      </div>
+                    </>
+                  )}
+                  
+                  {order.paypalInvoiceId && (
+                    <>
+                      <Separator className="my-3" />
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">PayPal Invoice:</span>
+                          <Badge variant={order.paypalInvoiceStatus === 'PAID' ? 'default' : 'secondary'}>
+                            {order.paypalInvoiceStatus || 'SENT'}
+                          </Badge>
+                        </div>
+                        {order.paypalInvoiceUrl && (
+                          <a
+                            href={order.paypalInvoiceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline"
+                          >
+                            View PayPal Invoice →
+                          </a>
+                        )}
                       </div>
                     </>
                   )}

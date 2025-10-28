@@ -147,6 +147,226 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create and send PayPal invoice
+  app.post("/api/create-paypal-invoice", async (req, res) => {
+    try {
+      const { orderId, isMultiItem } = req.body;
+      
+      if (!orderId) {
+        return res.status(400).json({ error: "Order ID is required" });
+      }
+
+      const { createPayPalInvoice, sendPayPalInvoice } = await import("./paypal.js");
+      let order;
+      let items: any[] = [];
+
+      if (isMultiItem) {
+        // Fetch multi-item order
+        const orderHeader = await storage.getOrderHeaderById(orderId);
+        if (!orderHeader) {
+          return res.status(404).json({ error: "Order not found" });
+        }
+        order = orderHeader;
+        
+        // Build items array from order items
+        const orderItems = await storage.getOrderItemsByHeaderId(orderId);
+        items = orderItems.map((item, index) => ({
+          name: `Item #${index + 1}: ${item.frameSku || 'Frame'}`,
+          description: `${item.width || 'N/A'} x ${item.height || 'N/A'}`,
+          quantity: "1",
+          unit_amount: {
+            currency_code: "USD",
+            value: item.itemTotal || "0.00",
+          },
+        }));
+        
+        // Add shipping
+        if (parseFloat(orderHeader.shipping) > 0) {
+          items.push({
+            name: "Shipping",
+            quantity: "1",
+            unit_amount: {
+              currency_code: "USD",
+              value: orderHeader.shipping,
+            },
+          });
+        }
+        
+        // Add sales tax
+        if (orderHeader.salesTax && parseFloat(orderHeader.salesTax) > 0) {
+          items.push({
+            name: "Sales Tax",
+            quantity: "1",
+            unit_amount: {
+              currency_code: "USD",
+              value: orderHeader.salesTax,
+            },
+          });
+        }
+      } else {
+        // Fetch single-item order
+        order = await storage.getOrderById(orderId);
+        if (!order) {
+          return res.status(404).json({ error: "Order not found" });
+        }
+        
+        // Build items array
+        items.push({
+          name: `Frame: ${order.frameSku || 'Custom Frame'}`,
+          description: `${order.width || 'N/A'} x ${order.height || 'N/A'}`,
+          quantity: order.quantity?.toString() || "1",
+          unit_amount: {
+            currency_code: "USD",
+            value: order.itemTotal,
+          },
+        });
+        
+        // Add shipping
+        if (parseFloat(order.shipping) > 0) {
+          items.push({
+            name: "Shipping",
+            quantity: "1",
+            unit_amount: {
+              currency_code: "USD",
+              value: order.shipping,
+            },
+          });
+        }
+        
+        // Add sales tax
+        if (order.salesTax && parseFloat(order.salesTax) > 0) {
+          items.push({
+            name: "Sales Tax",
+            quantity: "1",
+            unit_amount: {
+              currency_code: "USD",
+              value: order.salesTax,
+            },
+          });
+        }
+      }
+
+      // Validate customer email
+      if (!order.email) {
+        return res.status(400).json({ error: "Customer email is required to send PayPal invoice" });
+      }
+
+      // Create invoice
+      const invoice = await createPayPalInvoice(order, items);
+      
+      // Send invoice
+      await sendPayPalInvoice(invoice.id);
+      
+      // Get the payment URL from invoice links
+      const paymentLink = invoice.links.find((link: any) => link.rel === "payer-view");
+      
+      // Update order with PayPal invoice info
+      const updateData = {
+        paypalInvoiceId: invoice.id,
+        paypalInvoiceStatus: "SENT",
+        paypalInvoiceUrl: paymentLink?.href,
+        paymentMethod: "paypal" as const,
+      };
+      
+      if (isMultiItem) {
+        await storage.updateOrderHeader(orderId, updateData);
+      } else {
+        await storage.updateOrder(orderId, updateData);
+      }
+
+      res.json({ 
+        success: true, 
+        invoiceId: invoice.id,
+        invoiceUrl: paymentLink?.href,
+        message: "PayPal invoice created and sent successfully" 
+      });
+    } catch (error: any) {
+      console.error("Error creating PayPal invoice:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // PayPal webhook handler
+  app.post("/api/webhooks/paypal", async (req, res) => {
+    try {
+      const { verifyWebhookSignature } = await import("./paypal.js");
+      
+      // Verify webhook signature for security
+      const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+      if (!webhookId) {
+        console.error("[PayPal Webhook] PAYPAL_WEBHOOK_ID not configured");
+        return res.status(500).json({ error: "Webhook not configured" });
+      }
+      
+      // Extract PayPal transmission headers (case-insensitive)
+      const headers: Record<string, string> = {};
+      for (const [key, value] of Object.entries(req.headers)) {
+        if (typeof value === 'string') {
+          headers[key.toLowerCase()] = value;
+        }
+      }
+      
+      // Verify the webhook signature
+      const isValid = await verifyWebhookSignature(webhookId, headers, req.body);
+      if (!isValid) {
+        console.error("[PayPal Webhook] SECURITY ALERT: Invalid webhook signature detected");
+        console.error(`[PayPal Webhook] Transmission ID:`, headers['paypal-transmission-id']);
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+      
+      const { event_type, resource } = req.body;
+      
+      console.log(`[PayPal Webhook] Verified event: ${event_type}`);
+      
+      // Handle invoice paid event
+      if (event_type === "INVOICING.INVOICE.PAID") {
+        const invoiceId = resource.id;
+        const paidAmount = resource.amount?.value || resource.payments?.paid_amount?.value || "0";
+        
+        // Find order with this invoice ID
+        const allOrders = await storage.listOrders();
+        const order = allOrders.find((o: any) => o.paypalInvoiceId === invoiceId);
+        
+        if (order) {
+          // Update order payment status
+          const newPaidToDate = parseFloat(order.paidToDate || "0") + parseFloat(paidAmount);
+          const newBalance = parseFloat(order.total) - newPaidToDate;
+          
+          await storage.updateOrder(order.id, {
+            paypalInvoiceStatus: "PAID",
+            paidToDate: newPaidToDate.toFixed(2),
+            balance: Math.max(0, newBalance).toFixed(2),
+          });
+          
+          console.log(`[PayPal Webhook] Updated order ${order.id} - Paid: $${paidAmount}`);
+        }
+        
+        // Check multi-item orders
+        const allMultiOrders = await storage.listOrderHeaders();
+        const multiOrder = allMultiOrders.find((o: any) => o.paypalInvoiceId === invoiceId);
+        
+        if (multiOrder) {
+          const newPaidToDate = parseFloat(multiOrder.paidToDate || "0") + parseFloat(paidAmount);
+          const newBalance = parseFloat(multiOrder.total) - newPaidToDate;
+          
+          await storage.updateOrderHeader(multiOrder.id, {
+            paypalInvoiceStatus: "PAID",
+            paidToDate: newPaidToDate.toFixed(2),
+            balance: Math.max(0, newBalance).toFixed(2),
+          });
+          
+          console.log(`[PayPal Webhook] Updated multi-order ${multiOrder.id} - Paid: $${paidAmount}`);
+        }
+      }
+      
+      // Acknowledge webhook
+      res.status(200).send();
+    } catch (error: any) {
+      console.error("[PayPal Webhook] Error processing webhook:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Send order email (to Brian or customer)
   app.post("/api/send-order-email", async (req, res) => {
     try {
