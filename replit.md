@@ -42,7 +42,8 @@ Preferred communication style: Simple, everyday language.
 -   **Transactional Email System**: Integrated Resend API for sending order notifications and customer confirmations.
 -   **Automatic Order Recording**: Orders are automatically recorded in the database upon creation.
 -   **ShipStation Integration**: Fully integrated ShipStation V1 REST API for automatic order syncing, including optional sync, data mapping, and non-blocking synchronization. For PayPal invoice orders, ShipStation sync is intelligently deferred until payment is confirmed via webhook to prevent shipping unpaid orders.
--   **Google Reviews Request System**: Prominent button on new order form and order detail page sends frictionless review requests via email (Resend) or SMS (optional Twilio), directing customers to Google Reviews page.
+-   **Google Reviews Request System**: Prominent button on new order form and order detail page sends frictionless review requests via email (Resend) or SMS (Klaviyo primary, Twilio fallback), directing customers to Google Reviews page.
+-   **Klaviyo Integration**: Automatic customer profile creation and list subscription upon order creation. Syncs customer data (name, email, phone, order history) to Klaviyo for marketing automation. Supports optional SMS for Google Reviews if Klaviyo SMS is enabled.
 -   **PayPal Invoice Integration**: Fully integrated PayPal Invoicing API v2 for sending payment invoices to customers, with cryptographic webhook signature verification to prevent fraud, automatic payment tracking via webhooks, and real-time order balance updates. Supports both sandbox (development) and production environments.
 
 ### Data Storage Solutions
@@ -55,7 +56,8 @@ Preferred communication style: Simple, everyday language.
 
 -   **Database Service**: Neon serverless PostgreSQL.
 -   **Email Service**: Resend API.
--   **SMS Service**: Twilio API (optional for Google Reviews SMS).
+-   **SMS Service**: Klaviyo (primary for SMS and customer data sync), Twilio API (fallback for Google Reviews SMS).
+-   **Marketing Automation**: Klaviyo for automatic customer profile creation, list subscription, and optional SMS.
 -   **Payment Gateways**: Square SDK for credit card processing, PayPal Invoicing API v2 for invoice-based payments.
 -   **Shipping Integration**: ShipStation V1 REST API.
 -   **Fonts**: Google Fonts (Inter, Geist Mono, Fira Code, DM Sans, Architects Daughter).
