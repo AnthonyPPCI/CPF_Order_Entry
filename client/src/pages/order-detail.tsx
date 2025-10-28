@@ -422,6 +422,27 @@ export default function OrderDetail() {
     );
   }
 
+  // Type guard: If we reach here, order must be not null
+  // (multiOrder path returned early, and we checked !order && !multiOrder above)
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-8">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">Order not found</p>
+                <Link href="/orders" asChild>
+                  <Button variant="outline">Back to Orders</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   const handlePrint = () => {
     window.print();
   };
@@ -460,9 +481,8 @@ export default function OrderDetail() {
             mat1Sku: order.mat1Sku,
             mat2Sku: order.mat2Sku,
             mat3Sku: order.mat3Sku,
-            mat4Sku: order.mat4Sku,
-            acrylic: order.acrylic,
-            backing: order.backing,
+            acrylicType: order.acrylicType,
+            backingSku: order.backingSku,
             description: order.description,
             orderDate: order.orderDate,
           },
@@ -752,18 +772,10 @@ export default function OrderDetail() {
                       </span>
                     </div>
                   )}
-                  {order.discountPercent > 0 && (
+                  {order.discount && (
                     <div className="flex justify-between text-sm text-chart-2">
-                      <span>Discount ({order.discountPercent}%):</span>
-                      <span className="font-mono font-medium">
-                        -$
-                        {(
-                          (parseFloat(order.itemTotal) +
-                            parseFloat(order.shipping) +
-                            (order.salesTax ? parseFloat(order.salesTax) : 0)) *
-                          (order.discountPercent / 100)
-                        ).toFixed(2)}
-                      </span>
+                      <span className="text-muted-foreground">Discount:</span>
+                      <span className="font-medium">{order.discount}</span>
                     </div>
                   )}
 
