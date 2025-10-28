@@ -831,34 +831,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[ShipStation] Deferring sync for PayPal order ${order.id} until payment confirmed`);
       }
       
-      // If payment info provided, process the payment
-      if (paymentData && paymentData.sourceId && paymentData.amount) {
+      // If payment info provided, process or record the payment
+      if (paymentData && paymentData.amount) {
         try {
-          if (!squareClient) {
-            throw new Error("Square payment not configured");
-          }
-
-          const locationId = process.env.VITE_SQUARE_LOCATION_ID || process.env.SQUARE_LOCATION_ID;
-          if (!locationId) {
-            throw new Error("Square Location ID not configured");
-          }
-
-          // Convert amount to cents
-          const amountInCents = Math.round(parseFloat(paymentData.amount) * 100);
-
-          // Create payment using Square API
-          const response = await squareClient.payments.create({
-            sourceId: paymentData.sourceId,
-            idempotencyKey: randomUUID(),
-            amountMoney: {
-              amount: BigInt(amountInCents),
-              currency: 'USD',
-            },
-            locationId,
-          });
-
-          if (response.result?.payment?.status === 'COMPLETED') {
-            // Update paidToDate and balance
+          // Check if payment is already charged (pre-charged before order creation)
+          if (paymentData.paymentId && paymentData.status === 'charged') {
+            // Payment already charged - just update paidToDate and balance
+            console.log(`[Payment] Using pre-charged payment ${paymentData.paymentId} for order ${order.id}`);
             const paidAmount = parseFloat(paymentData.amount);
             const currentPaid = parseFloat(order.paidToDate);
             const newPaidToDate = (currentPaid + paidAmount).toFixed(2);
@@ -869,16 +848,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
               balance: newBalance 
             });
             
-            // Return just the order for consistency with cash/no payment responses
             return res.status(201).json(updatedOrder);
-          } else {
-            // Payment failed - rollback order creation
-            await storage.deleteOrder(order.id);
-            return res.status(400).json({ 
-              error: "Payment failed", 
-              status: response.result?.payment?.status,
-              orderRolledBack: true
+          }
+          
+          // Legacy flow: charge the card now (shouldn't happen with new flow, but kept for compatibility)
+          if (paymentData.sourceId) {
+            if (!squareClient) {
+              throw new Error("Square payment not configured");
+            }
+
+            const locationId = process.env.VITE_SQUARE_LOCATION_ID || process.env.SQUARE_LOCATION_ID;
+            if (!locationId) {
+              throw new Error("Square Location ID not configured");
+            }
+
+            // Convert amount to cents
+            const amountInCents = Math.round(parseFloat(paymentData.amount) * 100);
+
+            // Create payment using Square API
+            const response = await squareClient.payments.create({
+              sourceId: paymentData.sourceId,
+              idempotencyKey: randomUUID(),
+              amountMoney: {
+                amount: BigInt(amountInCents),
+                currency: 'USD',
+              },
+              locationId,
             });
+
+            if (response.result?.payment?.status === 'COMPLETED') {
+              // Update paidToDate and balance
+              const paidAmount = parseFloat(paymentData.amount);
+              const currentPaid = parseFloat(order.paidToDate);
+              const newPaidToDate = (currentPaid + paidAmount).toFixed(2);
+              const newBalance = Math.max(0, parseFloat(order.total) - parseFloat(newPaidToDate)).toFixed(2);
+              
+              const updatedOrder = await storage.updateOrder(order.id, { 
+                paidToDate: newPaidToDate,
+                balance: newBalance 
+              });
+              
+              // Return just the order for consistency with cash/no payment responses
+              return res.status(201).json(updatedOrder);
+            } else {
+              // Payment failed - rollback order creation
+              await storage.deleteOrder(order.id);
+              return res.status(400).json({ 
+                error: "Payment failed", 
+                status: response.result?.payment?.status,
+                orderRolledBack: true
+              });
+            }
           }
         } catch (paymentError: any) {
           // Payment processing failed - rollback order creation

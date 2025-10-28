@@ -431,7 +431,9 @@ export default function NewOrder() {
       if (processedPayment.type === 'credit_card') {
         paymentData = {
           sourceId: processedPayment.token,
-          amount: processedPayment.amount
+          amount: processedPayment.amount,
+          paymentId: processedPayment.paymentId,
+          status: processedPayment.status
         };
         paymentMethodValue = "credit_card";
       } else if (processedPayment.type === 'cash') {
