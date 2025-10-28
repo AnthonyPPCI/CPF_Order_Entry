@@ -114,6 +114,17 @@ export async function addCustomerToKlaviyo(order: Order | OrderHeader): Promise<
     }
 
     console.log(`[Klaviyo] Added profile ${profileId} to list ${listId}`);
+    
+    // Subscribe to SMS if customer consented
+    if ((order as any).smsConsent && phone) {
+      console.log(`[Klaviyo] Customer consented to SMS, subscribing ${phone}...`);
+      try {
+        await subscribeToKlaviyoSMS(phone, order.customerName || '', email);
+      } catch (smsError: any) {
+        console.error("[Klaviyo] Error subscribing to SMS:", smsError.message);
+        // Don't throw - profile was created, just SMS subscription failed
+      }
+    }
   } catch (error: any) {
     console.error("[Klaviyo] Error syncing customer:", error.message);
     // Don't throw - we don't want Klaviyo failures to break order creation
