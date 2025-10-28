@@ -339,6 +339,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           
           console.log(`[PayPal Webhook] Updated order ${order.id} - Paid: $${paidAmount}`);
+          
+          // Now sync to ShipStation if it was deferred during order creation
+          if (order.syncToShipstation) {
+            try {
+              console.log(`[ShipStation] PayPal payment confirmed, syncing order ${order.id} to ShipStation...`);
+              await syncOrderToShipStation(order);
+              console.log(`[ShipStation] Successfully synced PayPal order ${order.id} to ShipStation`);
+            } catch (shipStationError: any) {
+              console.error(`[ShipStation] Failed to sync PayPal order ${order.id}:`, shipStationError.message);
+              // Don't fail the webhook processing if ShipStation sync fails
+            }
+          }
         }
         
         // Check multi-item orders
@@ -356,6 +368,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           
           console.log(`[PayPal Webhook] Updated multi-order ${multiOrder.id} - Paid: $${paidAmount}`);
+          
+          // Now sync to ShipStation if it was deferred during order creation
+          if (multiOrder.syncToShipstation) {
+            try {
+              console.log(`[ShipStation] PayPal payment confirmed, syncing multi-order ${multiOrder.id} to ShipStation...`);
+              await syncMultiItemOrderToShipStation(multiOrder, multiOrder.items);
+              console.log(`[ShipStation] Successfully synced PayPal multi-order ${multiOrder.id} to ShipStation`);
+            } catch (shipStationError: any) {
+              console.error(`[ShipStation] Failed to sync PayPal multi-order ${multiOrder.id}:`, shipStationError.message);
+              // Don't fail the webhook processing if ShipStation sync fails
+            }
+          }
         }
       }
       
@@ -730,9 +754,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create the order first
       const order = await storage.createOrder(completeOrderData);
       
-      // Sync to ShipStation if requested
-      console.log(`[ShipStation] Order ${order.id} syncToShipstation flag: ${validatedData.syncToShipstation}`);
-      if (validatedData.syncToShipstation) {
+      // Sync to ShipStation if requested (but skip for PayPal - sync after payment)
+      const isPayPalOrder = validatedData.paymentMethod === "paypal";
+      console.log(`[ShipStation] Order ${order.id} syncToShipstation flag: ${validatedData.syncToShipstation}, payment method: ${validatedData.paymentMethod}`);
+      
+      if (validatedData.syncToShipstation && !isPayPalOrder) {
         try {
           console.log(`[ShipStation] Starting sync for order ${order.id}...`);
           await syncOrderToShipStation(order);
@@ -741,6 +767,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(`[ShipStation] Failed to sync order ${order.id}:`, shipStationError.message);
           // Don't fail the order creation if ShipStation sync fails
         }
+      } else if (isPayPalOrder && validatedData.syncToShipstation) {
+        console.log(`[ShipStation] Deferring sync for PayPal order ${order.id} until payment confirmed`);
       }
       
       // If payment info provided, process the payment
@@ -1054,9 +1082,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const order = await storage.createMultiItemOrder(headerData, itemsData);
       
-      // Sync to ShipStation if requested
-      console.log(`[ShipStation] Multi-item order ${order.id} syncToShipstation flag: ${validatedHeader.syncToShipstation}`);
-      if (validatedHeader.syncToShipstation) {
+      // Sync to ShipStation if requested (but skip for PayPal - sync after payment)
+      const isPayPalOrder = validatedHeader.paymentMethod === "paypal";
+      console.log(`[ShipStation] Multi-item order ${order.id} syncToShipstation flag: ${validatedHeader.syncToShipstation}, payment method: ${validatedHeader.paymentMethod}`);
+      
+      if (validatedHeader.syncToShipstation && !isPayPalOrder) {
         try {
           console.log(`[ShipStation] Starting sync for multi-item order ${order.id}...`);
           await syncMultiItemOrderToShipStation(order, order.items);
@@ -1065,6 +1095,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(`[ShipStation] Failed to sync multi-item order ${order.id}:`, shipStationError.message);
           // Don't fail the order creation if ShipStation sync fails
         }
+      } else if (isPayPalOrder && validatedHeader.syncToShipstation) {
+        console.log(`[ShipStation] Deferring sync for PayPal multi-order ${order.id} until payment confirmed`);
       }
       
       res.status(201).json(order);
