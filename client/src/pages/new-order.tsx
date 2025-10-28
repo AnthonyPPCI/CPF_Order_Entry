@@ -59,6 +59,7 @@ export default function NewOrder() {
   const [paymentAmount, setPaymentAmount] = useState("0.00");
   const [skipPayment, setSkipPayment] = useState(false);
   const [activePaymentMethod, setActivePaymentMethod] = useState<string | undefined>(undefined);
+  const [processedPayment, setProcessedPayment] = useState<{ type: 'credit_card' | 'cash', token?: string, amount: string } | null>(null);
   const { tokenize } = useSquarePaymentForm();
   const [calculatedPricing, setCalculatedPricing] = useState({
     itemTotal: 0,
@@ -240,41 +241,80 @@ export default function NewOrder() {
     setPaymentAmount(calculatedPricing.total.toFixed(2));
   }, [calculatedPricing.total]);
 
+  // Handler to process credit card payment
+  const handleProcessCreditCard = async () => {
+    if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid payment amount.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const result = await tokenize();
+    if (result.token) {
+      setProcessedPayment({
+        type: 'credit_card',
+        token: result.token,
+        amount: paymentAmount
+      });
+      toast({
+        title: "Payment Ready",
+        description: `Credit card payment of $${paymentAmount} is ready to process when you create the order.`,
+      });
+    } else {
+      toast({
+        title: "Payment Error",
+        description: result.error || "Please enter valid card details.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Handler to record cash payment
+  const handleRecordCash = () => {
+    const cashAmount = form.watch("cashAmount");
+    if (!cashAmount || parseFloat(cashAmount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid cash amount.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setProcessedPayment({
+      type: 'cash',
+      amount: cashAmount
+    });
+    toast({
+      title: "Cash Payment Ready",
+      description: `Cash payment of $${cashAmount} will be recorded when you create the order.`,
+    });
+  };
+
   const onSubmit = async (data: InsertOrder & { cashAmount?: string }) => {
     // Remove pricing fields - server will calculate them
     const { itemTotal, shipping, salesTax, total, balance, cashAmount, ...orderData } = data as any;
     
-    // Determine payment data and method
+    // Use pre-processed payment if available
     let paymentData = null;
     let paymentMethodValue = null;
     let orderDataWithPayment = { ...orderData };
     
-    // Check if credit card payment (user opened credit card accordion)
-    if (activePaymentMethod === 'credit-card' && paymentAmount && parseFloat(paymentAmount) > 0) {
-      const result = await tokenize();
-      if (result.token) {
+    if (processedPayment) {
+      if (processedPayment.type === 'credit_card') {
         paymentData = {
-          sourceId: result.token,
-          amount: paymentAmount
+          sourceId: processedPayment.token,
+          amount: processedPayment.amount
         };
         paymentMethodValue = "credit_card";
-      } else {
-        // Show error if user selected credit card but form not ready
-        toast({
-          title: "Payment Error",
-          description: result.error || "Please enter valid card details or skip payment.",
-          variant: "destructive"
-        });
-        return;
+      } else if (processedPayment.type === 'cash') {
+        paymentMethodValue = "cash";
+        orderDataWithPayment.paidToDate = processedPayment.amount;
       }
     }
-    // Check if cash payment (user opened cash accordion)
-    else if (activePaymentMethod === 'cash' && cashAmount && parseFloat(cashAmount) > 0) {
-      paymentMethodValue = "cash";
-      // Set paidToDate for cash payments
-      orderDataWithPayment.paidToDate = cashAmount;
-    }
-    // No payment method selected - that's okay, create order without payment
     
     // Add payment method to order data
     orderDataWithPayment.paymentMethod = paymentMethodValue;
@@ -1752,7 +1792,7 @@ export default function NewOrder() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Payment (Optional)</CardTitle>
+                  <CardTitle className="text-lg">Payment</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Accordion 
@@ -1763,21 +1803,46 @@ export default function NewOrder() {
                     onValueChange={setActivePaymentMethod}
                   >
                     <AccordionItem value="credit-card">
-                      <AccordionTrigger data-testid="accordion-credit-card">Credit Card Payment</AccordionTrigger>
+                      <AccordionTrigger data-testid="accordion-credit-card">
+                        <div className="flex items-center gap-2">
+                          Credit Card Payment
+                          {processedPayment?.type === 'credit_card' && (
+                            <Badge variant="default" className="ml-2">Ready: ${processedPayment.amount}</Badge>
+                          )}
+                        </div>
+                      </AccordionTrigger>
                       <AccordionContent>
-                        <SquarePaymentForm
-                          amount={paymentAmount}
-                          onAmountChange={setPaymentAmount}
-                          maxAmount={calculatedPricing.total.toFixed(2)}
-                        />
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Payment will be processed when you create the order
-                        </p>
+                        <div className="space-y-4">
+                          <SquarePaymentForm
+                            amount={paymentAmount}
+                            onAmountChange={setPaymentAmount}
+                            maxAmount={calculatedPricing.total.toFixed(2)}
+                          />
+                          <Button
+                            type="button"
+                            onClick={handleProcessCreditCard}
+                            className="w-full"
+                            disabled={processedPayment?.type === 'credit_card'}
+                            data-testid="button-process-credit-card"
+                          >
+                            {processedPayment?.type === 'credit_card' ? 'Payment Ready' : 'Process Credit Card Payment'}
+                          </Button>
+                          <p className="text-sm text-muted-foreground">
+                            Click the button above to prepare the payment, then click "Create Order"
+                          </p>
+                        </div>
                       </AccordionContent>
                     </AccordionItem>
 
                     <AccordionItem value="cash">
-                      <AccordionTrigger data-testid="accordion-cash">Cash Payment</AccordionTrigger>
+                      <AccordionTrigger data-testid="accordion-cash">
+                        <div className="flex items-center gap-2">
+                          Cash Payment
+                          {processedPayment?.type === 'cash' && (
+                            <Badge variant="default" className="ml-2">Ready: ${processedPayment.amount}</Badge>
+                          )}
+                        </div>
+                      </AccordionTrigger>
                       <AccordionContent>
                         <div className="space-y-4">
                           <div className="space-y-2">
@@ -1791,8 +1856,17 @@ export default function NewOrder() {
                               data-testid="input-cash-amount"
                             />
                           </div>
+                          <Button
+                            type="button"
+                            onClick={handleRecordCash}
+                            className="w-full"
+                            disabled={processedPayment?.type === 'cash'}
+                            data-testid="button-record-cash"
+                          >
+                            {processedPayment?.type === 'cash' ? 'Cash Payment Ready' : 'Record Cash Payment'}
+                          </Button>
                           <p className="text-sm text-muted-foreground">
-                            Cash payment will be recorded with the order
+                            Click the button above to prepare the cash payment, then click "Create Order"
                           </p>
                         </div>
                       </AccordionContent>
