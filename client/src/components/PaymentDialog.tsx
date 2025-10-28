@@ -151,42 +151,46 @@ export function PaymentDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            Collect Payment
+            Payment
           </DialogTitle>
           <DialogDescription>
-            Process a payment for Order #{orderId.slice(0, 8).toUpperCase()}
+            Order #{orderId.slice(0, 8).toUpperCase()} · Balance due: ${balance}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-6 py-4">
           <div className="space-y-2">
-            <Label htmlFor="payment-amount">Payment Amount</Label>
+            <Label htmlFor="payment-amount">Amount to Charge</Label>
             <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">$</span>
+              <span className="text-lg text-muted-foreground">$</span>
               <Input
                 id="payment-amount"
                 type="number"
                 step="0.01"
-                min="0"
+                min="0.01"
                 max={parseFloat(balance)}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
+                className="text-lg font-medium"
                 data-testid="input-payment-amount"
               />
             </div>
-            <p className="text-sm text-muted-foreground">
-              Current balance: ${balance}
+            <p className="text-xs text-muted-foreground">
+              Maximum: ${balance}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label>Card Details</Label>
+            <Label>Credit Card Information</Label>
             <div 
               id="card-container" 
-              className="border rounded-md p-3 min-h-[100px]"
+              className="border rounded-md p-4 min-h-[120px] bg-muted/30"
               data-testid="square-card-container"
             />
+            <p className="text-xs text-muted-foreground">
+              Powered by Square · Secure payment processing
+            </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
