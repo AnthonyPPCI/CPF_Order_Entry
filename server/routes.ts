@@ -102,33 +102,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Send SMS if phone provided and Twilio is configured
-      if (phone && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+      // Send SMS if phone provided (try Klaviyo first, then fall back to Twilio)
+      if (phone) {
         try {
-          const message = `Hi ${customerName}! Thanks for choosing CustomPictureFrames.com. We'd love your feedback! Please leave us a Google review: ${reviewUrl}`;
-          
-          const twilioResponse = await fetch(
-            `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                Authorization: `Basic ${Buffer.from(
-                  `${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`
-                ).toString("base64")}`,
-              },
-              body: new URLSearchParams({
-                To: phone,
-                From: process.env.TWILIO_PHONE_NUMBER,
-                Body: message,
-              }),
-            }
-          );
-
-          if (twilioResponse.ok) {
+          // Try Klaviyo SMS first
+          if (process.env.KLAVIYO_API_KEY) {
+            const { sendGoogleReviewRequestViaSMS } = await import("./klaviyo.js");
+            await sendGoogleReviewRequestViaSMS(phone, customerName, reviewUrl);
             results.sms = "sent";
-          } else {
-            results.sms = "failed";
+          } 
+          // Fall back to Twilio if Klaviyo not configured
+          else if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+            const message = `Hi ${customerName}! Thanks for choosing CustomPictureFrames.com. We'd love your feedback! Please leave us a Google review: ${reviewUrl}`;
+            
+            const twilioResponse = await fetch(
+              `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/x-www-form-urlencoded",
+                  Authorization: `Basic ${Buffer.from(
+                    `${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`
+                  ).toString("base64")}`,
+                },
+                body: new URLSearchParams({
+                  To: phone,
+                  From: process.env.TWILIO_PHONE_NUMBER,
+                  Body: message,
+                }),
+              }
+            );
+
+            if (twilioResponse.ok) {
+              results.sms = "sent";
+            } else {
+              results.sms = "failed";
+            }
           }
         } catch (smsError: any) {
           console.error("Failed to send review request SMS:", smsError);
@@ -754,6 +763,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create the order first
       const order = await storage.createOrder(completeOrderData);
       
+      // Sync customer to Klaviyo
+      try {
+        const { addCustomerToKlaviyo } = await import("./klaviyo.js");
+        await addCustomerToKlaviyo(order);
+      } catch (klaviyoError: any) {
+        console.error(`[Klaviyo] Failed to sync customer:`, klaviyoError.message);
+        // Don't fail the order creation if Klaviyo sync fails
+      }
+      
       // Sync to ShipStation if requested (but skip for PayPal - sync after payment)
       const isPayPalOrder = validatedData.paymentMethod === "paypal";
       console.log(`[ShipStation] Order ${order.id} syncToShipstation flag: ${validatedData.syncToShipstation}, payment method: ${validatedData.paymentMethod}`);
@@ -1081,6 +1099,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }));
       
       const order = await storage.createMultiItemOrder(headerData, itemsData);
+      
+      // Sync customer to Klaviyo
+      try {
+        const { addCustomerToKlaviyo } = await import("./klaviyo.js");
+        await addCustomerToKlaviyo(order);
+      } catch (klaviyoError: any) {
+        console.error(`[Klaviyo] Failed to sync customer:`, klaviyoError.message);
+        // Don't fail the order creation if Klaviyo sync fails
+      }
       
       // Sync to ShipStation if requested (but skip for PayPal - sync after payment)
       const isPayPalOrder = validatedHeader.paymentMethod === "paypal";
