@@ -43,7 +43,7 @@ Preferred communication style: Simple, everyday language.
 -   **Automatic Order Recording**: Orders are automatically recorded in the database upon creation.
 -   **ShipStation Integration**: Fully integrated ShipStation V1 REST API for automatic order syncing, including optional sync, data mapping, and non-blocking synchronization.
 -   **Google Reviews Request System**: Prominent button on new order form and order detail page sends frictionless review requests via email (Resend) or SMS (optional Twilio), directing customers to Google Reviews page.
--   **PayPal Invoice Integration**: Fully integrated PayPal Invoicing API v2 for sending payment invoices to customers, with automatic payment tracking via webhooks and real-time order balance updates.
+-   **PayPal Invoice Integration**: Fully integrated PayPal Invoicing API v2 for sending payment invoices to customers, with cryptographic webhook signature verification to prevent fraud, automatic payment tracking via webhooks, and real-time order balance updates. Supports both sandbox (development) and production environments.
 
 ### Data Storage Solutions
 -   **Database**: PostgreSQL via Drizzle ORM with Neon serverless driver.
