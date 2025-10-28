@@ -102,43 +102,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Send SMS if phone provided (try Klaviyo first, then fall back to Twilio)
-      if (phone) {
+      // Send SMS if phone provided and Klaviyo is configured
+      if (phone && process.env.KLAVIYO_API_KEY) {
         try {
-          // Try Klaviyo SMS first
-          if (process.env.KLAVIYO_API_KEY) {
-            const { sendGoogleReviewRequestViaSMS } = await import("./klaviyo.js");
-            await sendGoogleReviewRequestViaSMS(phone, customerName, reviewUrl);
-            results.sms = "sent";
-          } 
-          // Fall back to Twilio if Klaviyo not configured
-          else if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
-            const message = `Hi ${customerName}! Thanks for choosing CustomPictureFrames.com. We'd love your feedback! Please leave us a Google review: ${reviewUrl}`;
-            
-            const twilioResponse = await fetch(
-              `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/x-www-form-urlencoded",
-                  Authorization: `Basic ${Buffer.from(
-                    `${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`
-                  ).toString("base64")}`,
-                },
-                body: new URLSearchParams({
-                  To: phone,
-                  From: process.env.TWILIO_PHONE_NUMBER,
-                  Body: message,
-                }),
-              }
-            );
-
-            if (twilioResponse.ok) {
-              results.sms = "sent";
-            } else {
-              results.sms = "failed";
-            }
-          }
+          const { sendGoogleReviewRequestViaSMS } = await import("./klaviyo.js");
+          await sendGoogleReviewRequestViaSMS(phone, customerName, reviewUrl);
+          results.sms = "sent";
         } catch (smsError: any) {
           console.error("Failed to send review request SMS:", smsError);
           results.sms = "failed";
