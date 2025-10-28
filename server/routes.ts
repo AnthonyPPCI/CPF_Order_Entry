@@ -10,6 +10,12 @@ import { SquareClient, SquareEnvironment } from "square";
 import { randomUUID, createHash } from "crypto";
 import { syncOrderToShipStation, syncMultiItemOrderToShipStation } from "./shipstation";
 
+// Fix BigInt JSON serialization for Square SDK v43+
+// Square SDK returns BigInt values that can't be serialized to JSON by default
+(BigInt.prototype as any).toJSON = function() {
+  return this.toString();
+};
+
 // Initialize Resend for email sending
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -636,7 +642,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sourceId,
         idempotencyKey: randomUUID(),
         amountMoney: {
-          amount: amountInCents.toString(),
+          amount: BigInt(amountInCents),
           currency: 'USD',
         },
         locationId,
@@ -902,7 +908,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               sourceId: paymentData.sourceId,
               idempotencyKey: randomUUID(),
               amountMoney: {
-                amount: amountInCents.toString(),
+                amount: BigInt(amountInCents),
                 currency: 'USD',
               },
               locationId,
