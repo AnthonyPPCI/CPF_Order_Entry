@@ -297,12 +297,12 @@ export default function OrderDetail() {
                                 <code className="font-mono text-xs">{item.backingSku}</code>
                               </div>
                             )}
-                            {item.width && item.height && (
+                            {(item.width && item.height) || item.sample ? (
                               <div>
                                 <span className="text-muted-foreground">Size:</span>{" "}
-                                <span className="font-mono">{item.width} × {item.height}"</span>
+                                <span className="font-mono">{item.sample ? "Sample" : `${item.width} × ${item.height}"`}</span>
                               </div>
-                            )}
+                            ) : null}
                             {item.quantity && (
                               <div>
                                 <span className="text-muted-foreground">Quantity:</span> {item.quantity}
@@ -637,7 +637,7 @@ export default function OrderDetail() {
                     </p>
                     <p>
                       <span className="text-muted-foreground">Dimensions:</span>{" "}
-                      <span className="font-mono">{order.width} × {order.height} inches</span>
+                      <span className="font-mono">{order.sample ? "Sample" : `${order.width} × ${order.height} inches`}</span>
                     </p>
                     <p>
                       <span className="text-muted-foreground">Quantity:</span>{" "}

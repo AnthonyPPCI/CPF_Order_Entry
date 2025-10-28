@@ -190,17 +190,20 @@ export default function NewOrder() {
     },
   });
 
-  // Watch form values for pricing calculation
+  // Watch form values for pricing calculation - watch all fields to trigger recalculation
   const watchedValues = form.watch();
 
   useEffect(() => {
     // Debounce pricing API call
     const timer = setTimeout(async () => {
       try {
+        // Get fresh form values to ensure we have the latest state
+        const currentValues = form.getValues();
+        
         const response = await fetch('/api/pricing', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(watchedValues),
+          body: JSON.stringify(currentValues),
         });
         
         if (response.ok) {
@@ -222,7 +225,7 @@ export default function NewOrder() {
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timer);
-  }, [watchedValues]);
+  }, [watchedValues, form]);
 
   // Auto-populate Frame SKU with topper SKU when building stacker frames
   useEffect(() => {

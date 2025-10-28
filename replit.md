@@ -56,6 +56,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 28, 2025 - Sample Order Feature (Complete)
+-   **Sample Order Implementation**: Fully implemented sample order system allowing customers to order frame/mat samples at minimal cost:
+    -   **Pricing Logic**: Sample orders have $0 item cost with delivery-method-aware shipping ($5 for "shipping", $0 for "pickup" at shop)
+    -   **Sales Tax**: NJ sales tax (7%) applies only to shipping cost when applicable (e.g., $0.35 on $5 shipping)
+    -   **UI Behavior**: Sample checkbox disables most fields (width, height, quantity, stacker, acrylic, backing, mats, print options, additional options) since only SKU is needed
+    -   **Display Consistency**: All views (order form, order detail, order list) display "Sample" instead of dimensions for sample orders
+    -   **Database Schema**: Added `sample` boolean field to orders/order_items tables
+-   **Technical Fixes**:
+    -   Fixed deliveryMethod value mismatch: Changed backend check from "pick-up" to "pickup" to match frontend radio button value
+    -   Enhanced pricing useEffect: Modified to use `form.getValues()` inside useEffect to ensure fresh form state is sent to API
+    -   Added `cleanEmptyFields()` helper: Converts empty strings to null before database insertion, preventing PostgreSQL "invalid input syntax for type numeric" errors
+    -   Applied helper to all order creation endpoints: `/api/orders`, `/api/orders-with-payment`, `/api/multi-orders`
+-   **Testing**: Comprehensive end-to-end tests verify pickup ($0.00 total) and shipping ($5.35 NJ total) scenarios work correctly
+
 ### October 28, 2025 - Stale Payment Prevention System
 -   **Comprehensive Payment Safety**: Implemented multi-layered system to prevent stale payment data from being processed:
     -   **Auto-clearing on amount change**: React useEffect automatically clears processed payments when order total or cash amount changes, with toast notification to user

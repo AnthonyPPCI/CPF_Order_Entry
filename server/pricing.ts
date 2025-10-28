@@ -268,10 +268,12 @@ function applyTieredMarkup(baseCost: number, config: any, applyMinimum: boolean 
 }
 
 export function calculatePricing(order: InsertOrder): PricingResult {
-  // Handle sample orders - fixed $0 item cost + $5 shipping
+  // Handle sample orders - fixed $0 item cost + $5 shipping (only if delivery method requires shipping)
   if (order.sample) {
-    const shipping = 5.00;
-    // Calculate sales tax (7% if in NJ)
+    // Only charge shipping if delivery method requires it (not pickup)
+    const requiresShipping = order.deliveryMethod !== "pickup";
+    const shipping = requiresShipping ? 5.00 : 0.00;
+    // Calculate sales tax (7% if in NJ, applied only to shipping if any)
     const cityStateZip = order.cityStateZip || "";
     const isTaxable = /\bNJ\b/i.test(cityStateZip);
     const salesTax = isTaxable ? shipping * 0.07 : 0;

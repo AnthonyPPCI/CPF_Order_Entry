@@ -20,6 +20,20 @@ const squareClient = process.env.SQUARE_ACCESS_TOKEN ? new SquareClient({
   environment: process.env.SQUARE_ACCESS_TOKEN?.startsWith('EAAA') ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
 }) : null;
 
+// Helper function to clean empty strings from numeric/text fields
+function cleanEmptyFields(data: any): any {
+  const cleaned = { ...data };
+  
+  // Convert empty strings to null for all fields (PostgreSQL prefers null over empty strings for optional fields)
+  for (const key in cleaned) {
+    if (cleaned[key] === '') {
+      cleaned[key] = null;
+    }
+  }
+  
+  return cleaned;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Send order email (to Brian or customer)
   app.post("/api/send-order-email", async (req, res) => {
@@ -321,11 +335,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate pricing server-side
       const pricing = calculatePricing(validatedData);
       
-      // Merge validated data with calculated pricing
-      const orderData = {
+      // Merge validated data with calculated pricing and clean empty strings
+      const orderData = cleanEmptyFields({
         ...validatedData,
         ...pricing,
-      };
+      });
       
       const order = await storage.createOrder(orderData);
       res.status(201).json(order);
@@ -348,11 +362,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate pricing server-side
       const pricing = calculatePricing(validatedData);
       
-      // Merge validated data with calculated pricing
-      const completeOrderData = {
+      // Merge validated data with calculated pricing and clean empty strings
+      const completeOrderData = cleanEmptyFields({
         ...validatedData,
         ...pricing,
-      };
+      });
       
       // Create the order first
       const order = await storage.createOrder(completeOrderData);
@@ -650,17 +664,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         deposit: validatedHeader.deposit || undefined,
       });
       
-      // Merge header data with calculated pricing
-      const headerData = {
+      // Merge header data with calculated pricing and clean empty strings
+      const headerData = cleanEmptyFields({
         ...validatedHeader,
         shipping: pricing.shipping,
         salesTax: pricing.salesTax,
         total: pricing.total,
         balance: pricing.balance,
-      };
+      });
       
-      // Merge items with their calculated pricing and item numbers
-      const itemsData = validatedItems.map((item, index) => ({
+      // Merge items with their calculated pricing and item numbers, clean empty strings
+      const itemsData = validatedItems.map((item, index) => cleanEmptyFields({
         ...item,
         itemNumber: index + 1,
         itemTotal: pricing.items[index].itemTotal,

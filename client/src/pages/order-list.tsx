@@ -165,7 +165,7 @@ export default function OrderList() {
                                 )}
                               </td>
                               <td className="p-4 text-sm font-mono">
-                                {isMulti ? "—" : `${(order as Order).width}×${(order as Order).height}`}
+                                {isMulti ? "—" : (order as Order).sample ? "Sample" : `${(order as Order).width}×${(order as Order).height}`}
                               </td>
                               <td className="p-4 text-sm text-muted-foreground max-w-xs truncate">
                                 {order.description || "—"}
@@ -247,7 +247,7 @@ export default function OrderList() {
                             <div>
                               <span className="text-muted-foreground">Size:</span>
                               <div className="font-mono font-medium">
-                                {(order as Order).width}×{(order as Order).height}
+                                {(order as Order).sample ? "Sample" : `${(order as Order).width}×${(order as Order).height}`}
                               </div>
                             </div>
                           </div>
