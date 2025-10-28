@@ -270,15 +270,17 @@ export default function OrderDetail() {
                 <CreditCard className="h-6 w-6" />
                 <span className="font-semibold">Collect Payment</span>
               </Button>
-              
+            </div>
+            
+            <div className="flex justify-end">
               <Button 
-                variant="outline" 
+                variant="ghost" 
+                size="icon"
                 onClick={() => setDeleteDialogOpen(true)} 
                 data-testid="button-delete-order"
-                className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2 text-destructive hover:text-destructive"
+                className="text-muted-foreground hover:text-destructive"
               >
-                <Trash2 className="h-6 w-6" />
-                <span className="font-semibold">Delete Order</span>
+                <Trash2 className="h-4 w-4" />
               </Button>
             </div>
 
@@ -635,15 +637,17 @@ export default function OrderDetail() {
               <CreditCard className="h-6 w-6" />
               <span className="font-semibold">Collect Payment</span>
             </Button>
-            
+          </div>
+          
+          <div className="flex justify-end">
             <Button 
-              variant="outline" 
+              variant="ghost" 
+              size="icon"
               onClick={() => setDeleteDialogOpen(true)} 
               data-testid="button-delete-order"
-              className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2 text-destructive hover:text-destructive"
+              className="text-muted-foreground hover:text-destructive"
             >
-              <Trash2 className="h-6 w-6" />
-              <span className="font-semibold">Delete Order</span>
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
 
