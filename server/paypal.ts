@@ -180,7 +180,23 @@ export async function createPayPalInvoice(order: Order | OrderHeader, items: Pay
 
   const result = await response.json();
   console.log('[PayPal SDK] Invoice creation response:', JSON.stringify(result, null, 2));
-  return result;
+  
+  // PayPal returns the invoice ID in the href URL
+  // Format: https://api.paypal.com/v2/invoicing/invoices/INV2-XXXX-XXXX-XXXX-XXXX
+  const invoiceId = result.href?.split('/invoices/')[1];
+  
+  if (!invoiceId) {
+    throw new Error(`Failed to extract invoice ID from response: ${JSON.stringify(result)}`);
+  }
+  
+  // Return a properly formatted invoice object
+  return {
+    id: invoiceId,
+    href: result.href,
+    rel: result.rel,
+    method: result.method,
+    links: [result],
+  };
 }
 
 export async function sendPayPalInvoice(invoiceId: string): Promise<void> {
