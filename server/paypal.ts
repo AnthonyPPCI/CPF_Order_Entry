@@ -1,7 +1,9 @@
 import type { Order, OrderHeader } from "../shared/schema";
 
 // PayPal API Base URLs
-const PAYPAL_API_BASE = process.env.NODE_ENV === "production" 
+// Use live PayPal API (production) - set to false for sandbox testing
+const USE_LIVE_PAYPAL = true;
+const PAYPAL_API_BASE = USE_LIVE_PAYPAL
   ? "https://api-m.paypal.com"
   : "https://api-m.sandbox.paypal.com";
 
@@ -63,7 +65,7 @@ export async function getPayPalAccessToken(): Promise<string> {
   const trimmedSecret = clientSecret.trim();
   
   // Debug info (without exposing actual values)
-  const environment = process.env.NODE_ENV === "production" ? "production" : "sandbox";
+  const environment = USE_LIVE_PAYPAL ? "production (LIVE)" : "sandbox";
   console.log(`[PayPal SDK] Attempting to get access token for ${environment} environment`);
   console.log(`[PayPal SDK] Client ID length: ${trimmedClientId.length} characters`);
   console.log(`[PayPal SDK] Client ID starts with: ${trimmedClientId.substring(0, 4)}...`);
@@ -83,11 +85,11 @@ export async function getPayPalAccessToken(): Promise<string> {
 
   if (!response.ok) {
     const error = await response.text();
-    const environment = process.env.NODE_ENV === "production" ? "production" : "sandbox";
+    const environment = USE_LIVE_PAYPAL ? "production (LIVE)" : "sandbox";
     throw new Error(
       `Failed to get PayPal access token from ${environment} environment: ${error}\n\n` +
       `Make sure your PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET are for PayPal's ${environment} environment.\n` +
-      `${environment === "sandbox" ? "Get sandbox credentials from: https://developer.paypal.com/dashboard/" : ""}`
+      `${!USE_LIVE_PAYPAL ? "Get sandbox credentials from: https://developer.paypal.com/dashboard/" : ""}`
     );
   }
 
