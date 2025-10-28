@@ -4,7 +4,7 @@ import { useRoute, Link } from "wouter";
 import { type Order, type OrderHeader, type OrderItem } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Printer, Mail, Square, CreditCard } from "lucide-react";
+import { ArrowLeft, Printer, Mail, CreditCard } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -374,18 +374,6 @@ export default function OrderDetail() {
         variant: "destructive",
       });
     }
-  };
-
-  const handleOpenSquare = () => {
-    if (!order) return;
-    
-    const squareUrl = `https://squareup.com/dashboard/sales/transactions`;
-    window.open(squareUrl, '_blank');
-    
-    toast({
-      title: "Opening Square",
-      description: "Square payment system opened in new tab.",
-    });
   };
 
   const hasDeposit = order.deposit && parseFloat(order.deposit) > 0;
