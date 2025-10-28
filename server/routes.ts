@@ -15,9 +15,7 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 
 // Initialize Square client
 const squareClient = process.env.SQUARE_ACCESS_TOKEN ? new SquareClient({
-  bearerAuthCredentials: {
-    accessToken: process.env.SQUARE_ACCESS_TOKEN
-  },
+  accessToken: process.env.SQUARE_ACCESS_TOKEN,
   environment: process.env.SQUARE_ACCESS_TOKEN?.startsWith('EAAA') ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
 }) : null;
 
@@ -616,6 +614,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert amount to cents (Square uses smallest currency unit)
       const amountInCents = Math.round(parseFloat(amount) * 100);
 
+      const detectedEnvironment = process.env.SQUARE_ACCESS_TOKEN?.startsWith('EAAA') ? 'Production' : 'Sandbox';
+      
       console.log('Square payment request:', {
         locationId,
         amount: amountInCents,
@@ -623,6 +623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hasBuyerEmail: !!buyerEmailAddress,
         hasAccessToken: !!process.env.SQUARE_ACCESS_TOKEN,
         accessTokenPrefix: process.env.SQUARE_ACCESS_TOKEN?.substring(0, 10) + '...',
+        detectedEnvironment,
       });
 
       // Build payment request with verification token for CVV verification
@@ -647,8 +648,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentRequest.buyerEmailAddress = buyerEmailAddress;
       }
 
+      console.log('Calling Square Payments API with request:', JSON.stringify({
+        ...paymentRequest,
+        amountMoney: { amount: amountInCents.toString(), currency: 'USD' },
+        sourceId: sourceId.substring(0, 10) + '...',
+        verificationToken: verificationToken ? verificationToken.substring(0, 10) + '...' : undefined,
+      }, null, 2));
+
       // Create payment using Square API (v43+ syntax)
-      const response = await squareClient.payments.create(paymentRequest);
+      const response = await squareClient.payments.createPayment(paymentRequest);
+
+      console.log('Square API response status:', response.statusCode);
+      console.log('Square API response:', JSON.stringify(response.result, null, 2));
 
       if (response.result?.payment?.status === 'COMPLETED') {
         // If orderId provided, fetch the order to update balance
