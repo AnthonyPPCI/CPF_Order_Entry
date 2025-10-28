@@ -57,13 +57,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Send Google Review request
   app.post("/api/send-review-request", async (req, res) => {
     try {
+      console.log('[Google Reviews] Received review request:', { customerName: req.body.customerName, email: req.body.email, phone: req.body.phone });
+      
       const { customerName, email, phone } = req.body;
 
       if (!customerName) {
+        console.log('[Google Reviews] Error: Customer name missing');
         return res.status(400).json({ error: "Customer name is required" });
       }
 
       if (!email && !phone) {
+        console.log('[Google Reviews] Error: No contact info provided');
         return res.status(400).json({ error: "Either email or phone number is required" });
       }
 
@@ -72,6 +76,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send email if provided
       if (email && resend) {
+        console.log(`[Google Reviews] Sending email to: ${email}`);
         try {
           const emailResult = await resend.emails.send({
             from: "CustomPictureFrames.com <orders@custompictureframes.com>",
@@ -95,25 +100,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
               </div>
             `,
           });
+          console.log(`[Google Reviews] Email sent successfully to ${email}:`, emailResult);
           results.email = "sent";
         } catch (emailError: any) {
-          console.error("Failed to send review request email:", emailError);
+          console.error("[Google Reviews] Failed to send review request email:", emailError);
           results.email = "failed";
         }
+      } else if (email && !resend) {
+        console.log('[Google Reviews] Resend client not initialized - RESEND_API_KEY missing');
       }
 
       // Send SMS if phone provided and Klaviyo is configured
       if (phone && process.env.KLAVIYO_API_KEY) {
+        console.log(`[Google Reviews] Sending SMS to: ${phone}`);
         try {
           const { sendGoogleReviewRequestViaSMS } = await import("./klaviyo.js");
           await sendGoogleReviewRequestViaSMS(phone, customerName, reviewUrl);
+          console.log(`[Google Reviews] SMS sent successfully to ${phone}`);
           results.sms = "sent";
         } catch (smsError: any) {
-          console.error("Failed to send review request SMS:", smsError);
+          console.error("[Google Reviews] Failed to send review request SMS:", smsError);
           results.sms = "failed";
         }
+      } else if (phone && !process.env.KLAVIYO_API_KEY) {
+        console.log('[Google Reviews] Klaviyo not configured - KLAVIYO_API_KEY missing');
       }
 
+      console.log('[Google Reviews] Final results:', results);
       res.json({ 
         success: true, 
         results,
