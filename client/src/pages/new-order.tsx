@@ -632,12 +632,12 @@ export default function NewOrder() {
                                 )}
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-sm">
-                                {item.width && item.height && (
+                                {(item.width && item.height) || item.sample ? (
                                   <div>
                                     <span className="text-muted-foreground">Size:</span>{" "}
-                                    <span className="font-mono">{item.width}" × {item.height}"</span>
+                                    <span className="font-mono">{item.sample ? "Sample" : `${item.width}" × ${item.height}"`}</span>
                                   </div>
-                                )}
+                                ) : null}
                                 {item.quantity && (
                                   <div>
                                     <span className="text-muted-foreground">Qty:</span> {item.quantity}
@@ -907,6 +907,7 @@ export default function NewOrder() {
                               <Checkbox
                                 checked={field.value}
                                 onCheckedChange={field.onChange}
+                                disabled={form.watch("sample")}
                                 data-testid="checkbox-stacker-frame"
                               />
                             </FormControl>
@@ -993,6 +994,7 @@ export default function NewOrder() {
                                   field.onChange(parsed);
                                 }}
                                 value={widthText}
+                                disabled={form.watch("sample")}
                                 data-testid="input-width"
                               />
                             </FormControl>
@@ -1017,6 +1019,7 @@ export default function NewOrder() {
                                   field.onChange(parsed);
                                 }}
                                 value={heightText}
+                                disabled={form.watch("sample")}
                                 data-testid="input-height"
                               />
                             </FormControl>
@@ -1036,6 +1039,7 @@ export default function NewOrder() {
                                 {...field}
                                 type="number"
                                 onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                disabled={form.watch("sample")}
                                 data-testid="input-quantity"
                               />
                             </FormControl>
@@ -1052,7 +1056,7 @@ export default function NewOrder() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Acrylic Type</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={form.watch("sample")}>
                               <FormControl>
                                 <SelectTrigger data-testid="select-acrylic-type">
                                   <SelectValue />
@@ -1079,6 +1083,7 @@ export default function NewOrder() {
                               onChange={field.onChange}
                               placeholder="Search backing SKU..."
                               filterItemType="" // Show all supplies for backing (no filter)
+                              disabled={form.watch("sample")}
                               data-testid="combobox-backing-sku"
                             />
                             <FormMessage />
@@ -1107,7 +1112,7 @@ export default function NewOrder() {
                                   <FormItem>
                                     <FormLabel className="text-sm">All Sides</FormLabel>
                                     <FormControl>
-                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-all" />
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" disabled={form.watch("sample")} data-testid="input-mat-border-all" />
                                     </FormControl>
                                   </FormItem>
                                 )}
@@ -1119,7 +1124,7 @@ export default function NewOrder() {
                                   <FormItem>
                                     <FormLabel className="text-sm">Left</FormLabel>
                                     <FormControl>
-                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-left" />
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" disabled={form.watch("sample")} data-testid="input-mat-border-left" />
                                     </FormControl>
                                   </FormItem>
                                 )}
@@ -1131,7 +1136,7 @@ export default function NewOrder() {
                                   <FormItem>
                                     <FormLabel className="text-sm">Right</FormLabel>
                                     <FormControl>
-                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-right" />
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" disabled={form.watch("sample")} data-testid="input-mat-border-right" />
                                     </FormControl>
                                   </FormItem>
                                 )}
@@ -1143,7 +1148,7 @@ export default function NewOrder() {
                                   <FormItem>
                                     <FormLabel className="text-sm">Top</FormLabel>
                                     <FormControl>
-                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-top" />
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" disabled={form.watch("sample")} data-testid="input-mat-border-top" />
                                     </FormControl>
                                   </FormItem>
                                 )}
@@ -1155,7 +1160,7 @@ export default function NewOrder() {
                                   <FormItem>
                                     <FormLabel className="text-sm">Bottom</FormLabel>
                                     <FormControl>
-                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" data-testid="input-mat-border-bottom" />
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 2.5 or 2 1/2" disabled={form.watch("sample")} data-testid="input-mat-border-bottom" />
                                     </FormControl>
                                   </FormItem>
                                 )}
@@ -1190,7 +1195,7 @@ export default function NewOrder() {
                                   <FormItem>
                                     <FormLabel className="text-sm">Mat 1 Reveal</FormLabel>
                                     <FormControl>
-                                      <Input {...field} value={field.value || ""} placeholder="e.g., 0.125" data-testid="input-mat1-reveal" />
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 0.125" disabled={form.watch("sample")} data-testid="input-mat1-reveal" />
                                     </FormControl>
                                   </FormItem>
                                 )}
@@ -1206,6 +1211,7 @@ export default function NewOrder() {
                                         value={field.value || ""}
                                         onChange={field.onChange}
                                         placeholder="Select mat 2..."
+                                        disabled={form.watch("sample")}
                                       />
                                     </FormControl>
                                   </FormItem>
@@ -1218,7 +1224,7 @@ export default function NewOrder() {
                                   <FormItem>
                                     <FormLabel className="text-sm">Mat 2 Reveal</FormLabel>
                                     <FormControl>
-                                      <Input {...field} value={field.value || ""} placeholder="e.g., 0.125" data-testid="input-mat2-reveal" />
+                                      <Input {...field} value={field.value || ""} placeholder="e.g., 0.125" disabled={form.watch("sample")} data-testid="input-mat2-reveal" />
                                     </FormControl>
                                   </FormItem>
                                 )}
@@ -1234,6 +1240,7 @@ export default function NewOrder() {
                                         value={field.value || ""}
                                         onChange={field.onChange}
                                         placeholder="Select mat 3..."
+                                        disabled={form.watch("sample")}
                                       />
                                     </FormControl>
                                   </FormItem>
@@ -1250,6 +1257,7 @@ export default function NewOrder() {
                                         {...field}
                                         type="number"
                                         onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                        disabled={form.watch("sample")}
                                         data-testid="input-extra-mat-openings"
                                       />
                                     </FormControl>
@@ -1278,6 +1286,7 @@ export default function NewOrder() {
                                       <Checkbox
                                         checked={field.value}
                                         onCheckedChange={field.onChange}
+                                        disabled={form.watch("sample")}
                                         data-testid="checkbox-print-paper"
                                       />
                                     </FormControl>
@@ -1308,6 +1317,7 @@ export default function NewOrder() {
                                       <Checkbox
                                         checked={field.value}
                                         onCheckedChange={field.onChange}
+                                        disabled={form.watch("sample")}
                                         data-testid="checkbox-dry-mount"
                                       />
                                     </FormControl>
@@ -1327,6 +1337,7 @@ export default function NewOrder() {
                                       <Checkbox
                                         checked={field.value}
                                         onCheckedChange={field.onChange}
+                                        disabled={form.watch("sample")}
                                         data-testid="checkbox-print-canvas"
                                       />
                                     </FormControl>
@@ -1367,6 +1378,7 @@ export default function NewOrder() {
                                       <Checkbox
                                         checked={field.value}
                                         onCheckedChange={field.onChange}
+                                        disabled={form.watch("sample")}
                                         data-testid="checkbox-canvas-stretching"
                                       />
                                     </FormControl>
@@ -1396,6 +1408,7 @@ export default function NewOrder() {
                                       <Checkbox
                                         checked={field.value}
                                         onCheckedChange={field.onChange}
+                                        disabled={form.watch("sample")}
                                         data-testid="checkbox-leds"
                                       />
                                     </FormControl>
@@ -1413,6 +1426,7 @@ export default function NewOrder() {
                                       <Checkbox
                                         checked={field.value}
                                         onCheckedChange={field.onChange}
+                                        disabled={form.watch("sample")}
                                         data-testid="checkbox-shadowbox-fitting"
                                       />
                                     </FormControl>
@@ -1430,6 +1444,7 @@ export default function NewOrder() {
                                       <Checkbox
                                         checked={field.value}
                                         onCheckedChange={field.onChange}
+                                        disabled={form.watch("sample")}
                                         data-testid="checkbox-additional-labor"
                                       />
                                     </FormControl>
@@ -1674,7 +1689,7 @@ export default function NewOrder() {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Size:</span>
                       <span className="font-mono font-medium" data-testid="text-frame-size">
-                        {form.watch("width")} × {form.watch("height")} in
+                        {form.watch("sample") ? "Sample" : `${form.watch("width")} × ${form.watch("height")} in`}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
