@@ -24,6 +24,11 @@ interface ShipStationAddress {
   residential?: boolean;
 }
 
+interface ShipStationItemOption {
+  name: string;
+  value: string;
+}
+
 interface ShipStationItem {
   lineItemKey?: string;
   sku?: string;
@@ -31,6 +36,7 @@ interface ShipStationItem {
   quantity: number;
   unitPrice: number;
   taxAmount?: number;
+  options?: ShipStationItemOption[];
   weight?: {
     value: number;
     units: "pounds" | "ounces" | "grams";
@@ -92,6 +98,90 @@ function parseAddress(cityStateZip: string | null): { city: string; state: strin
 }
 
 /**
+ * Build item options array for ShipStation pack slip
+ * Lists all components: frame type, acrylic, backing, mats, special features
+ */
+function buildItemOptions(item: any): ShipStationItemOption[] {
+  const options: ShipStationItemOption[] = [];
+
+  // Frame Type (only on Order type)
+  if (item.frameType) {
+    options.push({ name: "Frame Type", value: item.frameType });
+  }
+
+  // Acrylic
+  if (item.acrylicType) {
+    options.push({ name: "Acrylic", value: item.acrylicType });
+  }
+
+  // Backing
+  if (item.backingSku) {
+    options.push({ name: "Backing", value: item.backingSku });
+  }
+
+  // Mat configuration
+  if (item.mat1Sku) {
+    const matDescription = item.mat2Sku ? "Double Mat" : "Single Mat";
+    options.push({ name: "Mat Configuration", value: matDescription });
+    
+    // Mat colors
+    options.push({ name: "Mat 1", value: `Sku: ${item.mat1Sku}` });
+    if (item.mat2Sku) {
+      options.push({ name: "Mat 2", value: `Sku: ${item.mat2Sku}` });
+    }
+    
+    // Mat borders
+    if (item.matBorderAll) {
+      options.push({ name: "Mat Border", value: `${item.matBorderAll}"` });
+    } else {
+      const borders: string[] = [];
+      if (item.matBorderLeft) borders.push(`Left: ${item.matBorderLeft}"`);
+      if (item.matBorderRight) borders.push(`Right: ${item.matBorderRight}"`);
+      if (item.matBorderTop) borders.push(`Top: ${item.matBorderTop}"`);
+      if (item.matBorderBottom) borders.push(`Bottom: ${item.matBorderBottom}"`);
+      if (borders.length > 0) {
+        options.push({ name: "Mat Borders", value: borders.join(", ") });
+      }
+    }
+    
+    // Mat reveals (for double mats)
+    if (item.mat1Reveal) {
+      options.push({ name: "Mat 1 Reveal", value: `${item.mat1Reveal}"` });
+    }
+    if (item.mat2Reveal) {
+      options.push({ name: "Mat 2 Reveal", value: `${item.mat2Reveal}"` });
+    }
+  }
+
+  // Extra mat openings
+  if (item.extraMatOpenings && item.extraMatOpenings > 0) {
+    options.push({ name: "Extra Mat Openings", value: item.extraMatOpenings.toString() });
+  }
+
+  // Shadow depth (Stacker frames)
+  if (item.shadowDepth) {
+    options.push({ name: "Shadow Depth", value: `${item.shadowDepth}"` });
+  }
+
+  // Topper
+  if (item.topperSku) {
+    options.push({ name: "Topper", value: item.topperSku });
+  }
+
+  // Fabric wrapping (only on Order type)
+  if (item.fabricWrapping) {
+    options.push({ name: "Fabric Wrapping", value: "Yes" });
+  }
+
+  // Conservation mounting (only on Order type)
+  if (item.conservationMounting) {
+    options.push({ name: "Conservation Mounting", value: "Yes" });
+  }
+
+  return options;
+}
+
+/**
  * Convert single-item order to ShipStation format
  */
 function convertSingleOrderToShipStation(order: Order): ShipStationOrderRequest {
@@ -112,27 +202,39 @@ function convertSingleOrderToShipStation(order: Order): ShipStationOrderRequest 
       }
     : undefined;
 
-  // Build item description
-  let itemDescription = "Custom Picture Frame";
-  if (order.frameSku) {
-    itemDescription = `Frame ${order.frameSku}`;
+  // Build SKU in format: F{frameSku}_{width}x{height}
+  let sku: string | undefined;
+  if (order.frameSku && order.width && order.height) {
+    sku = `F${order.frameSku}_${order.width}x${order.height}`;
+  } else if (order.frameSku) {
+    sku = order.frameSku;
   }
-  if (order.width && order.height) {
-    itemDescription += ` (${order.width}" × ${order.height}")`;
+
+  // Build item name
+  let itemName = "Custom Picture Frame";
+  if (order.frameSku) {
+    itemName = `Frame ${order.frameSku}`;
+    if (order.width && order.height) {
+      itemName += ` (${order.width}" × ${order.height}")`;
+    }
   }
   if (order.description) {
-    itemDescription = order.description;
+    itemName = order.description;
   }
+
+  // Build item options (components list for pack slip)
+  const itemOptions = buildItemOptions(order);
 
   // Create item entry
   const quantity = order.quantity || 1;
   const items: ShipStationItem[] = [
     {
-      sku: order.frameSku || undefined,
-      name: itemDescription,
+      sku,
+      name: itemName,
       quantity: quantity,
       unitPrice: parseFloat(order.itemTotal.toString()) / quantity,
       taxAmount: order.salesTax ? parseFloat(order.salesTax.toString()) : undefined,
+      options: itemOptions.length > 0 ? itemOptions : undefined,
     },
   ];
 
@@ -185,23 +287,36 @@ function convertMultiItemOrderToShipStation(
 
   // Build items array
   const shipStationItems: ShipStationItem[] = items.map((item) => {
-    let itemDescription = `Item ${item.itemNumber}: Custom Picture Frame`;
+    // Build SKU in format: F{frameSku}_{width}x{height}
+    let sku: string | undefined;
+    if (item.frameSku && item.width && item.height) {
+      sku = `F${item.frameSku}_${item.width}x${item.height}`;
+    } else if (item.frameSku) {
+      sku = item.frameSku;
+    }
+
+    // Build item name
+    let itemName = `Item ${item.itemNumber}: Custom Picture Frame`;
     if (item.frameSku) {
-      itemDescription = `Item ${item.itemNumber}: Frame ${item.frameSku}`;
+      itemName = `Item ${item.itemNumber}: Frame ${item.frameSku}`;
+      if (item.width && item.height) {
+        itemName += ` (${item.width}" × ${item.height}")`;
+      }
     }
-    if (item.width && item.height) {
-      itemDescription += ` (${item.width}" × ${item.height}")`;
-    }
+
+    // Build item options (components list for pack slip)
+    const itemOptions = buildItemOptions(item);
 
     const quantity = item.quantity || 1;
     const itemTotal = parseFloat(item.itemTotal?.toString() || "0");
     
     return {
       lineItemKey: item.id,
-      sku: item.frameSku || undefined,
-      name: itemDescription,
+      sku,
+      name: itemName,
       quantity: quantity,
       unitPrice: itemTotal / quantity,
+      options: itemOptions.length > 0 ? itemOptions : undefined,
     };
   });
 
