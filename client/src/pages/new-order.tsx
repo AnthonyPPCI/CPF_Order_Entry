@@ -50,6 +50,30 @@ function parseFraction(input: string): number {
   return parseFloat(str) || 0;
 }
 
+// Helper function to parse discount values (matches backend logic)
+function parseDiscount(discountInput: string, subtotal: number): number {
+  if (!discountInput || discountInput.trim() === "") return 0;
+  
+  const str = discountInput.trim();
+  
+  // Check if it's a percentage (e.g., "10%", "15%")
+  if (str.includes('%')) {
+    const percentValue = parseFloat(str.replace('%', '').trim());
+    if (isNaN(percentValue)) return 0;
+    return (percentValue / 100) * subtotal;
+  }
+  
+  // Check if it's a dollar amount (e.g., "$10", "$10.50")
+  if (str.includes('$')) {
+    const dollarValue = parseFloat(str.replace('$', '').trim());
+    return isNaN(dollarValue) ? 0 : dollarValue;
+  }
+  
+  // Otherwise treat as plain number (assume dollar amount)
+  const value = parseFloat(str);
+  return isNaN(value) ? 0 : value;
+}
+
 export default function NewOrder() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -1899,6 +1923,24 @@ export default function NewOrder() {
                         </span>
                       </div>
                     )}
+                    {(() => {
+                      const discountValue = form.watch("discount");
+                      if (!discountValue) return null;
+                      
+                      const subtotalBeforeDiscount = calculatedPricing.itemTotal + calculatedPricing.shipping + calculatedPricing.salesTax;
+                      const discountAmount = parseDiscount(discountValue, subtotalBeforeDiscount);
+                      
+                      if (discountAmount <= 0) return null;
+                      
+                      return (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Discount ({discountValue}):</span>
+                          <span className="font-mono font-semibold text-green-600 dark:text-green-400" data-testid="text-discount">
+                            -${discountAmount.toFixed(2)}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <Separator />
