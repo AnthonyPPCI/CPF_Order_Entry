@@ -81,11 +81,12 @@ export function SquarePaymentForm({
   }, [cardContainerId, onCardReady, onError]);
 
   /**
-   * Tokenize the card details
+   * Tokenize the card details and get verification token
+   * @param buyerDetails Optional buyer details for verification (email, phone, etc.)
    * @returns Promise<{token: string, verificationToken?: string, details?: any} | {error: string}>
    */
-  const tokenize = async (): Promise<{ token?: string; verificationToken?: string; details?: any; error?: string }> => {
-    if (!cardRef.current) {
+  const tokenize = async (buyerDetails?: { email?: string; givenName?: string; familyName?: string; phone?: string }): Promise<{ token?: string; verificationToken?: string; details?: any; error?: string }> => {
+    if (!cardRef.current || !paymentsRef.current) {
       return { error: "Payment form not initialized" };
     }
 
@@ -94,18 +95,59 @@ export function SquarePaymentForm({
     }
 
     try {
-      const result = await cardRef.current.tokenize();
+      // Step 1: Tokenize the card
+      const tokenResult = await cardRef.current.tokenize();
       
-      if (result.status === 'OK') {
-        // Return both payment token and verification token (for CVV verification)
-        return { 
-          token: result.token,
-          verificationToken: result.details?.method === 'card' ? result.details.card?.verification_token : undefined,
-          details: result.details
-        };
-      } else {
-        return { error: result.errors?.[0]?.message || 'Card tokenization failed' };
+      if (tokenResult.status !== 'OK') {
+        return { error: tokenResult.errors?.[0]?.message || 'Card tokenization failed' };
       }
+
+      const paymentToken = tokenResult.token;
+
+      // Step 2: Verify buyer (for CVV verification and fraud prevention)
+      let verificationToken: string | undefined;
+      
+      try {
+        const verificationDetails: any = {
+          amount: amount,
+          currencyCode: 'USD',
+          intent: 'CHARGE',
+        };
+
+        // Add billing contact if provided
+        if (buyerDetails?.email || buyerDetails?.givenName || buyerDetails?.phone) {
+          verificationDetails.billingContact = {};
+          
+          if (buyerDetails.email) {
+            verificationDetails.billingContact.email = buyerDetails.email;
+          }
+          if (buyerDetails.givenName) {
+            verificationDetails.billingContact.givenName = buyerDetails.givenName;
+          }
+          if (buyerDetails.familyName) {
+            verificationDetails.billingContact.familyName = buyerDetails.familyName;
+          }
+          if (buyerDetails.phone) {
+            verificationDetails.billingContact.phone = buyerDetails.phone;
+          }
+        }
+
+        const verifyResult = await paymentsRef.current.verifyBuyer(paymentToken, verificationDetails);
+        
+        if (verifyResult.token) {
+          verificationToken = verifyResult.token;
+        }
+      } catch (verifyError: any) {
+        console.warn('Buyer verification failed:', verifyError);
+        // Continue without verification token if this fails
+      }
+
+      // Return both payment token and verification token
+      return { 
+        token: paymentToken,
+        verificationToken,
+        details: tokenResult.details
+      };
     } catch (error: any) {
       return { error: error.message || 'Failed to tokenize card' };
     }
@@ -174,11 +216,11 @@ export function SquarePaymentForm({
 
 // Export a hook for easy access to tokenization
 export function useSquarePaymentForm() {
-  const tokenize = async (): Promise<{ token?: string; verificationToken?: string; details?: any; error?: string }> => {
+  const tokenize = async (buyerDetails?: { email?: string; givenName?: string; familyName?: string; phone?: string }): Promise<{ token?: string; verificationToken?: string; details?: any; error?: string }> => {
     // Find any square card container (works with unique IDs)
     const container = document.querySelector('[id^="square-card-"]');
     if (container && (container as any).tokenize) {
-      return (container as any).tokenize();
+      return (container as any).tokenize(buyerDetails);
     }
     return { error: "Payment form not ready" };
   };
