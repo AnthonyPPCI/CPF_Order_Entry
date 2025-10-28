@@ -340,9 +340,13 @@ export default function NewOrder() {
     try {
       // Get customer details for verification
       const customerEmail = form.getValues("email");
-      const firstName = form.getValues("firstName");
-      const lastName = form.getValues("lastName");
+      const customerName = form.getValues("customerName");
       const phone = form.getValues("phone");
+
+      // Split customer name into first and last name for buyer verification
+      const nameParts = customerName?.split(" ") || [];
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
 
       // Step 1: Tokenize the card with buyer verification (includes CVV verification)
       const result = await tokenize({
