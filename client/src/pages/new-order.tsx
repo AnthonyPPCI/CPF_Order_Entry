@@ -83,7 +83,14 @@ export default function NewOrder() {
   const [paymentAmount, setPaymentAmount] = useState("0.00");
   const [skipPayment, setSkipPayment] = useState(false);
   const [activePaymentMethod, setActivePaymentMethod] = useState<string | undefined>(undefined);
-  const [processedPayment, setProcessedPayment] = useState<{ type: 'credit_card' | 'cash', token?: string, amount: string } | null>(null);
+  const [processedPayment, setProcessedPayment] = useState<{ 
+    type: 'credit_card' | 'cash' | 'paypal', 
+    token?: string, 
+    amount: string,
+    status?: 'ready' | 'charged' | 'failed',
+    paymentId?: string,
+    errorMessage?: string
+  } | null>(null);
   const { tokenize } = useSquarePaymentForm();
   const [calculatedPricing, setCalculatedPricing] = useState({
     itemTotal: 0,
@@ -324,21 +331,65 @@ export default function NewOrder() {
       return;
     }
 
-    const result = await tokenize();
-    if (result.token) {
-      setProcessedPayment({
-        type: 'credit_card',
-        token: result.token,
-        amount: paymentAmount
+    // Show processing toast
+    toast({
+      title: "Processing Payment...",
+      description: "Charging card, please wait...",
+    });
+
+    try {
+      // Step 1: Tokenize the card
+      const result = await tokenize();
+      if (!result.token) {
+        throw new Error(result.error || "Card tokenization failed");
+      }
+
+      // Step 2: Charge the card immediately (without order ID)
+      const response = await fetch('/api/process-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: parseFloat(paymentAmount).toFixed(2),
+          sourceId: result.token,
+        }),
       });
-      toast({
-        title: "Payment Ready",
-        description: `Credit card payment of $${paymentAmount} is ready to process when you create the order.`,
-      });
-    } else {
+
+      const data = await response.json();
+
+      if (response.ok && data.success && data.status === 'COMPLETED') {
+        // Payment succeeded
+        setProcessedPayment({
+          type: 'credit_card',
+          token: result.token,
+          amount: paymentAmount,
+          status: 'charged',
+          paymentId: data.paymentId
+        });
+        toast({
+          title: "✅ Payment Accepted",
+          description: `$${paymentAmount} charged successfully. Payment ID: ${data.paymentId.substring(0, 8)}...`,
+        });
+      } else {
+        // Payment failed or declined
+        const errorMsg = data.error || "Payment declined";
+        setProcessedPayment({
+          type: 'credit_card',
+          token: result.token,
+          amount: paymentAmount,
+          status: 'failed',
+          errorMessage: errorMsg
+        });
+        toast({
+          title: "❌ Payment Declined",
+          description: errorMsg,
+          variant: "destructive"
+        });
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
       toast({
         title: "Payment Error",
-        description: result.error || "Please enter valid card details.",
+        description: error.message || "Failed to process payment. Please try again.",
         variant: "destructive"
       });
     }

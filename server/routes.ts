@@ -601,9 +601,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { orderId, amount, sourceId } = req.body;
 
-      // Validate required fields
-      if (!orderId || !amount || !sourceId) {
-        return res.status(400).json({ error: "Missing required fields: orderId, amount, sourceId" });
+      // Validate required fields (orderId is optional for pre-order payments)
+      if (!amount || !sourceId) {
+        return res.status(400).json({ error: "Missing required fields: amount, sourceId" });
       }
 
       // Get location ID (check both VITE_ prefixed and non-prefixed)
@@ -635,40 +635,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (response.result?.payment?.status === 'COMPLETED') {
-        // Fetch the order to update balance
-        let order = await storage.getOrderById(orderId);
-        let isMultiItem = false;
-        
-        if (!order) {
-          // Try multi-item order
-          const multiOrder = await storage.getMultiItemOrderById(orderId);
-          if (multiOrder) {
-            order = multiOrder as any;
-            isMultiItem = true;
+        // If orderId provided, fetch the order to update balance
+        if (orderId) {
+          let order = await storage.getOrderById(orderId);
+          let isMultiItem = false;
+          
+          if (!order) {
+            // Try multi-item order
+            const multiOrder = await storage.getMultiItemOrderById(orderId);
+            if (multiOrder) {
+              order = multiOrder as any;
+              isMultiItem = true;
+            }
           }
-        }
 
-        if (order) {
-          const currentBalance = parseFloat(order.balance);
-          const newBalance = Math.max(0, currentBalance - parseFloat(amount));
-          
-          // Update order balance
-          const updateData = { balance: newBalance.toFixed(2) };
-          
-          if (isMultiItem) {
-            await storage.updateMultiItemOrder(orderId, updateData);
+          if (order) {
+            const currentBalance = parseFloat(order.balance);
+            const newBalance = Math.max(0, currentBalance - parseFloat(amount));
+            
+            // Update order balance
+            const updateData = { balance: newBalance.toFixed(2) };
+            
+            if (isMultiItem) {
+              await storage.updateMultiItemOrder(orderId, updateData);
+            } else {
+              await storage.updateOrder(orderId, updateData);
+            }
+            
+            res.json({ 
+              success: true, 
+              paymentId: response.result.payment.id,
+              newBalance: newBalance.toFixed(2),
+              status: 'COMPLETED'
+            });
           } else {
-            await storage.updateOrder(orderId, updateData);
+            res.status(404).json({ error: "Order not found" });
           }
+        } else {
+          // Pre-order payment (no order ID yet)
+          res.json({ 
+            success: true, 
+            paymentId: response.result.payment.id,
+            amount: amount,
+            status: 'COMPLETED'
+          });
         }
-
-        res.json({ 
-          success: true, 
-          paymentId: response.result.payment.id,
-          newBalance: order ? Math.max(0, parseFloat(order.balance) - parseFloat(amount)).toFixed(2) : '0.00'
-        });
       } else {
-        res.status(400).json({ error: "Payment failed", status: response.result?.payment?.status });
+        const paymentStatus = response.result?.payment?.status || 'FAILED';
+        res.status(400).json({ 
+          error: "Payment declined or failed", 
+          status: paymentStatus,
+          success: false
+        });
       }
     } catch (error: any) {
       console.error('Square payment error:', error);
