@@ -203,8 +203,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing required fields: orderId, amount, sourceId" });
       }
 
+      // Get location ID (check both VITE_ prefixed and non-prefixed)
+      const locationId = process.env.VITE_SQUARE_LOCATION_ID || process.env.SQUARE_LOCATION_ID;
+      
+      if (!locationId) {
+        return res.status(500).json({ error: "Square Location ID not configured. Please add SQUARE_LOCATION_ID or VITE_SQUARE_LOCATION_ID." });
+      }
+
       // Convert amount to cents (Square uses smallest currency unit)
       const amountInCents = Math.round(parseFloat(amount) * 100);
+
+      console.log('Square payment request:', {
+        locationId,
+        amount: amountInCents,
+        hasAccessToken: !!process.env.SQUARE_ACCESS_TOKEN,
+        accessTokenPrefix: process.env.SQUARE_ACCESS_TOKEN?.substring(0, 10) + '...',
+      });
 
       // Create payment using Square API (v43+ syntax)
       const { result } = await squareClient.payments.create({
@@ -214,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           amount: BigInt(amountInCents),
           currency: 'USD',
         },
-        locationId: process.env.SQUARE_LOCATION_ID,
+        locationId,
       });
 
       if (result.payment?.status === 'COMPLETED') {
