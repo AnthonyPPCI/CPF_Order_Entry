@@ -848,56 +848,58 @@ export default function NewOrder() {
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="chopOnly"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center space-x-3 space-y-0 pt-8">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                disabled={form.watch("sample")}
-                                data-testid="checkbox-chop-only"
-                              />
-                            </FormControl>
-                            <FormLabel className="font-normal cursor-pointer">
-                              Chop Only
-                            </FormLabel>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="sample"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center space-x-3 space-y-0 pt-8">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                data-testid="checkbox-sample"
-                              />
-                            </FormControl>
-                            <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-6 pt-8">
+                        <FormField
+                          control={form.control}
+                          name="chopOnly"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  disabled={form.watch("sample")}
+                                  data-testid="checkbox-chop-only"
+                                />
+                              </FormControl>
                               <FormLabel className="font-normal cursor-pointer">
-                                Sample
+                                Chop Only
                               </FormLabel>
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p className="max-w-xs">Sample orders are $0 for materials with $5 flat shipping. Only frame or mat SKU is required.</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="sample"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  data-testid="checkbox-sample"
+                                />
+                              </FormControl>
+                              <div className="flex items-center gap-2">
+                                <FormLabel className="font-normal cursor-pointer">
+                                  Sample
+                                </FormLabel>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="max-w-xs">Sample orders are $0 for materials with $5 flat shipping. Only frame or mat SKU is required.</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
