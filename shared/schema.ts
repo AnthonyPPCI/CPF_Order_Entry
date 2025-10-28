@@ -81,7 +81,12 @@ export const orders = pgTable("orders", {
   deposit: text("deposit"),
   paidToDate: decimal("paid_to_date", { precision: 10, scale: 2 }).notNull().default("0"),
   balance: decimal("balance", { precision: 10, scale: 2 }).notNull(),
-  paymentMethod: varchar("payment_method").$type<"credit_card" | "cash" | null>(),
+  paymentMethod: varchar("payment_method").$type<"credit_card" | "cash" | "paypal" | null>(),
+  
+  // PayPal Integration
+  paypalInvoiceId: varchar("paypal_invoice_id"),
+  paypalInvoiceStatus: varchar("paypal_invoice_status"),
+  paypalInvoiceUrl: text("paypal_invoice_url"),
   
   // ShipStation Integration
   syncToShipstation: boolean("sync_to_shipstation").notNull().default(false),
@@ -180,7 +185,12 @@ export const orderHeaders = pgTable("order_headers", {
   deposit: text("deposit"),
   paidToDate: decimal("paid_to_date", { precision: 10, scale: 2 }).notNull().default("0"),
   balance: decimal("balance", { precision: 10, scale: 2 }).notNull(),
-  paymentMethod: varchar("payment_method").$type<"credit_card" | "cash" | null>(),
+  paymentMethod: varchar("payment_method").$type<"credit_card" | "cash" | "paypal" | null>(),
+  
+  // PayPal Integration
+  paypalInvoiceId: varchar("paypal_invoice_id"),
+  paypalInvoiceStatus: varchar("paypal_invoice_status"),
+  paypalInvoiceUrl: text("paypal_invoice_url"),
   
   // ShipStation Integration
   syncToShipstation: boolean("sync_to_shipstation").notNull().default(false),
