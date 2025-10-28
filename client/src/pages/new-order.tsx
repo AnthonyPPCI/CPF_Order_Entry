@@ -1862,6 +1862,24 @@ export default function NewOrder() {
                         ${calculatedPricing.total.toFixed(2)}
                       </span>
                     </div>
+                    
+                    {processedPayment && (
+                      <>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Paid to Date:</span>
+                          <span className="font-mono font-semibold text-green-600 dark:text-green-400" data-testid="text-paid-to-date">
+                            ${processedPayment.amount}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-lg">
+                          <span className="font-semibold">Balance:</span>
+                          <span className="font-mono font-bold" data-testid="text-balance">
+                            ${(parseFloat(calculatedPricing.total.toFixed(2)) - parseFloat(processedPayment.amount)).toFixed(2)}
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {pendingItems.length > 0 && (

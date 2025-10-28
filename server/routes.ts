@@ -376,10 +376,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate pricing server-side
       const pricing = calculatePricing(validatedData);
       
-      // Merge validated data with calculated pricing and clean empty strings
+      // Preserve payment fields from original orderData (validation strips these out)
+      const paymentFields: any = {};
+      if (orderData.paidToDate) {
+        paymentFields.paidToDate = orderData.paidToDate;
+      }
+      if (orderData.paymentMethod) {
+        paymentFields.paymentMethod = orderData.paymentMethod;
+      }
+      
+      // Merge pricing with validated data, then add payment fields
       const completeOrderData = cleanEmptyFields({
-        ...validatedData,
         ...pricing,
+        ...validatedData,
+        ...paymentFields,  // Add payment fields last to ensure they're preserved
       });
       
       // Create the order first
