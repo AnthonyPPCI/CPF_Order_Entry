@@ -128,11 +128,11 @@ export async function sendGoogleReviewRequestViaSMS(phone: string, customerName:
   }
 
   try {
-    // Create SMS message
-    const message = `Hi ${customerName}! Thanks for your order at CustomPictureFrames.com! We'd love your feedback. Please leave us a review: ${googleReviewUrl}`;
-
-    // Send SMS via Klaviyo
-    const response = await fetch(`${KLAVIYO_API_BASE}/campaigns/`, {
+    // Format phone number to E.164 format for Klaviyo
+    const formattedPhone = formatPhoneForKlaviyo(phone);
+    
+    // Step 1: Create or update profile with phone number
+    const profileResponse = await fetch(`${KLAVIYO_API_BASE}/profiles/`, {
       method: "POST",
       headers: {
         "Authorization": `Klaviyo-API-Key ${apiKey}`,
@@ -141,32 +141,91 @@ export async function sendGoogleReviewRequestViaSMS(phone: string, customerName:
       },
       body: JSON.stringify({
         data: {
-          type: "campaign",
+          type: "profile",
           attributes: {
-            name: `Google Review Request - ${new Date().toISOString()}`,
-            channel: "sms",
-            audiences: {
-              included: [phone],
+            phone_number: formattedPhone,
+            first_name: customerName.split(' ')[0],
+            last_name: customerName.split(' ').slice(1).join(' ') || '',
+            properties: {
+              review_url: googleReviewUrl,
             },
-            messages: [
-              {
-                channel: "sms",
-                content: {
-                  body: message,
-                },
-              },
-            ],
           },
         },
       }),
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to send SMS via Klaviyo: ${error}`);
+    let profileId: string;
+    if (profileResponse.ok) {
+      const profileData = await profileResponse.json();
+      profileId = profileData.data.id;
+    } else {
+      // Profile might already exist, try to find it
+      const searchResponse = await fetch(
+        `${KLAVIYO_API_BASE}/profiles/?filter=equals(phone_number,"${formattedPhone}")`,
+        {
+          headers: {
+            "Authorization": `Klaviyo-API-Key ${apiKey}`,
+            "revision": KLAVIYO_REVISION,
+          },
+        }
+      );
+      
+      if (!searchResponse.ok) {
+        throw new Error("Failed to create or find profile");
+      }
+      
+      const searchData = await searchResponse.json();
+      if (searchData.data && searchData.data.length > 0) {
+        profileId = searchData.data[0].id;
+      } else {
+        throw new Error("Failed to create profile");
+      }
     }
 
-    console.log(`[Klaviyo] Sent Google review SMS to ${phone}`);
+    // Step 2: Create a custom event to trigger SMS flow
+    const eventResponse = await fetch(`${KLAVIYO_API_BASE}/events/`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Klaviyo-API-Key ${apiKey}`,
+        "revision": KLAVIYO_REVISION,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        data: {
+          type: "event",
+          attributes: {
+            profile: {
+              data: {
+                type: "profile",
+                id: profileId,
+              },
+            },
+            metric: {
+              data: {
+                type: "metric",
+                attributes: {
+                  name: "Google Review Request",
+                },
+              },
+            },
+            properties: {
+              customer_name: customerName,
+              review_url: googleReviewUrl,
+              phone_number: formattedPhone,
+            },
+            time: new Date().toISOString(),
+          },
+        },
+      }),
+    });
+
+    if (!eventResponse.ok) {
+      const error = await eventResponse.text();
+      throw new Error(`Failed to create Klaviyo event: ${error}`);
+    }
+
+    console.log(`[Klaviyo] Created "Google Review Request" event for profile ${profileId} (${formattedPhone})`);
+    console.log('[Klaviyo] Note: To send SMS automatically, create a Flow in Klaviyo that triggers on "Google Review Request" events');
   } catch (error: any) {
     console.error("[Klaviyo] Error sending SMS:", error.message);
     throw error;
