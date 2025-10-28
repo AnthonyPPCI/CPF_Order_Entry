@@ -7,6 +7,9 @@ import {
   type InsertOrderItem,
 } from "@shared/schema";
 import { randomUUID, createHash } from "crypto";
+import { db } from "./db";
+import { orders, orderHeaders, orderItems } from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 
 // Extended insert type that includes calculated pricing fields
 type InsertOrderWithPricing = InsertOrder & {
@@ -462,4 +465,149 @@ class PricingConfigStorage {
 
 export const pricingConfigStorage = new PricingConfigStorage();
 
-export const storage = new MemStorage();
+// Database-backed storage implementation
+export class DbStorage implements IStorage {
+  // Legacy single-item order operations
+  async getAllOrders(): Promise<Order[]> {
+    return await db.select().from(orders).orderBy(desc(orders.orderDate));
+  }
+
+  async getOrderById(id: string): Promise<Order | undefined> {
+    const result = await db.select().from(orders).where(eq(orders.id, id));
+    return result[0];
+  }
+
+  async createOrder(insertOrder: InsertOrderWithPricing): Promise<Order> {
+    const result = await db.insert(orders).values(insertOrder).returning();
+    return result[0];
+  }
+
+  async updateOrder(id: string, updateData: Partial<InsertOrderWithPricing>): Promise<Order | undefined> {
+    const result = await db.update(orders)
+      .set(updateData)
+      .where(eq(orders.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteOrder(id: string): Promise<boolean> {
+    const result = await db.delete(orders).where(eq(orders.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // Multi-item order operations
+  async getAllMultiItemOrders(): Promise<MultiItemOrder[]> {
+    const headers = await db.select().from(orderHeaders).orderBy(desc(orderHeaders.orderDate));
+    
+    const ordersWithItems = await Promise.all(
+      headers.map(async (header) => {
+        const items = await db.select().from(orderItems).where(eq(orderItems.orderId, header.id));
+        return {
+          ...header,
+          items,
+        };
+      })
+    );
+    
+    return ordersWithItems;
+  }
+
+  async getMultiItemOrderById(id: string): Promise<MultiItemOrder | undefined> {
+    const headerResult = await db.select().from(orderHeaders).where(eq(orderHeaders.id, id));
+    const header = headerResult[0];
+    
+    if (!header) {
+      return undefined;
+    }
+    
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, id));
+    
+    return {
+      ...header,
+      items,
+    };
+  }
+
+  async createMultiItemOrder(
+    insertHeader: InsertOrderHeaderWithPricing,
+    insertItems: InsertOrderItemWithPricing[]
+  ): Promise<MultiItemOrder> {
+    // Use a transaction to ensure atomicity
+    const result = await db.transaction(async (tx) => {
+      // Insert header
+      const headerResult = await tx.insert(orderHeaders).values(insertHeader).returning();
+      const header = headerResult[0];
+      
+      // Insert items with the header's ID
+      const itemsWithOrderId = insertItems.map((item, index) => ({
+        ...item,
+        orderId: header.id,
+        itemNumber: item.itemNumber || index + 1,
+      }));
+      
+      const itemsResult = await tx.insert(orderItems).values(itemsWithOrderId).returning();
+      
+      return {
+        ...header,
+        items: itemsResult,
+      };
+    });
+    
+    return result;
+  }
+
+  async updateMultiItemOrder(
+    id: string,
+    updateHeader: Partial<InsertOrderHeaderWithPricing>,
+    updateItems?: InsertOrderItemWithPricing[]
+  ): Promise<MultiItemOrder | undefined> {
+    const result = await db.transaction(async (tx) => {
+      // Update header
+      const headerResult = await tx.update(orderHeaders)
+        .set(updateHeader)
+        .where(eq(orderHeaders.id, id))
+        .returning();
+      
+      const header = headerResult[0];
+      if (!header) {
+        return undefined;
+      }
+      
+      // If items are provided, replace all items
+      let items: OrderItem[] = [];
+      if (updateItems) {
+        // Delete existing items
+        await tx.delete(orderItems).where(eq(orderItems.orderId, id));
+        
+        // Insert new items
+        const itemsWithOrderId = updateItems.map((item, index) => ({
+          ...item,
+          orderId: id,
+          itemNumber: item.itemNumber || index + 1,
+        }));
+        
+        items = await tx.insert(orderItems).values(itemsWithOrderId).returning();
+      } else {
+        // If no items provided, fetch existing items
+        items = await tx.select().from(orderItems).where(eq(orderItems.orderId, id));
+      }
+      
+      return {
+        ...header,
+        items,
+      };
+    });
+    
+    return result;
+  }
+
+  async deleteMultiItemOrder(id: string): Promise<boolean> {
+    // Delete header (items will be cascade deleted if foreign key constraints are set up)
+    // Or we can explicitly delete items first
+    await db.delete(orderItems).where(eq(orderItems.orderId, id));
+    const result = await db.delete(orderHeaders).where(eq(orderHeaders.id, id)).returning();
+    return result.length > 0;
+  }
+}
+
+export const storage = new DbStorage();

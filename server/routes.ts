@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Resend } from "resend";
 import { generateOrderPDF } from "./pdf-generator";
 import { SquareClient, SquareEnvironment } from "square";
-import { randomUUID } from "crypto";
+import { randomUUID, createHash } from "crypto";
 
 // Initialize Resend for email sending
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -753,15 +753,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete multi-item order
+  // Delete single-item order (password protected)
+  app.delete("/api/orders/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { password } = req.body;
+      
+      // Verify password: "2026DOG"
+      const expectedHash = createHash('sha256').update('2026DOG').digest('hex');
+      const providedHash = createHash('sha256').update(password || '').digest('hex');
+      
+      if (providedHash !== expectedHash) {
+        return res.status(403).json({ error: "Invalid password" });
+      }
+      
+      const deleted = await storage.deleteOrder(id);
+      if (deleted) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ error: "Order not found" });
+      }
+    } catch (error) {
+      console.error("Delete order error:", error);
+      res.status(500).json({ error: "Failed to delete order" });
+    }
+  });
+
+  // Delete multi-item order (password protected)
   app.delete("/api/multi-orders/:id", async (req, res) => {
     try {
-      const success = await storage.deleteMultiItemOrder(req.params.id);
-      if (!success) {
-        return res.status(404).json({ error: "Order not found" });
+      const { id } = req.params;
+      const { password } = req.body;
+      
+      const expectedHash = createHash('sha256').update('2026DOG').digest('hex');
+      const providedHash = createHash('sha256').update(password || '').digest('hex');
+      
+      if (providedHash !== expectedHash) {
+        return res.status(403).json({ error: "Invalid password" });
       }
-      res.status(204).send();
+      
+      const deleted = await storage.deleteMultiItemOrder(id);
+      if (deleted) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ error: "Order not found" });
+      }
     } catch (error) {
+      console.error("Delete multi-item order error:", error);
       res.status(500).json({ error: "Failed to delete order" });
     }
   });

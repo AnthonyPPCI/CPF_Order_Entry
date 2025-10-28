@@ -1,14 +1,26 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRoute, Link } from "wouter";
+import { useRoute, Link, useLocation } from "wouter";
 import { type Order, type OrderHeader, type OrderItem } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Printer, Mail, CreditCard } from "lucide-react";
+import { ArrowLeft, Printer, Mail, CreditCard, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentDialog } from "@/components/PaymentDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import cpfLogo from "@assets/cpf-logo.webp";
 
 // Type for multi-item order response (header fields merged with items array)
@@ -18,10 +30,14 @@ type MultiItemOrderResponse = OrderHeader & {
 
 export default function OrderDetail() {
   const [, params] = useRoute("/order/:id");
+  const [, setLocation] = useLocation();
   const orderId = params?.id;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: orderData, isLoading } = useQuery<Order | MultiItemOrderResponse>({
     queryKey: ["/api/orders", orderId],
@@ -126,6 +142,46 @@ export default function OrderDetail() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!orderId) return;
+    
+    setIsDeleting(true);
+    try {
+      const endpoint = isMultiItemOrder ? `/api/multi-orders/${orderId}` : `/api/orders/${orderId}`;
+      
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete order');
+      }
+
+      toast({
+        title: "Order Deleted",
+        description: "The order has been successfully deleted.",
+      });
+      
+      // Invalidate queries and navigate back to orders list
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-orders"] });
+      setLocation("/orders");
+    } catch (error) {
+      toast({
+        title: "Delete Failed",
+        description: error instanceof Error ? error.message : "Failed to delete order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setDeletePassword("");
+    }
+  };
+
   // If it's a multi-item order, show simplified view for now
   if (multiOrder) {
     return (
@@ -143,7 +199,7 @@ export default function OrderDetail() {
             </div>
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 print:hidden">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:hidden">
               <Button 
                 variant="outline" 
                 onClick={handlePrintMulti} 
@@ -173,6 +229,16 @@ export default function OrderDetail() {
               >
                 <CreditCard className="h-6 w-6" />
                 <span className="font-semibold">Collect Payment</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => setDeleteDialogOpen(true)} 
+                data-testid="button-delete-order"
+                className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-6 w-6" />
+                <span className="font-semibold">Delete Order</span>
               </Button>
             </div>
 
@@ -307,6 +373,50 @@ export default function OrderDetail() {
               queryClient.invalidateQueries({ queryKey: ["/api/orders", multiOrder.id] });
             }}
           />
+          
+          {/* Delete Dialog */}
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent data-testid="dialog-delete-order">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Order</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. Please enter the password to confirm deletion.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="py-4">
+                <Label htmlFor="delete-password" className="text-sm font-medium">
+                  Password
+                </Label>
+                <Input
+                  id="delete-password"
+                  type="password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  placeholder="Enter password"
+                  data-testid="input-delete-password"
+                  className="mt-2"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && deletePassword) {
+                      handleDelete();
+                    }
+                  }}
+                />
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid="button-cancel-delete" disabled={isDeleting}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  disabled={!deletePassword || isDeleting}
+                  data-testid="button-confirm-delete"
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  {isDeleting ? "Deleting..." : "Delete Order"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     );
@@ -394,7 +504,7 @@ export default function OrderDetail() {
           </div>
 
           {/* Action Buttons - Google Sheets Style */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 print:hidden">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:hidden">
             <Button 
               variant="outline" 
               onClick={handlePrint} 
@@ -424,6 +534,16 @@ export default function OrderDetail() {
             >
               <CreditCard className="h-6 w-6" />
               <span className="font-semibold">Collect Payment</span>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteDialogOpen(true)} 
+              data-testid="button-delete-order"
+              className="h-auto py-4 flex-col gap-2 hover-elevate active-elevate-2 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-6 w-6" />
+              <span className="font-semibold">Delete Order</span>
             </Button>
           </div>
 
@@ -687,6 +807,50 @@ export default function OrderDetail() {
               queryClient.invalidateQueries({ queryKey: ["/api/orders", order.id] });
             }}
           />
+          
+          {/* Delete Dialog */}
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent data-testid="dialog-delete-order">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Order</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. Please enter the password to confirm deletion.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="py-4">
+                <Label htmlFor="delete-password" className="text-sm font-medium">
+                  Password
+                </Label>
+                <Input
+                  id="delete-password"
+                  type="password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  placeholder="Enter password"
+                  data-testid="input-delete-password"
+                  className="mt-2"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && deletePassword) {
+                      handleDelete();
+                    }
+                  }}
+                />
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid="button-cancel-delete" disabled={isDeleting}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  disabled={!deletePassword || isDeleting}
+                  data-testid="button-confirm-delete"
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  {isDeleting ? "Deleting..." : "Delete Order"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </div>
