@@ -386,8 +386,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const order = await storage.createOrder(completeOrderData);
       
       // Sync to ShipStation if requested
+      console.log(`[ShipStation] Order ${order.id} syncToShipstation flag: ${validatedData.syncToShipstation}`);
       if (validatedData.syncToShipstation) {
         try {
+          console.log(`[ShipStation] Starting sync for order ${order.id}...`);
           await syncOrderToShipStation(order);
           console.log(`[ShipStation] Successfully synced order ${order.id} to ShipStation`);
         } catch (shipStationError: any) {
@@ -708,8 +710,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const order = await storage.createMultiItemOrder(headerData, itemsData);
       
       // Sync to ShipStation if requested
+      console.log(`[ShipStation] Multi-item order ${order.id} syncToShipstation flag: ${validatedHeader.syncToShipstation}`);
       if (validatedHeader.syncToShipstation) {
         try {
+          console.log(`[ShipStation] Starting sync for multi-item order ${order.id}...`);
           await syncMultiItemOrderToShipStation(order, order.items);
           console.log(`[ShipStation] Successfully synced multi-item order ${order.id} to ShipStation`);
         } catch (shipStationError: any) {
