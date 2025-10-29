@@ -189,13 +189,19 @@ export async function createPayPalInvoice(order: Order | OrderHeader, items: Pay
     throw new Error(`Failed to extract invoice ID from response: ${JSON.stringify(result)}`);
   }
   
-  // Return a properly formatted invoice object
+  // Return a properly formatted invoice object matching PayPalInvoice interface
   return {
     id: invoiceId,
-    href: result.href,
-    rel: result.rel,
-    method: result.method,
-    links: [result],
+    status: "DRAFT", // Newly created invoices are in DRAFT status
+    detail: {
+      invoice_number: order.orderNumber || `ORD-${order.id.slice(0, 8).toUpperCase()}`,
+      currency_code: "USD",
+    },
+    links: [{
+      href: result.href,
+      rel: result.rel || "self",
+      method: result.method || "GET",
+    }],
   };
 }
 
