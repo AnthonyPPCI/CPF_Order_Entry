@@ -59,6 +59,19 @@ async function generateNextOrderNumber(): Promise<string> {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Get current authenticated user info
+  app.get('/api/auth/user', ...protect, (req, res) => {
+    const user = req.user as any;
+    res.json({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      accessibleApps: user.accessibleApps,
+    });
+  });
+
   // Send Google Review request
   app.post("/api/send-review-request", ...protect, async (req, res) => {
     try {
