@@ -9,6 +9,7 @@ import { generateOrderPDF } from "./pdf-generator";
 import Stripe from "stripe";
 import { randomUUID, createHash } from "crypto";
 import { syncOrderToShipStation, syncMultiItemOrderToShipStation } from "./shipstation";
+import { protect } from "./auth";
 
 // Initialize Resend for email sending
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -59,7 +60,7 @@ async function generateNextOrderNumber(): Promise<string> {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Send Google Review request
-  app.post("/api/send-review-request", async (req, res) => {
+  app.post("/api/send-review-request", ...protect, async (req, res) => {
     try {
       console.log('[Google Reviews] Received review request:', { customerName: req.body.customerName, email: req.body.email, phone: req.body.phone, smsConsent: req.body.smsConsent });
       
@@ -167,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test SMS endpoint for debugging Twilio
-  app.post("/api/test-sms", async (req, res) => {
+  app.post("/api/test-sms", ...protect, async (req, res) => {
     try {
       console.log('[Test SMS] Received request:', req.body);
       const { phone, message } = req.body;
@@ -204,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create and send PayPal invoice
-  app.post("/api/create-paypal-invoice", async (req, res) => {
+  app.post("/api/create-paypal-invoice", ...protect, async (req, res) => {
     try {
       console.log('[PayPal Invoice] Starting invoice creation process');
       const { orderId, isMultiItem } = req.body;
@@ -463,7 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send order email (to Brian or customer)
-  app.post("/api/send-order-email", async (req, res) => {
+  app.post("/api/send-order-email", ...protect, async (req, res) => {
     try {
       if (!resend) {
         return res.status(500).json({ error: "Email service not configured. Please add RESEND_API_KEY." });
@@ -631,7 +632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create Stripe PaymentIntent
-  app.post("/api/create-payment-intent", async (req, res) => {
+  app.post("/api/create-payment-intent", ...protect, async (req, res) => {
     try {
       if (!stripe) {
         return res.status(500).json({ error: "Stripe payment not configured. Please add STRIPE_SECRET_KEY." });
@@ -679,7 +680,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Confirm Stripe Payment and update order
-  app.post("/api/confirm-payment", async (req, res) => {
+  app.post("/api/confirm-payment", ...protect, async (req, res) => {
     try {
       if (!stripe) {
         return res.status(500).json({ error: "Stripe payment not configured. Please add STRIPE_SECRET_KEY." });
@@ -763,7 +764,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Record cash or check payment
-  app.post("/api/record-payment", async (req, res) => {
+  app.post("/api/record-payment", ...protect, async (req, res) => {
     try {
       const { orderId, amount, paymentMethod, checkNumber } = req.body;
 
@@ -831,7 +832,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mark order as picked up
-  app.post("/api/orders/:id/mark-picked-up", async (req, res) => {
+  app.post("/api/orders/:id/mark-picked-up", ...protect, async (req, res) => {
     try {
       const orderId = req.params.id;
 
@@ -880,7 +881,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all orders (both single-item and multi-item)
-  app.get("/api/orders", async (req, res) => {
+  app.get("/api/orders", ...protect, async (req, res) => {
     try {
       const singleOrders = await storage.getAllOrders();
       const multiOrders = await storage.getAllMultiItemOrders();
@@ -900,7 +901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get single order by ID
-  app.get("/api/orders/:id", async (req, res) => {
+  app.get("/api/orders/:id", ...protect, async (req, res) => {
     try {
       // Try to fetch from multi-item orders first
       const multiOrder = await storage.getMultiItemOrderById(req.params.id);
@@ -920,7 +921,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new order
-  app.post("/api/orders", async (req, res) => {
+  app.post("/api/orders", ...protect, async (req, res) => {
     try {
       const validatedData = insertOrderSchema.parse(req.body);
       
@@ -957,7 +958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create order with optional payment processing
-  app.post("/api/orders-with-payment", async (req, res) => {
+  app.post("/api/orders-with-payment", ...protect, async (req, res) => {
     try {
       const { orderData, paymentData } = req.body;
       
@@ -1066,7 +1067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update order
-  app.patch("/api/orders/:id", async (req, res) => {
+  app.patch("/api/orders/:id", ...protect, async (req, res) => {
     try {
       const partialSchema = insertOrderSchema.partial();
       const validatedData = partialSchema.parse(req.body);
@@ -1105,7 +1106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete order
-  app.delete("/api/orders/:id", async (req, res) => {
+  app.delete("/api/orders/:id", ...protect, async (req, res) => {
     try {
       const success = await storage.deleteOrder(req.params.id);
       if (!success) {
@@ -1118,7 +1119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Calculate pricing preview (without saving order)
-  app.post("/api/pricing", async (req, res) => {
+  app.post("/api/pricing", ...protect, async (req, res) => {
     try {
       const pricing = calculatePricing(req.body);
       res.json(pricing);
@@ -1129,7 +1130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Control Panel APIs
-  app.post("/api/control-panel/verify", async (req, res) => {
+  app.post("/api/control-panel/verify", ...protect, async (req, res) => {
     try {
       const { password } = req.body;
       const isValid = pricingConfigStorage.verifyPassword(password);
@@ -1139,7 +1140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/control-panel/config", async (req, res) => {
+  app.get("/api/control-panel/config", ...protect, async (req, res) => {
     try {
       const config = pricingConfigStorage.getConfig();
       // Don't send the password hash to client
@@ -1150,7 +1151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/control-panel/config", async (req, res) => {
+  app.post("/api/control-panel/config", ...protect, async (req, res) => {
     try {
       const { password, ...updates } = req.body;
       
@@ -1168,7 +1169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get moulding data
-  app.get("/api/control-panel/mouldings", async (req, res) => {
+  app.get("/api/control-panel/mouldings", ...protect, async (req, res) => {
     try {
       const { loadPricingData } = await import("./pricing-data");
       const data = loadPricingData();
@@ -1180,7 +1181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get supply data
-  app.get("/api/control-panel/supplies", async (req, res) => {
+  app.get("/api/control-panel/supplies", ...protect, async (req, res) => {
     try {
       const { loadPricingData } = await import("./pricing-data");
       const data = loadPricingData();
@@ -1192,7 +1193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all supplies for mat autocomplete (return all since mat items aren't specifically labeled)
-  app.get("/api/supplies", async (req, res) => {
+  app.get("/api/supplies", ...protect, async (req, res) => {
     try {
       const { loadPricingData } = await import("./pricing-data");
       const data = loadPricingData();
@@ -1206,7 +1207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Margin Analysis Routes
   
   // Run scenario analysis
-  app.post("/api/margin-analysis/scenarios", async (req, res) => {
+  app.post("/api/margin-analysis/scenarios", ...protect, async (req, res) => {
     try {
       const { runScenarioAnalysis } = await import("./margin-analysis");
       const { laborConfig, businessMetrics } = req.body;
@@ -1220,7 +1221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Analyze margin for a specific order
-  app.post("/api/margin-analysis/order", async (req, res) => {
+  app.post("/api/margin-analysis/order", ...protect, async (req, res) => {
     try {
       const { analyzeMargin } = await import("./margin-analysis");
       const { order, laborConfig, businessMetrics } = req.body;
@@ -1236,7 +1237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Multi-item Order Routes
   
   // Get all multi-item orders
-  app.get("/api/multi-orders", async (req, res) => {
+  app.get("/api/multi-orders", ...protect, async (req, res) => {
     try {
       const orders = await storage.getAllMultiItemOrders();
       res.json(orders);
@@ -1246,7 +1247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get single multi-item order by ID
-  app.get("/api/multi-orders/:id", async (req, res) => {
+  app.get("/api/multi-orders/:id", ...protect, async (req, res) => {
     try {
       const order = await storage.getMultiItemOrderById(req.params.id);
       if (!order) {
@@ -1259,7 +1260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new multi-item order
-  app.post("/api/multi-orders", async (req, res) => {
+  app.post("/api/multi-orders", ...protect, async (req, res) => {
     try {
       const { header, items } = req.body;
       
@@ -1343,7 +1344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update multi-item order
-  app.patch("/api/multi-orders/:id", async (req, res) => {
+  app.patch("/api/multi-orders/:id", ...protect, async (req, res) => {
     try {
       const { header, items } = req.body;
       
@@ -1413,7 +1414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete single-item order (password protected)
-  app.delete("/api/orders/:id", async (req, res) => {
+  app.delete("/api/orders/:id", ...protect, async (req, res) => {
     try {
       const { id } = req.params;
       const { password } = req.body;
@@ -1439,7 +1440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete multi-item order (password protected)
-  app.delete("/api/multi-orders/:id", async (req, res) => {
+  app.delete("/api/multi-orders/:id", ...protect, async (req, res) => {
     try {
       const { id } = req.params;
       const { password } = req.body;
@@ -1464,7 +1465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Calculate multi-item pricing preview (without saving order)
-  app.post("/api/multi-pricing", async (req, res) => {
+  app.post("/api/multi-pricing", ...protect, async (req, res) => {
     try {
       const { items, customerAddress, deliveryMethod, discount, deposit } = req.body;
       const pricing = calculateMultiItemPricing({

@@ -1,0 +1,61 @@
+I need to integrate this Order Entry application with our centralized FrameBox authentication system. The main platform at framebox.com handles all user authentication, and this app needs to share those sessions.
+
+Requirements:
+
+Shared Database Access: This app needs to connect to the same PostgreSQL database as the main FrameBox platform to access user sessions and verify permissions.
+
+Session Configuration: Implement express-session with these exact settings:
+
+Use connect-pg-simple for PostgreSQL session storage
+Session TTL: 7 days (604800000 ms)
+Cookie domain: .framebox.com (in production)
+Cookie settings: httpOnly, secure (production only), sameSite: "lax"
+Session table name: sessions
+Authentication Middleware: Create middleware that:
+
+Checks if the user is authenticated (via Passport.js session)
+Verifies the user has order_entry in their accessibleApps array
+Returns 401 if not authenticated
+Returns 403 if authenticated but doesn't have order_entry permission
+User Schema: The users table has these key fields:
+
+id (uuid)
+email (varchar)
+role (enum: super_admin, admin, manager, user)
+accessibleApps (text array) - contains app identifiers like "order_entry"
+active (boolean)
+requirePasswordChange (boolean)
+Environment Variables Needed:
+
+DATABASE_URL - PostgreSQL connection string (shared with main platform)
+SESSION_SECRET - Session encryption key (MUST be the same as main platform)
+NODE_ENV - Set to "production" for production deployment
+Implementation Details:
+
+Do NOT implement login/signup routes (handled by main platform)
+Do NOT use passport strategies (sessions are created by main platform)
+DO implement passport.deserializeUser to load user from session
+Protect all routes with authentication middleware
+Show a friendly error if user lacks order_entry permission
+Example Middleware Pattern:
+
+// Auth middleware
+export const requireAuth: RequestHandler = async (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Please log in at framebox.com" });
+  }
+  
+  const user = req.user as any;
+  
+  // Check if user has order_entry permission
+  if (!user.accessibleApps?.includes('order_entry') && 
+      user.role !== 'super_admin' && 
+      user.role !== 'admin') {
+    return res.status(403).json({ 
+      message: "You don't have access to Order Entry. Contact your administrator." 
+    });
+  }
+  
+  next();
+};
+Please implement this authentication integration while preserving all existing Order Entry functionality.

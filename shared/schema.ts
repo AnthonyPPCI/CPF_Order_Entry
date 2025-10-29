@@ -365,3 +365,20 @@ export interface ScenarioAnalysis {
   healthyCount: number;         // Number of scenarios with healthy margins
   warningCount: number;         // Number of scenarios with warning margins
 }
+
+// FrameBox Users Table (Shared Authentication)
+// This table is owned by the main FrameBox platform and shared across all apps
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").notNull().unique(),
+  password: text("password"), // Hashed password
+  role: varchar("role").$type<"super_admin" | "admin" | "manager" | "user">().notNull().default("user"),
+  accessibleApps: text("accessible_apps").array().notNull().default(sql`ARRAY[]::text[]`),
+  active: boolean("active").notNull().default(true),
+  requirePasswordChange: boolean("require_password_change").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type SelectUser = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
