@@ -111,13 +111,6 @@ export function StripePaymentForm({
     );
   }
 
-  const elementsOptions: StripeElementsOptions = {
-    clientSecret,
-    appearance: {
-      theme: 'stripe',
-    },
-  };
-
   return (
     <div className="space-y-4" data-testid="stripe-payment-form">
       {showAmountInput && (
@@ -152,7 +145,7 @@ export function StripePaymentForm({
           <AlertDescription>{initError}</AlertDescription>
         </Alert>
       ) : (
-        <Elements stripe={stripePromise} options={elementsOptions}>
+        <Elements stripe={stripePromise}>
           <StripeCardForm onCardReady={onCardReady} onError={onError} />
         </Elements>
       )}
