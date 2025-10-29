@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MatCombobox } from "@/components/mat-combobox";
 import { StripePaymentForm } from "@/components/StripePaymentForm";
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { X, Plus, ChevronDown, HelpCircle, Star } from "lucide-react";
@@ -128,13 +128,14 @@ function CreditCardPaymentContent({
     });
 
     try {
-      const { error, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: window.location.origin + '/order/success',
-        },
-        redirect: 'if_required',
-      });
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        {
+          payment_method: {
+            card: elements.getElement(CardElement)!,
+          },
+        }
+      );
 
       if (error) {
         setProcessedPayment({
@@ -224,10 +225,25 @@ function CreditCardPaymentContent({
 
       <div className="space-y-2">
         <Label>Card Information</Label>
-        <div data-testid="stripe-card-container">
-          <PaymentElement
+        <div 
+          data-testid="stripe-card-container"
+          className="p-3 border rounded-md bg-background"
+        >
+          <CardElement
             options={{
-              layout: 'tabs'
+              style: {
+                base: {
+                  fontSize: '16px',
+                  color: '#424770',
+                  '::placeholder': {
+                    color: '#aab7c4',
+                  },
+                },
+                invalid: {
+                  color: '#9e2146',
+                },
+              },
+              hidePostalCode: true,
             }}
           />
         </div>
@@ -240,7 +256,7 @@ function CreditCardPaymentContent({
         className="w-full"
         data-testid="button-process-credit-card"
       >
-        {isProcessing ? "Processing..." : "Process Credit Card Payment"}
+        {isProcessing ? "Processing..." : `Charge $${paymentAmount || '0.00'}`}
       </Button>
 
       <p className="text-sm text-muted-foreground">
