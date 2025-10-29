@@ -19,6 +19,7 @@ export const orders = pgTable("orders", {
   
   // Order Details
   deliveryMethod: text("delivery_method").notNull().default("shipping"),
+  pickupStatus: varchar("pickup_status").$type<"awaiting_pickup" | "picked_up" | null>(),
   description: text("description"),
   specialRequests: text("special_requests"),
   
@@ -176,6 +177,7 @@ export const orderHeaders = pgTable("order_headers", {
   
   // Delivery & Notes
   deliveryMethod: text("delivery_method").notNull().default("shipping"),
+  pickupStatus: varchar("pickup_status").$type<"awaiting_pickup" | "picked_up" | null>(),
   description: text("description"),
   specialRequests: text("special_requests"),
   
