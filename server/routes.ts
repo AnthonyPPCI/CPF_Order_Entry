@@ -18,7 +18,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
   console.warn('[Stripe] Warning: STRIPE_SECRET_KEY not configured');
 }
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
+  apiVersion: "2025-09-30.clover",
 }) : null;
 
 if (stripe) {
@@ -118,10 +118,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             `,
           });
           console.log(`[Google Reviews] Email sent successfully to ${email}:`, emailResult);
-          results.email = "sent";
+          results.email = "sent" as any;
         } catch (emailError: any) {
           console.error("[Google Reviews] Failed to send review request email:", emailError);
-          results.email = "failed";
+          results.email = "failed" as any;
         }
       } else if (email && !resend) {
         console.log('[Google Reviews] Resend client not initialized - RESEND_API_KEY missing');
@@ -134,10 +134,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { sendGoogleReviewRequestViaSMS } = await import("./twilio.js");
           await sendGoogleReviewRequestViaSMS(phone, customerName, reviewUrl);
           console.log(`[Google Reviews] SMS sent successfully to ${phone}`);
-          results.sms = "sent";
+          results.sms = "sent" as any;
         } catch (smsError: any) {
           console.error("[Google Reviews] Failed to send review request SMS:", smsError);
-          results.sms = "failed";
+          results.sms = "failed" as any;
         }
       }
 
@@ -221,15 +221,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (isMultiItem) {
         // Fetch multi-item order
-        const orderHeader = await storage.getOrderHeaderById(orderId);
-        if (!orderHeader) {
+        const multiItemOrder = await storage.getMultiItemOrderById(orderId);
+        if (!multiItemOrder) {
           return res.status(404).json({ error: "Order not found" });
         }
-        order = orderHeader;
+        order = multiItemOrder;
         
         // Build items array from order items
-        const orderItems = await storage.getOrderItemsByHeaderId(orderId);
-        items = orderItems.map((item, index) => ({
+        items = multiItemOrder.items.map((item: any, index: number) => ({
           name: `Item #${index + 1}: ${item.frameSku || 'Frame'}`,
           description: `${item.width || 'N/A'} x ${item.height || 'N/A'}`,
           quantity: "1",
@@ -240,25 +239,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }));
         
         // Add shipping
-        if (parseFloat(orderHeader.shipping) > 0) {
+        if (parseFloat(multiItemOrder.shipping) > 0) {
           items.push({
             name: "Shipping",
             quantity: "1",
             unit_amount: {
               currency_code: "USD",
-              value: orderHeader.shipping,
+              value: multiItemOrder.shipping,
             },
           });
         }
         
         // Add sales tax
-        if (orderHeader.salesTax && parseFloat(orderHeader.salesTax) > 0) {
+        if (multiItemOrder.salesTax && parseFloat(multiItemOrder.salesTax) > 0) {
           items.push({
             name: "Sales Tax",
             quantity: "1",
             unit_amount: {
               currency_code: "USD",
-              value: orderHeader.salesTax,
+              value: multiItemOrder.salesTax,
             },
           });
         }
@@ -337,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       if (isMultiItem) {
-        await storage.updateOrderHeader(orderId, updateData);
+        await storage.updateMultiItemOrder(orderId, updateData);
       } else {
         await storage.updateOrder(orderId, updateData);
       }
@@ -396,7 +395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const paidAmount = resource.amount?.value || resource.payments?.paid_amount?.value || "0";
         
         // Find order with this invoice ID
-        const allOrders = await storage.listOrders();
+        const allOrders = await storage.getAllOrders();
         const order = allOrders.find((o: any) => o.paypalInvoiceId === invoiceId);
         
         if (order) {
@@ -426,14 +425,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Check multi-item orders
-        const allMultiOrders = await storage.listOrderHeaders();
+        const allMultiOrders = await storage.getAllMultiItemOrders();
         const multiOrder = allMultiOrders.find((o: any) => o.paypalInvoiceId === invoiceId);
         
         if (multiOrder) {
           const newPaidToDate = parseFloat(multiOrder.paidToDate || "0") + parseFloat(paidAmount);
           const newBalance = parseFloat(multiOrder.total) - newPaidToDate;
           
-          await storage.updateOrderHeader(multiOrder.id, {
+          await storage.updateMultiItemOrder(multiOrder.id, {
             paypalInvoiceStatus: "PAID",
             paidToDate: newPaidToDate.toFixed(2),
             balance: Math.max(0, newBalance).toFixed(2),

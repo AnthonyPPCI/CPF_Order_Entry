@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { CreditCard, Loader2, AlertCircle, DollarSign, Receipt, Banknote, FileText } from "lucide-react";
-import { StripePaymentForm } from "./StripePaymentForm";
-import { Elements, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -249,13 +248,56 @@ function CreditCardPaymentContent({
 
   return (
     <div className="space-y-6">
-      <StripePaymentForm
-        amount={amount}
-        onAmountChange={setAmount}
-        maxAmount={balance}
-        showAmountInput={true}
-        clientSecret={clientSecret}
-      />
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="payment-amount">Amount to Charge</Label>
+          <div className="flex items-center gap-2">
+            <span className="text-lg text-muted-foreground">$</span>
+            <Input
+              id="payment-amount"
+              type="number"
+              step="0.01"
+              min="0.01"
+              max={parseFloat(balance)}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+              className="text-lg font-medium"
+              data-testid="input-payment-amount"
+            />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Maximum: ${balance}
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Card Information</Label>
+          <div 
+            data-testid="stripe-card-container"
+            className="p-3 border rounded-md bg-background"
+          >
+            <CardElement
+              options={{
+                style: {
+                  base: {
+                    fontSize: '16px',
+                    color: '#424770',
+                    '::placeholder': {
+                      color: '#aab7c4',
+                    },
+                  },
+                  invalid: {
+                    color: '#9e2146',
+                  },
+                },
+                hidePostalCode: true,
+                disableLinkAutofill: true,
+              } as any}
+            />
+          </div>
+        </div>
+      </div>
 
       <div className="flex justify-end gap-2 pt-4">
         <Button
