@@ -6,14 +6,11 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { CreditCard, Loader2, AlertCircle, DollarSign, Receipt, Banknote, FileText } from "lucide-react";
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { queryClient } from "@/lib/queryClient";
-
-const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
-const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
+import { stripePromise } from "@/lib/stripe";
 
 interface PaymentDialogProps {
   open: boolean;
