@@ -51,7 +51,12 @@ function StripeCardForm({
           onReady={handleReady}
           onChange={handleChange}
           options={{
-            layout: 'tabs'
+            layout: 'tabs',
+            fields: {
+              billingDetails: {
+                email: 'never'
+              }
+            }
           }}
         />
       </div>
