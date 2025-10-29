@@ -140,6 +140,15 @@ function CreditCardPaymentContent({
       return;
     }
 
+    if (loadingIntent) {
+      toast({
+        title: "Payment Amount Updating",
+        description: "Please wait for the payment amount to finish updating before processing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setProcessing(true);
 
     try {
@@ -157,6 +166,16 @@ function CreditCardPaymentContent({
       }
 
       if (paymentIntent && paymentIntent.id) {
+        // Validate that the PaymentIntent amount matches the entered amount
+        const paymentIntentAmount = (paymentIntent.amount / 100).toFixed(2);
+        const enteredAmount = parseFloat(amount).toFixed(2);
+        
+        if (paymentIntentAmount !== enteredAmount) {
+          throw new Error(
+            `Payment amount mismatch: Expected $${enteredAmount} but PaymentIntent is for $${paymentIntentAmount}. Please wait a moment and try again.`
+          );
+        }
+
         const response = await fetch('/api/confirm-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -238,6 +257,11 @@ function CreditCardPaymentContent({
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Processing...
+            </>
+          ) : loadingIntent ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Updating Amount...
             </>
           ) : (
             `Charge $${amount || '0.00'}`
