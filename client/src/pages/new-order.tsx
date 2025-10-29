@@ -2416,7 +2416,7 @@ export default function NewOrder() {
                             </p>
                           </div>
                         ) : (
-                          <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
+                          <Elements stripe={stripePromise}>
                             <CreditCardPaymentContent
                               paymentAmount={paymentAmount}
                               setPaymentAmount={setPaymentAmount}

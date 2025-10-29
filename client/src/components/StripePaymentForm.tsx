@@ -145,7 +145,17 @@ export function StripePaymentForm({
           <AlertDescription>{initError}</AlertDescription>
         </Alert>
       ) : (
-        <Elements stripe={stripePromise}>
+        <Elements 
+          stripe={stripePromise}
+          options={{
+            // Disable Link to prevent "Save with Link" button
+            appearance: {
+              theme: 'stripe',
+            },
+            // Explicitly disable wallet options
+            loader: 'auto',
+          }}
+        >
           <StripeCardForm onCardReady={onCardReady} onError={onError} />
         </Elements>
       )}
