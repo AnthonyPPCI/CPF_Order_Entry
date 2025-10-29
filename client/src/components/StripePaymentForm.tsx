@@ -53,9 +53,11 @@ function StripeCardForm({
           options={{
             layout: 'tabs',
             fields: {
-              billingDetails: {
-                email: 'never'
-              }
+              billingDetails: 'never'
+            },
+            wallets: {
+              applePay: 'never',
+              googlePay: 'never'
             }
           }}
         />
