@@ -35,24 +35,28 @@ function App() {
       .then(res => {
         if (res.status === 401 || res.status === 403) {
           // Not authenticated or no permission - redirect to main site
+          // Keep isLoading true to prevent UI flash during redirect
           window.location.href = 'https://framesbox.com';
-          return;
+          return null;
         }
         return res.json();
       })
       .then(user => {
         if (user) {
           setIsAuthenticated(true);
+          setIsLoading(false);
         }
-        setIsLoading(false);
+        // If user is null (redirect happened), keep isLoading true
       })
       .catch(() => {
         // Error - redirect to main site
+        // Keep isLoading true to prevent UI flash during redirect
         window.location.href = 'https://framesbox.com';
       });
   }, []);
 
-  if (isLoading) {
+  // Show loading spinner while checking authentication or during redirect
+  if (isLoading || !isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
@@ -63,6 +67,7 @@ function App() {
     );
   }
 
+  // Only render app content if authenticated
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
