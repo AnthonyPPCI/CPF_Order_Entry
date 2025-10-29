@@ -166,6 +166,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test SMS endpoint for debugging Twilio
+  app.post("/api/test-sms", async (req, res) => {
+    try {
+      console.log('[Test SMS] Received request:', req.body);
+      const { phone, message } = req.body;
+
+      if (!phone) {
+        return res.status(400).json({ error: "Phone number is required" });
+      }
+
+      const testMessage = message || "Test message from CustomPictureFrames.com";
+
+      console.log(`[Test SMS] Attempting to send SMS to: ${phone}`);
+      console.log(`[Test SMS] Message: ${testMessage}`);
+      console.log(`[Test SMS] TWILIO_ACCOUNT_SID exists: ${!!process.env.TWILIO_ACCOUNT_SID}`);
+      console.log(`[Test SMS] TWILIO_AUTH_TOKEN exists: ${!!process.env.TWILIO_AUTH_TOKEN}`);
+      console.log(`[Test SMS] TWILIO_PHONE_NUMBER: ${process.env.TWILIO_PHONE_NUMBER}`);
+
+      const { sendSMS } = await import("./twilio.js");
+      await sendSMS(phone, testMessage);
+
+      console.log('[Test SMS] SMS sent successfully');
+      res.json({ 
+        success: true, 
+        message: 'Test SMS sent successfully',
+        phone,
+        testMessage
+      });
+    } catch (error: any) {
+      console.error("[Test SMS] Error sending test SMS:", error);
+      res.status(500).json({ 
+        error: error.message,
+        details: error.toString()
+      });
+    }
+  });
+
   // Create and send PayPal invoice
   app.post("/api/create-paypal-invoice", async (req, res) => {
     try {

@@ -8,6 +8,7 @@ import NewOrder from "@/pages/new-order";
 import OrderList from "@/pages/order-list";
 import OrderDetail from "@/pages/order-detail";
 import ControlPanel from "@/pages/control-panel";
+import SMSTest from "@/pages/sms-test";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/orders" component={OrderList} />
       <Route path="/order/:id" component={OrderDetail} />
       <Route path="/control-panel" component={ControlPanel} />
+      <Route path="/sms-test" component={SMSTest} />
       <Route component={NotFound} />
     </Switch>
   );
