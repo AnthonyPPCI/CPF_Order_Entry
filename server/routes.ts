@@ -6,28 +6,23 @@ import { calculatePricing, calculateMultiItemPricing } from "./pricing";
 import { z } from "zod";
 import { Resend } from "resend";
 import { generateOrderPDF } from "./pdf-generator";
-import { SquareClient, SquareEnvironment } from "square";
+import Stripe from "stripe";
 import { randomUUID, createHash } from "crypto";
 import { syncOrderToShipStation, syncMultiItemOrderToShipStation } from "./shipstation";
-
-// Fix BigInt JSON serialization for Square SDK v43+
-// Square SDK returns BigInt values that can't be serialized to JSON by default
-(BigInt.prototype as any).toJSON = function() {
-  return this.toString();
-};
 
 // Initialize Resend for email sending
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-// Initialize Square client (v43 API)
-const squareEnvironment = process.env.SQUARE_ACCESS_TOKEN?.startsWith('EAAA') ? SquareEnvironment.Production : SquareEnvironment.Sandbox;
-const squareClient = process.env.SQUARE_ACCESS_TOKEN ? new SquareClient({
-  accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment: squareEnvironment,
+// Initialize Stripe client
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.warn('[Stripe] Warning: STRIPE_SECRET_KEY not configured');
+}
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2023-10-16",
 }) : null;
 
-if (squareClient) {
-  console.log(`[Square] Initialized in ${squareEnvironment === SquareEnvironment.Production ? 'PRODUCTION' : 'SANDBOX'} mode (token prefix: ${process.env.SQUARE_ACCESS_TOKEN?.substring(0, 4)})`);
+if (stripe) {
+  console.log('[Stripe] Initialized successfully');
 }
 
 // Helper function to clean empty strings from numeric/text fields
@@ -80,16 +75,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Either email or phone number is required" });
       }
 
-      // Subscribe to SMS marketing if consent is given
-      if (smsConsent && phone && process.env.KLAVIYO_API_KEY) {
-        console.log(`[Google Reviews] SMS consent provided, subscribing ${phone} to Klaviyo SMS`);
+      // Send SMS confirmation if consent is given and phone provided
+      if (smsConsent && phone) {
+        console.log(`[Google Reviews] SMS consent provided, sending SMS confirmation to ${phone}`);
         try {
-          const { subscribeToKlaviyoSMS } = await import("./klaviyo.js");
-          await subscribeToKlaviyoSMS(phone, customerName, email);
-          console.log(`[Google Reviews] Successfully subscribed ${phone} to SMS marketing`);
+          const { sendSMS } = await import("./twilio.js");
+          await sendSMS(phone, `Thank you for choosing CustomPictureFrames.com! We appreciate your business and look forward to serving you again. - CPF`);
+          console.log(`[Google Reviews] Successfully sent SMS confirmation to ${phone}`);
         } catch (error: any) {
-          console.error("[Google Reviews] Failed to subscribe to SMS:", error);
-          // Don't fail the entire request if SMS subscription fails
+          console.error("[Google Reviews] Failed to send SMS confirmation:", error);
+          // Don't fail the entire request if SMS confirmation fails
         }
       }
 
@@ -132,11 +127,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('[Google Reviews] Resend client not initialized - RESEND_API_KEY missing');
       }
 
-      // Send SMS if phone provided and Klaviyo is configured
-      if (phone && process.env.KLAVIYO_API_KEY) {
+      // Send SMS if phone provided and Twilio is configured
+      if (phone) {
         console.log(`[Google Reviews] Sending SMS to: ${phone}`);
         try {
-          const { sendGoogleReviewRequestViaSMS } = await import("./klaviyo.js");
+          const { sendGoogleReviewRequestViaSMS } = await import("./twilio.js");
           await sendGoogleReviewRequestViaSMS(phone, customerName, reviewUrl);
           console.log(`[Google Reviews] SMS sent successfully to ${phone}`);
           results.sms = "sent";
@@ -144,8 +139,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("[Google Reviews] Failed to send review request SMS:", smsError);
           results.sms = "failed";
         }
-      } else if (phone && !process.env.KLAVIYO_API_KEY) {
-        console.log('[Google Reviews] Klaviyo not configured - KLAVIYO_API_KEY missing');
       }
 
       console.log('[Google Reviews] Final results:', results);
@@ -153,11 +146,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Build message based on what was actually sent
       let message = '';
       if (results.email === 'sent' && results.sms === 'sent') {
-        message = 'Review request sent via email. SMS queued in Klaviyo (requires Flow setup to send automatically).';
+        message = 'Review request sent via email and SMS.';
       } else if (results.email === 'sent') {
         message = 'Review request sent via email.';
       } else if (results.sms === 'sent') {
-        message = 'SMS queued in Klaviyo (requires Flow setup to send automatically).';
+        message = 'Review request sent via SMS.';
       } else {
         message = 'Review request processed.';
       }
@@ -601,83 +594,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Process Square payment
-  app.post("/api/process-payment", async (req, res) => {
+  // Create Stripe PaymentIntent
+  app.post("/api/create-payment-intent", async (req, res) => {
     try {
-      if (!squareClient) {
-        return res.status(500).json({ error: "Square payment not configured. Please add SQUARE_ACCESS_TOKEN." });
+      if (!stripe) {
+        return res.status(500).json({ error: "Stripe payment not configured. Please add STRIPE_SECRET_KEY." });
       }
 
-      const { orderId, amount, sourceId, verificationToken, buyerEmailAddress } = req.body;
+      const { amount, orderId, customerEmail } = req.body;
 
-      // Validate required fields (orderId is optional for pre-order payments)
-      if (!amount || !sourceId) {
-        return res.status(400).json({ error: "Missing required fields: amount, sourceId" });
+      // Validate required fields
+      if (!amount) {
+        return res.status(400).json({ error: "Missing required field: amount" });
       }
 
-      // Get location ID (check both VITE_ prefixed and non-prefixed)
-      const locationId = process.env.VITE_SQUARE_LOCATION_ID || process.env.SQUARE_LOCATION_ID;
-      
-      if (!locationId) {
-        return res.status(500).json({ error: "Square Location ID not configured. Please add SQUARE_LOCATION_ID or VITE_SQUARE_LOCATION_ID." });
-      }
-
-      // Convert amount to cents (Square uses smallest currency unit)
+      // Convert amount to cents (Stripe uses smallest currency unit)
       const amountInCents = Math.round(parseFloat(amount) * 100);
 
-      const detectedEnvironment = process.env.SQUARE_ACCESS_TOKEN?.startsWith('EAAA') ? 'Production' : 'Sandbox';
-      
-      console.log('Square payment request:', {
-        locationId,
+      console.log('[Stripe] Creating payment intent:', {
         amount: amountInCents,
-        hasVerificationToken: !!verificationToken,
-        hasBuyerEmail: !!buyerEmailAddress,
-        hasAccessToken: !!process.env.SQUARE_ACCESS_TOKEN,
-        accessTokenPrefix: process.env.SQUARE_ACCESS_TOKEN?.substring(0, 10) + '...',
-        detectedEnvironment,
+        orderId: orderId || 'none',
+        customerEmail: customerEmail || 'none',
       });
 
-      // Build payment request with verification token for CVV verification
-      const paymentRequest: any = {
-        sourceId,
-        idempotencyKey: randomUUID(),
-        amountMoney: {
-          amount: BigInt(amountInCents),
-          currency: 'USD',
+      // Create PaymentIntent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amountInCents,
+        currency: 'usd',
+        automatic_payment_methods: {
+          enabled: true,
         },
-        locationId,
-        autocomplete: true, // Complete payment immediately
-      };
+        metadata: {
+          orderId: orderId || 'pre-order',
+          customerEmail: customerEmail || '',
+        },
+      });
 
-      // Add verification token if provided (for CVV verification)
-      if (verificationToken) {
-        paymentRequest.verificationToken = verificationToken;
+      console.log(`[Stripe] PaymentIntent created successfully: ${paymentIntent.id}`);
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+      });
+    } catch (error: any) {
+      console.error('[Stripe] Payment intent creation error:', error);
+      res.status(500).json({ error: "Failed to create payment intent", details: error.message });
+    }
+  });
+
+  // Confirm Stripe Payment and update order
+  app.post("/api/confirm-payment", async (req, res) => {
+    try {
+      if (!stripe) {
+        return res.status(500).json({ error: "Stripe payment not configured. Please add STRIPE_SECRET_KEY." });
       }
 
-      // Add buyer email if provided (helps with fraud prevention)
-      if (buyerEmailAddress) {
-        paymentRequest.buyerEmailAddress = buyerEmailAddress;
+      const { paymentIntentId, orderId } = req.body;
+
+      // Validate required fields
+      if (!paymentIntentId) {
+        return res.status(400).json({ error: "Missing required field: paymentIntentId" });
       }
 
-      console.log('Calling Square Payments API with request:', JSON.stringify({
-        ...paymentRequest,
-        amountMoney: { amount: amountInCents.toString(), currency: 'USD' },
-        sourceId: sourceId.substring(0, 10) + '...',
-        verificationToken: verificationToken ? verificationToken.substring(0, 10) + '...' : undefined,
-      }, null, 2));
+      console.log(`[Stripe] Confirming payment intent: ${paymentIntentId}`);
 
-      // Create payment using Square API (v43 syntax)
-      const response = await squareClient.payments.create(paymentRequest);
+      // Retrieve the PaymentIntent to check its status
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-      console.log('Square API response status:', response.statusCode);
-      console.log('Square API response:', JSON.stringify(response.result, null, 2));
+      console.log(`[Stripe] PaymentIntent status: ${paymentIntent.status}`);
 
-      if (response.result?.payment?.status === 'COMPLETED') {
-        // If orderId provided, fetch the order to update balance
+      if (paymentIntent.status === 'succeeded') {
+        const amount = (paymentIntent.amount / 100).toFixed(2);
+
+        // If orderId provided, update the order balance
         if (orderId) {
           let order = await storage.getOrderById(orderId);
           let isMultiItem = false;
-          
+
           if (!order) {
             // Try multi-item order
             const multiOrder = await storage.getMultiItemOrderById(orderId);
@@ -690,45 +683,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (order) {
             const currentBalance = parseFloat(order.balance);
             const newBalance = Math.max(0, currentBalance - parseFloat(amount));
-            
+
             // Update order balance
             const updateData = { balance: newBalance.toFixed(2) };
-            
+
             if (isMultiItem) {
               await storage.updateMultiItemOrder(orderId, updateData);
             } else {
               await storage.updateOrder(orderId, updateData);
             }
-            
-            res.json({ 
-              success: true, 
-              paymentId: response.result.payment.id,
+
+            console.log(`[Stripe] Updated order ${orderId} - New balance: $${newBalance.toFixed(2)}`);
+
+            res.json({
+              success: true,
+              paymentIntentId: paymentIntent.id,
               newBalance: newBalance.toFixed(2),
-              status: 'COMPLETED'
+              status: 'succeeded'
             });
           } else {
             res.status(404).json({ error: "Order not found" });
           }
         } else {
           // Pre-order payment (no order ID yet)
-          res.json({ 
-            success: true, 
-            paymentId: response.result.payment.id,
+          res.json({
+            success: true,
+            paymentIntentId: paymentIntent.id,
             amount: amount,
-            status: 'COMPLETED'
+            status: 'succeeded'
           });
         }
       } else {
-        const paymentStatus = response.result?.payment?.status || 'FAILED';
-        res.status(400).json({ 
-          error: "Payment declined or failed", 
-          status: paymentStatus,
+        res.status(400).json({
+          error: "Payment not completed",
+          status: paymentIntent.status,
           success: false
         });
       }
     } catch (error: any) {
-      console.error('Square payment error:', error);
-      res.status(500).json({ error: "Failed to process payment", details: error.message });
+      console.error('[Stripe] Payment confirmation error:', error);
+      res.status(500).json({ error: "Failed to confirm payment", details: error.message });
     }
   });
 
@@ -843,13 +837,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create the order first
       const order = await storage.createOrder(completeOrderData);
       
-      // Sync customer to Klaviyo
-      try {
-        const { addCustomerToKlaviyo } = await import("./klaviyo.js");
-        await addCustomerToKlaviyo(order);
-      } catch (klaviyoError: any) {
-        console.error(`[Klaviyo] Failed to sync customer:`, klaviyoError.message);
-        // Don't fail the order creation if Klaviyo sync fails
+      // Send SMS confirmation if phone provided
+      if (order.phone) {
+        try {
+          const { sendOrderConfirmationSMS } = await import("./twilio.js");
+          await sendOrderConfirmationSMS(order);
+          console.log(`[Twilio] Order confirmation SMS sent for order ${order.orderNumber}`);
+        } catch (twilioError: any) {
+          console.error(`[Twilio] Failed to send confirmation SMS:`, twilioError.message);
+          // Don't fail the order creation if SMS fails
+        }
       }
       
       // Sync to ShipStation if requested (but skip for PayPal - sync after payment)
@@ -889,55 +886,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(201).json(updatedOrder);
           }
           
-          // Legacy flow: charge the card now (shouldn't happen with new flow, but kept for compatibility)
-          if (paymentData.sourceId) {
-            if (!squareClient) {
-              throw new Error("Square payment not configured");
-            }
-
-            const locationId = process.env.VITE_SQUARE_LOCATION_ID || process.env.SQUARE_LOCATION_ID;
-            if (!locationId) {
-              throw new Error("Square Location ID not configured");
-            }
-
-            // Convert amount to cents
-            const amountInCents = Math.round(parseFloat(paymentData.amount) * 100);
-
-            // Create payment using Square API (v43 syntax)
-            const response = await squareClient.payments.create({
-              sourceId: paymentData.sourceId,
-              idempotencyKey: randomUUID(),
-              amountMoney: {
-                amount: BigInt(amountInCents),
-                currency: 'USD',
-              },
-              locationId,
-            });
-
-            if (response.result?.payment?.status === 'COMPLETED') {
-              // Update paidToDate and balance
-              const paidAmount = parseFloat(paymentData.amount);
-              const currentPaid = parseFloat(order.paidToDate);
-              const newPaidToDate = (currentPaid + paidAmount).toFixed(2);
-              const newBalance = Math.max(0, parseFloat(order.total) - parseFloat(newPaidToDate)).toFixed(2);
-              
-              const updatedOrder = await storage.updateOrder(order.id, { 
-                paidToDate: newPaidToDate,
-                balance: newBalance 
-              });
-              
-              // Return just the order for consistency with cash/no payment responses
-              return res.status(201).json(updatedOrder);
-            } else {
-              // Payment failed - rollback order creation
-              await storage.deleteOrder(order.id);
-              return res.status(400).json({ 
-                error: "Payment failed", 
-                status: response.result?.payment?.status,
-                orderRolledBack: true
-              });
-            }
-          }
+          // Note: Payment should be pre-charged using /api/create-payment-intent
+          // before order creation. This legacy path is kept for compatibility.
         } catch (paymentError: any) {
           // Payment processing failed - rollback order creation
           await storage.deleteOrder(order.id);
@@ -1200,13 +1150,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const order = await storage.createMultiItemOrder(headerData, itemsData);
       
-      // Sync customer to Klaviyo
-      try {
-        const { addCustomerToKlaviyo } = await import("./klaviyo.js");
-        await addCustomerToKlaviyo(order);
-      } catch (klaviyoError: any) {
-        console.error(`[Klaviyo] Failed to sync customer:`, klaviyoError.message);
-        // Don't fail the order creation if Klaviyo sync fails
+      // Send SMS confirmation if phone provided
+      if (order.phone) {
+        try {
+          const { sendOrderConfirmationSMS } = await import("./twilio.js");
+          await sendOrderConfirmationSMS(order);
+          console.log(`[Twilio] Order confirmation SMS sent for order ${order.orderNumber}`);
+        } catch (twilioError: any) {
+          console.error(`[Twilio] Failed to send confirmation SMS:`, twilioError.message);
+          // Don't fail the order creation if SMS fails
+        }
       }
       
       // Sync to ShipStation if requested (but skip for PayPal - sync after payment)

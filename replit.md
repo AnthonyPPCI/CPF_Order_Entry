@@ -38,12 +38,12 @@ Preferred communication style: Simple, everyday language.
 -   **Dynamic Pricing Configuration**: A password-protected control panel allows staff to adjust business levers without code changes.
 -   **Margin Analysis System**: Comprehensive margin calculator validates pricing strategy, built-in scenario testing, and configurable labor cost model.
 -   **Authentication**: Control panel is password-protected with SHA-256 hashing.
--   **Square Payment Integration**: Pre-charge payment flow with immediate card processing and status display BEFORE order creation. Cards are charged via `/api/process-payment` endpoint, status (Accepted/Declined) is shown with color-coded badges, then orders are created with pre-charged payment metadata to prevent duplicate charges. Supports partial/deposit payments without validation blocking. Square environment auto-detects production vs sandbox based on token prefix ('EAAA' prefix = production mode).
+-   **Stripe Payment Integration**: Modern payment flow using Stripe Elements for secure card processing. Payment Intents are created via `/api/create-payment-intent` endpoint, returning a clientSecret for frontend card tokenization. After client-side card confirmation, `/api/confirm-payment` verifies payment status and updates order balance. Supports partial/deposit payments without validation blocking.
 -   **Transactional Email System**: Integrated Resend API for sending order notifications and customer confirmations.
 -   **Automatic Order Recording**: Orders are automatically recorded in the database upon creation.
 -   **ShipStation Integration**: Fully integrated ShipStation V1 REST API for automatic order syncing, including optional sync, data mapping, and non-blocking synchronization. For PayPal invoice orders, ShipStation sync is intelligently deferred until payment is confirmed via webhook to prevent shipping unpaid orders.
--   **Google Reviews Request System**: Prominent button on new order form and order detail page sends frictionless review requests via email (Resend) or SMS (Klaviyo), directing customers to Google Reviews page.
--   **Klaviyo Integration**: Automatic customer profile creation and list subscription upon order creation. Syncs customer data (name, email, phone, order history) to Klaviyo for marketing automation. When customers consent to SMS marketing via the order form checkbox, they are automatically subscribed to SMS marketing in Klaviyo using the profile-subscription-bulk-create-jobs API with "SUBSCRIBED" consent status. SMS subscription runs independently of list membership to ensure reliability.
+-   **Google Reviews Request System**: Prominent button on new order form and order detail page sends frictionless review requests via email (Resend) or SMS (Twilio), directing customers to Google Reviews page.
+-   **Twilio SMS Integration**: Sends SMS notifications for order confirmations and Google review requests. Uses Twilio's REST API for reliable SMS delivery with proper E.164 phone number formatting.
 -   **PayPal Invoice Integration**: Fully integrated PayPal Invoicing API v2 for sending payment invoices to customers, with cryptographic webhook signature verification to prevent fraud, automatic payment tracking via webhooks, and real-time order balance updates. Supports both sandbox (development) and production environments.
 
 ### Data Storage Solutions
@@ -56,10 +56,9 @@ Preferred communication style: Simple, everyday language.
 
 -   **Database Service**: Neon serverless PostgreSQL.
 -   **Email Service**: Resend API.
--   **SMS Service**: Klaviyo for SMS and customer data sync.
--   **Marketing Automation**: Klaviyo for automatic customer profile creation, list subscription, and optional SMS.
--   **Payment Gateways**: Square SDK for credit card processing, PayPal Invoicing API v2 for invoice-based payments.
+-   **SMS Service**: Twilio for SMS notifications and customer communications.
+-   **Payment Gateways**: Stripe for credit card processing, PayPal Invoicing API v2 for invoice-based payments.
 -   **Shipping Integration**: ShipStation V1 REST API.
 -   **Fonts**: Google Fonts (Inter, Geist Mono, Fira Code, DM Sans, Architects Daughter).
 -   **Build Tools**: Vite (frontend), esbuild (production server), Drizzle Kit (migrations).
--   **Node.js Libraries**: Express.js, React, TypeScript, Radix UI, shadcn/ui, Tailwind CSS, Wouter, TanStack Query, React Hook Form, Zod, Drizzle ORM, `@neondatabase/serverless`.
+-   **Node.js Libraries**: Express.js, React, TypeScript, Radix UI, shadcn/ui, Tailwind CSS, Wouter, TanStack Query, React Hook Form, Zod, Drizzle ORM, `@neondatabase/serverless`, Stripe, Twilio.

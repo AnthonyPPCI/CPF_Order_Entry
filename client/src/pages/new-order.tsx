@@ -19,9 +19,14 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MatCombobox } from "@/components/mat-combobox";
-import { SquarePaymentForm, useSquarePaymentForm } from "@/components/SquarePaymentForm";
+import { StripePaymentForm } from "@/components/StripePaymentForm";
+import { Elements, useStripe, useElements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { X, Plus, ChevronDown, HelpCircle, Star } from "lucide-react";
+
+const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
 
 // Helper function to parse fractions and decimals
 function parseFraction(input: string): number {
@@ -73,6 +78,172 @@ function parseDiscount(discountInput: string, subtotal: number): number {
   return 0;
 }
 
+// Component for Credit Card payment with Stripe integration
+function CreditCardPaymentContent({
+  paymentAmount,
+  setPaymentAmount,
+  calculatedPricing,
+  clientSecret,
+  isCreatingPaymentIntent,
+  processedPayment,
+  setProcessedPayment,
+  toast,
+}: {
+  paymentAmount: string;
+  setPaymentAmount: (amount: string) => void;
+  calculatedPricing: any;
+  clientSecret: string;
+  isCreatingPaymentIntent: boolean;
+  processedPayment: any;
+  setProcessedPayment: (payment: any) => void;
+  toast: any;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleProcessCreditCard = async () => {
+    if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid payment amount.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!stripe || !elements || !clientSecret) {
+      toast({
+        title: "Payment Not Ready",
+        description: "Payment system is still initializing. Please wait a moment and try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    toast({
+      title: "Processing Payment...",
+      description: "Charging card, please wait...",
+    });
+
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.origin + '/order/success',
+        },
+        redirect: 'if_required',
+      });
+
+      if (error) {
+        setProcessedPayment({
+          type: 'credit_card',
+          amount: paymentAmount,
+          status: 'failed',
+          errorMessage: error.message
+        });
+        toast({
+          title: "❌ Payment Declined",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+        setProcessedPayment({
+          type: 'credit_card',
+          paymentIntentId: paymentIntent.id,
+          amount: paymentAmount,
+          status: 'charged',
+          paymentId: paymentIntent.id
+        });
+        toast({
+          title: "✅ Payment Accepted",
+          description: `$${paymentAmount} charged successfully. Payment ID: ${paymentIntent.id.substring(0, 8)}...`,
+        });
+      } else {
+        throw new Error('Payment failed with unknown status');
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast({
+        title: "Payment Error",
+        description: error.message || "Failed to process payment. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  if (isCreatingPaymentIntent) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-center gap-2 p-4">
+          <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
+          <span className="text-sm text-muted-foreground">Initializing payment...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!clientSecret) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Payment form will appear when you enter an amount.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <StripePaymentForm
+        amount={paymentAmount}
+        onAmountChange={setPaymentAmount}
+        maxAmount={calculatedPricing.total.toFixed(2)}
+        clientSecret={clientSecret}
+      />
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          onClick={handleProcessCreditCard}
+          className="flex-1"
+          disabled={processedPayment?.type === 'credit_card' && processedPayment.status === 'charged' || isProcessing}
+          data-testid="button-process-credit-card"
+        >
+          {isProcessing
+            ? 'Processing...'
+            : processedPayment?.type === 'credit_card' && processedPayment.status === 'charged' 
+            ? '✓ Card Charged Successfully' 
+            : processedPayment?.type === 'credit_card' && processedPayment.status === 'failed'
+            ? 'Try Again'
+            : 'Process Credit Card Payment'
+          }
+        </Button>
+        {processedPayment?.type === 'credit_card' && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setProcessedPayment(null)}
+            data-testid="button-clear-credit-card"
+          >
+            Clear
+          </Button>
+        )}
+      </div>
+      <p className="text-sm text-muted-foreground">
+        {processedPayment?.type === 'credit_card' && processedPayment.status === 'charged'
+          ? `Card charged successfully. ${processedPayment.paymentId ? `Payment ID: ${processedPayment.paymentId.substring(0, 12)}...` : ''}`
+          : processedPayment?.type === 'credit_card' && processedPayment.status === 'failed'
+          ? `Payment declined. ${processedPayment.errorMessage || 'Please try again with a different card.'}`
+          : 'Click the button above to charge the card immediately and see accepted/declined status.'
+        }
+      </p>
+    </div>
+  );
+}
+
 export default function NewOrder() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -83,15 +254,16 @@ export default function NewOrder() {
   const [paymentAmount, setPaymentAmount] = useState("0.00");
   const [skipPayment, setSkipPayment] = useState(false);
   const [activePaymentMethod, setActivePaymentMethod] = useState<string | undefined>(undefined);
+  const [clientSecret, setClientSecret] = useState<string>("");
+  const [isCreatingPaymentIntent, setIsCreatingPaymentIntent] = useState(false);
   const [processedPayment, setProcessedPayment] = useState<{ 
     type: 'credit_card' | 'cash' | 'paypal', 
-    token?: string, 
+    paymentIntentId?: string, 
     amount: string,
     status?: 'ready' | 'charged' | 'failed',
     paymentId?: string,
     errorMessage?: string
   } | null>(null);
-  const { tokenize } = useSquarePaymentForm();
   const [calculatedPricing, setCalculatedPricing] = useState({
     itemTotal: 0,
     shipping: 0,
@@ -278,12 +450,47 @@ export default function NewOrder() {
     setPaymentAmount(calculatedPricing.total.toFixed(2));
   }, [calculatedPricing.total]);
 
+  // Create Stripe payment intent when credit card accordion opens and amount is entered
+  useEffect(() => {
+    const createPaymentIntent = async () => {
+      if (activePaymentMethod === 'credit-card' && parseFloat(paymentAmount) > 0 && !clientSecret) {
+        setIsCreatingPaymentIntent(true);
+        try {
+          const response = await fetch('/api/create-payment-intent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: paymentAmount }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setClientSecret(data.clientSecret);
+          } else {
+            throw new Error('Failed to create payment intent');
+          }
+        } catch (error: any) {
+          console.error('Payment intent error:', error);
+          toast({
+            title: "Payment Setup Error",
+            description: error.message || "Failed to initialize payment. Please try again.",
+            variant: "destructive"
+          });
+        } finally {
+          setIsCreatingPaymentIntent(false);
+        }
+      }
+    };
+
+    createPaymentIntent();
+  }, [activePaymentMethod, paymentAmount, clientSecret]);
+
   // Clear processed payment if amounts change (prevents stale payment data)
   useEffect(() => {
     if (processedPayment) {
       // Clear credit card payment if amount changed
       if (processedPayment.type === 'credit_card' && processedPayment.amount !== paymentAmount) {
         setProcessedPayment(null);
+        setClientSecret("");
         toast({
           title: "Payment Cleared",
           description: "Order total changed. Please process payment again.",
@@ -311,6 +518,7 @@ export default function NewOrder() {
       
       if (isWrongMethod) {
         setProcessedPayment(null);
+        setClientSecret("");
         toast({
           title: "Payment Cleared",
           description: "Switched payment method. Please process payment again.",
@@ -319,82 +527,6 @@ export default function NewOrder() {
       }
     }
   }, [activePaymentMethod, processedPayment]);
-
-  // Handler to process credit card payment
-  const handleProcessCreditCard = async () => {
-    if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid payment amount.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Show processing toast
-    toast({
-      title: "Processing Payment...",
-      description: "Charging card, please wait...",
-    });
-
-    try {
-      // Step 1: Tokenize the card (no buyer verification)
-      const result = await tokenize();
-      
-      if (!result.token) {
-        throw new Error(result.error || "Card tokenization failed");
-      }
-
-      // Step 2: Charge the card immediately
-      const response = await fetch('/api/process-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: parseFloat(paymentAmount).toFixed(2),
-          sourceId: result.token,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success && data.status === 'COMPLETED') {
-        // Payment succeeded
-        setProcessedPayment({
-          type: 'credit_card',
-          token: result.token,
-          amount: paymentAmount,
-          status: 'charged',
-          paymentId: data.paymentId
-        });
-        toast({
-          title: "✅ Payment Accepted",
-          description: `$${paymentAmount} charged successfully. Payment ID: ${data.paymentId.substring(0, 8)}...`,
-        });
-      } else {
-        // Payment failed or declined
-        const errorMsg = data.error || "Payment declined";
-        setProcessedPayment({
-          type: 'credit_card',
-          token: result.token,
-          amount: paymentAmount,
-          status: 'failed',
-          errorMessage: errorMsg
-        });
-        toast({
-          title: "❌ Payment Declined",
-          description: errorMsg,
-          variant: "destructive"
-        });
-      }
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      toast({
-        title: "Payment Error",
-        description: error.message || "Failed to process payment. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
 
   // Handler to record cash payment
   const handleRecordCash = () => {
@@ -431,7 +563,7 @@ export default function NewOrder() {
       // Use the already-processed payment (allows partial payments for deposits)
       if (processedPayment.type === 'credit_card') {
         paymentData = {
-          sourceId: processedPayment.token,
+          paymentIntentId: processedPayment.paymentIntentId,
           amount: processedPayment.amount,
           paymentId: processedPayment.paymentId,
           status: processedPayment.status
@@ -2160,47 +2292,37 @@ export default function NewOrder() {
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
-                        <div className="space-y-4">
-                          <SquarePaymentForm
-                            amount={paymentAmount}
-                            onAmountChange={setPaymentAmount}
-                            maxAmount={calculatedPricing.total.toFixed(2)}
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              type="button"
-                              onClick={handleProcessCreditCard}
-                              className="flex-1"
-                              disabled={processedPayment?.type === 'credit_card' && processedPayment.status === 'charged'}
-                              data-testid="button-process-credit-card"
-                            >
-                              {processedPayment?.type === 'credit_card' && processedPayment.status === 'charged' 
-                                ? '✓ Card Charged Successfully' 
-                                : processedPayment?.type === 'credit_card' && processedPayment.status === 'failed'
-                                ? 'Try Again'
-                                : 'Process Credit Card Payment'
-                              }
-                            </Button>
-                            {processedPayment?.type === 'credit_card' && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setProcessedPayment(null)}
-                                data-testid="button-clear-credit-card"
-                              >
-                                Clear
-                              </Button>
-                            )}
+                        {stripePromise && clientSecret ? (
+                          <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
+                            <CreditCardPaymentContent
+                              paymentAmount={paymentAmount}
+                              setPaymentAmount={setPaymentAmount}
+                              calculatedPricing={calculatedPricing}
+                              clientSecret={clientSecret}
+                              isCreatingPaymentIntent={isCreatingPaymentIntent}
+                              processedPayment={processedPayment}
+                              setProcessedPayment={setProcessedPayment}
+                              toast={toast}
+                            />
+                          </Elements>
+                        ) : !stripePromise ? (
+                          <div className="space-y-4">
+                            <p className="text-sm text-destructive">
+                              Stripe payment processing is not configured. Please contact support or use an alternative payment method.
+                            </p>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {processedPayment?.type === 'credit_card' && processedPayment.status === 'charged'
-                              ? `Card charged successfully. ${processedPayment.paymentId ? `Payment ID: ${processedPayment.paymentId.substring(0, 12)}...` : ''}`
-                              : processedPayment?.type === 'credit_card' && processedPayment.status === 'failed'
-                              ? `Payment declined. ${processedPayment.errorMessage || 'Please try again with a different card.'}`
-                              : 'Click the button above to charge the card immediately and see accepted/declined status.'
-                            }
-                          </p>
-                        </div>
+                        ) : (
+                          <CreditCardPaymentContent
+                            paymentAmount={paymentAmount}
+                            setPaymentAmount={setPaymentAmount}
+                            calculatedPricing={calculatedPricing}
+                            clientSecret={clientSecret}
+                            isCreatingPaymentIntent={isCreatingPaymentIntent}
+                            processedPayment={processedPayment}
+                            setProcessedPayment={setProcessedPayment}
+                            toast={toast}
+                          />
+                        )}
                       </AccordionContent>
                     </AccordionItem>
 
