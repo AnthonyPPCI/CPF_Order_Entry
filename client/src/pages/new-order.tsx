@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MatCombobox } from "@/components/mat-combobox";
 import { StripePaymentForm } from "@/components/StripePaymentForm";
-import { Elements, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { X, Plus, ChevronDown, HelpCircle, Star } from "lucide-react";
@@ -197,41 +197,52 @@ function CreditCardPaymentContent({
   }
 
   return (
-    <div className="space-y-4">
-      <StripePaymentForm
-        amount={paymentAmount}
-        onAmountChange={setPaymentAmount}
-        maxAmount={calculatedPricing.total.toFixed(2)}
-        clientSecret={clientSecret}
-      />
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          onClick={handleProcessCreditCard}
-          className="flex-1"
-          disabled={processedPayment?.type === 'credit_card' && processedPayment.status === 'charged' || isProcessing}
-          data-testid="button-process-credit-card"
-        >
-          {isProcessing
-            ? 'Processing...'
-            : processedPayment?.type === 'credit_card' && processedPayment.status === 'charged' 
-            ? '✓ Card Charged Successfully' 
-            : processedPayment?.type === 'credit_card' && processedPayment.status === 'failed'
-            ? 'Try Again'
-            : 'Process Credit Card Payment'
-          }
-        </Button>
-        {processedPayment?.type === 'credit_card' && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setProcessedPayment(null)}
-            data-testid="button-clear-credit-card"
-          >
-            Clear
-          </Button>
+    <div className="space-y-4" data-testid="stripe-payment-form">
+      <div className="space-y-2">
+        <Label htmlFor="payment-amount">Amount to Charge</Label>
+        <div className="flex items-center gap-2">
+          <span className="text-lg text-muted-foreground">$</span>
+          <Input
+            id="payment-amount"
+            type="number"
+            step="0.01"
+            min="0.01"
+            max={calculatedPricing?.total || undefined}
+            value={paymentAmount}
+            onChange={(e) => setPaymentAmount(e.target.value)}
+            placeholder="0.00"
+            className="text-lg font-medium"
+            data-testid="input-payment-amount"
+          />
+        </div>
+        {calculatedPricing && (
+          <p className="text-sm text-muted-foreground">
+            Maximum: ${calculatedPricing.total.toFixed(2)}
+          </p>
         )}
       </div>
+
+      <div className="space-y-2">
+        <Label>Card Information</Label>
+        <div data-testid="stripe-card-container">
+          <PaymentElement
+            options={{
+              layout: 'tabs'
+            }}
+          />
+        </div>
+      </div>
+
+      <Button
+        type="button"
+        onClick={handleProcessCreditCard}
+        disabled={isProcessing || !stripe || !elements}
+        className="w-full"
+        data-testid="button-process-credit-card"
+      >
+        {isProcessing ? "Processing..." : "Process Credit Card Payment"}
+      </Button>
+
       <p className="text-sm text-muted-foreground">
         {processedPayment?.type === 'credit_card' && processedPayment.status === 'charged'
           ? `Card charged successfully. ${processedPayment.paymentId ? `Payment ID: ${processedPayment.paymentId.substring(0, 12)}...` : ''}`
@@ -2128,7 +2139,7 @@ export default function NewOrder() {
                       </span>
                     </div>
                     
-                    {processedPayment && (
+                    {processedPayment && processedPayment.status === 'charged' && (
                       <>
                         <Separator className="my-2" />
                         <div className="flex justify-between">
@@ -2292,7 +2303,19 @@ export default function NewOrder() {
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
-                        {stripePromise && clientSecret ? (
+                        {!stripePromise ? (
+                          <div className="space-y-4">
+                            <p className="text-sm text-destructive">
+                              Stripe payment processing is not configured. Please contact support or use an alternative payment method.
+                            </p>
+                          </div>
+                        ) : !clientSecret ? (
+                          <div className="space-y-4">
+                            <p className="text-sm text-muted-foreground">
+                              Initializing payment system...
+                            </p>
+                          </div>
+                        ) : (
                           <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
                             <CreditCardPaymentContent
                               paymentAmount={paymentAmount}
@@ -2305,23 +2328,6 @@ export default function NewOrder() {
                               toast={toast}
                             />
                           </Elements>
-                        ) : !stripePromise ? (
-                          <div className="space-y-4">
-                            <p className="text-sm text-destructive">
-                              Stripe payment processing is not configured. Please contact support or use an alternative payment method.
-                            </p>
-                          </div>
-                        ) : (
-                          <CreditCardPaymentContent
-                            paymentAmount={paymentAmount}
-                            setPaymentAmount={setPaymentAmount}
-                            calculatedPricing={calculatedPricing}
-                            clientSecret={clientSecret}
-                            isCreatingPaymentIntent={isCreatingPaymentIntent}
-                            processedPayment={processedPayment}
-                            setProcessedPayment={setProcessedPayment}
-                            toast={toast}
-                          />
                         )}
                       </AccordionContent>
                     </AccordionItem>
