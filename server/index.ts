@@ -8,6 +8,9 @@ import { db } from "./db";
 
 const app = express();
 
+// Trust proxy for secure cookies (required for session sharing across subdomains)
+app.set("trust proxy", 1);
+
 declare module 'http' {
   interface IncomingMessage {
     rawBody: unknown
@@ -34,7 +37,7 @@ const sessionConfig: session.SessionOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production', // HTTPS only in production
     sameSite: 'lax',
-    domain: process.env.NODE_ENV === 'production' ? '.framebox.com' : undefined,
+    domain: process.env.NODE_ENV === 'production' ? '.framesbox.com' : undefined,
   },
 };
 

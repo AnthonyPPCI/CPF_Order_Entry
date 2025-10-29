@@ -48,10 +48,7 @@ passport.deserializeUser(async (id: string, done) => {
 export const requireAuth: RequestHandler = (req, res, next) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ 
-      message: "Please log in at framebox.com",
-      redirectUrl: process.env.NODE_ENV === 'production' 
-        ? 'https://framebox.com/login'
-        : 'http://localhost:3000/login'
+      message: "Please log in at https://framesbox.com to access Order Entry"
     });
   }
   next();

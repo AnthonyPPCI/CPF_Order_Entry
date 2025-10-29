@@ -10,7 +10,7 @@ async function throwIfResNotOk(res: Response) {
       const isDev = import.meta.env.DEV;
       const loginUrl = isDev 
         ? 'http://localhost:3000/login' 
-        : 'https://framebox.com/login';
+        : 'https://framesbox.com/login';
       
       // Parse error message if available
       try {
