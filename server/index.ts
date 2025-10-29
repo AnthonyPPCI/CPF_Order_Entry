@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { setupAuth } from "./auth";
+import { setupAuth, requireAuth } from "./auth";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
@@ -14,15 +14,19 @@ declare module 'http' {
   }
 }
 
-// CRITICAL: Setup authentication BEFORE registering routes
-setupAuth(app);
-
+// Parse JSON and URL-encoded bodies
 app.use(express.json({
   verify: (req, _res, buf) => {
     req.rawBody = buf;
   }
 }));
 app.use(express.urlencoded({ extended: false }));
+
+// CRITICAL: Setup authentication BEFORE registering routes
+setupAuth(app);
+
+// Protect all API routes with authentication
+app.use('/api', requireAuth);
 
 app.use((req, res, next) => {
   const start = Date.now();

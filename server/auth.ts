@@ -75,13 +75,13 @@ export function setupAuth(app: Express) {
 }
 
 /**
- * Authentication middleware - requires user to be logged in
- * Returns 401 if not authenticated
+ * Middleware to protect routes - checks authentication and authorization
+ * Use this on all API routes
  */
 export const requireAuth: RequestHandler = (req, res, next) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ 
-      message: "Please log in at https://framesbox.com to access Order Entry"
+      message: "Please log in at https://framesbox.com to access Order Entry" 
     });
   }
   
@@ -94,35 +94,22 @@ export const requireAuth: RequestHandler = (req, res, next) => {
     });
   }
   
-  next();
-};
-
-/**
- * Authorization middleware - requires user to have order_entry permission
- * Returns 403 if authenticated but lacks permission
- */
-export const requireOrderEntryAccess: RequestHandler = (req, res, next) => {
-  const user = req.user as SelectUser;
-
-  // Super admins and admins have access to all apps
+  // Super admin and admin roles have access to all apps
   if (user.role === 'super_admin' || user.role === 'admin') {
     return next();
   }
-
-  // Check if user has order_entry in their accessibleApps array
+  
+  // Check if user has order_entry permission
   if (!user.accessibleApps?.includes('order_entry')) {
-    return res.status(403).json({
-      message: "You don't have access to Order Entry. Contact your administrator for access.",
+    return res.status(403).json({ 
+      message: "You don't have access to Order Entry. Contact your administrator for access." 
     });
   }
-
+  
   next();
 };
 
-/**
- * Combined middleware - checks both authentication and authorization
- * Use this on all protected routes
- */
-export const protect: RequestHandler[] = [requireAuth, requireOrderEntryAccess];
+// Export protect as array for backward compatibility with existing routes
+export const protect = [requireAuth];
 
 export default passport;
