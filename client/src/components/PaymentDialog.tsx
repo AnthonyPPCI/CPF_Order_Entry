@@ -258,10 +258,7 @@ export function PaymentDialog({
   const { toast } = useToast();
   const [selectedMethod, setSelectedMethod] = useState<string>("");
   const [cashAmount, setCashAmount] = useState(balance);
-  const [checkAmount, setCheckAmount] = useState(balance);
-  const [checkNumber, setCheckNumber] = useState("");
   const [processingCash, setProcessingCash] = useState(false);
-  const [processingCheck, setProcessingCheck] = useState(false);
   const [processingPayPal, setProcessingPayPal] = useState(false);
   const [clientSecret, setClientSecret] = useState<string>("");
 
@@ -269,8 +266,6 @@ export function PaymentDialog({
   useEffect(() => {
     if (open) {
       setCashAmount(balance);
-      setCheckAmount(balance);
-      setCheckNumber("");
       setSelectedMethod("");
     }
   }, [open, balance]);
@@ -349,54 +344,6 @@ export function PaymentDialog({
       });
     } finally {
       setProcessingCash(false);
-    }
-  };
-
-  const handleCheckPayment = async () => {
-    if (!checkAmount || parseFloat(checkAmount) <= 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid check amount.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setProcessingCheck(true);
-    try {
-      const response = await fetch('/api/record-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId,
-          amount: parseFloat(checkAmount).toFixed(2),
-          paymentMethod: 'check',
-          checkNumber,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to record check payment');
-      }
-
-      toast({
-        title: "Check Payment Recorded",
-        description: `$${checkAmount} check payment recorded${checkNumber ? ` (Check #${checkNumber})` : ''}. New balance: $${data.newBalance}`,
-      });
-
-      onOpenChange(false);
-      onPaymentSuccess();
-    } catch (error: any) {
-      console.error('Check payment error:', error);
-      toast({
-        title: "Payment Failed",
-        description: error.message || "Failed to record check payment. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setProcessingCheck(false);
     }
   };
 
@@ -537,67 +484,6 @@ export function PaymentDialog({
                         </>
                       ) : (
                         `Record $${cashAmount || '0.00'}`
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Check Payment */}
-            <AccordionItem value="check">
-              <AccordionTrigger data-testid="accordion-check">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Check Payment
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="check-amount">Check Amount</Label>
-                    <Input
-                      id="check-amount"
-                      type="number"
-                      step="0.01"
-                      value={checkAmount}
-                      onChange={(e) => setCheckAmount(e.target.value)}
-                      placeholder="0.00"
-                      data-testid="input-check-amount"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="check-number">Check Number (Optional)</Label>
-                    <Input
-                      id="check-number"
-                      type="text"
-                      value={checkNumber}
-                      onChange={(e) => setCheckNumber(e.target.value)}
-                      placeholder="1234"
-                      data-testid="input-check-number"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => onOpenChange(false)}
-                      disabled={processingCheck}
-                      data-testid="button-cancel-check"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleCheckPayment}
-                      disabled={processingCheck || !checkAmount || parseFloat(checkAmount) <= 0}
-                      data-testid="button-record-check"
-                    >
-                      {processingCheck ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Recording...
-                        </>
-                      ) : (
-                        `Record $${checkAmount || '0.00'}`
                       )}
                     </Button>
                   </div>
