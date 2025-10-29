@@ -1,10 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
-import session from "express-session";
-import connectPgSimple from "connect-pg-simple";
-import passport from "./auth";
+import { setupAuth } from "./auth";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { db } from "./db";
 
 const app = express();
 
@@ -17,35 +14,8 @@ declare module 'http' {
   }
 }
 
-// Configure PostgreSQL session store (shared with FrameBox platform)
-const PgSession = connectPgSimple(session);
-
-// Session middleware - MUST be configured with same settings as main FrameBox platform
-const sessionConfig: session.SessionOptions = {
-  store: new PgSession({
-    conObject: {
-      connectionString: process.env.DATABASE_URL,
-    },
-    tableName: 'sessions', // Shared session table with FrameBox
-    ttl: 7 * 24 * 60 * 60, // 7 days (604800 seconds)
-  }),
-  secret: process.env.SESSION_SECRET || 'fallback-secret-change-in-production',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: 'lax',
-    domain: process.env.NODE_ENV === 'production' ? '.framesbox.com' : undefined,
-  },
-};
-
-app.use(session(sessionConfig));
-
-// Initialize Passport for authentication
-app.use(passport.initialize());
-app.use(passport.session());
+// CRITICAL: Setup authentication BEFORE registering routes
+setupAuth(app);
 
 app.use(express.json({
   verify: (req, _res, buf) => {
