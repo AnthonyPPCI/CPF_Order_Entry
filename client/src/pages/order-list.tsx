@@ -3,10 +3,13 @@ import { type Order, type OrderHeader, type OrderItem } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, Search, Package } from "lucide-react";
+import { Eye, Search, Package, CheckCircle, Copy } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 // Union type for both single-item and multi-item orders
 type MultiItemOrder = OrderHeader & { items: OrderItem[] };
@@ -17,14 +20,60 @@ function isMultiItemOrder(order: AnyOrder): order is MultiItemOrder {
   return 'items' in order && Array.isArray(order.items);
 }
 
+type FilterType = 'all' | 'awaiting_payment' | 'awaiting_pickup';
+
 export default function OrderList() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<FilterType>('all');
+  const { toast } = useToast();
 
   const { data: orders, isLoading } = useQuery<AnyOrder[]>({
     queryKey: ["/api/orders"],
   });
 
+  const handleMarkPickedUp = async (orderId: string, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    try {
+      const response = await fetch(`/api/orders/${orderId}/mark-picked-up`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to mark order as picked up');
+      }
+
+      toast({
+        title: "Order Marked as Picked Up",
+        description: "The order has been successfully marked as picked up.",
+      });
+
+      // Refresh orders list
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+    } catch (error: any) {
+      console.error('Error marking order as picked up:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to mark order as picked up. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredOrders = orders?.filter((order) => {
+    // Apply filter type first
+    if (filterType === 'awaiting_payment') {
+      const balance = parseFloat(order.balance || "0");
+      if (balance <= 0) return false;
+    } else if (filterType === 'awaiting_pickup') {
+      if (order.deliveryMethod !== 'pickup' || order.pickupStatus === 'picked_up') return false;
+    }
+    
+    // Then apply search term
     const search = searchTerm.toLowerCase();
     const customerName = order.customerName?.toLowerCase() || "";
     const description = order.description?.toLowerCase() || "";
@@ -94,6 +143,21 @@ export default function OrderList() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Filters */}
+          <Tabs value={filterType} onValueChange={(value) => setFilterType(value as FilterType)} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="all" data-testid="filter-all">
+                All Orders
+              </TabsTrigger>
+              <TabsTrigger value="awaiting_payment" data-testid="filter-awaiting-payment">
+                Awaiting Payment
+              </TabsTrigger>
+              <TabsTrigger value="awaiting_pickup" data-testid="filter-awaiting-pickup">
+                Awaiting Pickup
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           {/* Orders List */}
           {!filteredOrders || filteredOrders.length === 0 ? (
@@ -188,11 +252,29 @@ export default function OrderList() {
                                 )}
                               </td>
                               <td className="p-4 text-right">
-                                <Link href={`/order/${order.id}`} asChild>
-                                  <Button variant="ghost" size="icon" data-testid={`button-view-${order.id}`}>
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                </Link>
+                                <div className="flex justify-end gap-2">
+                                  {order.deliveryMethod === 'pickup' && order.pickupStatus !== 'picked_up' && (
+                                    <Button 
+                                      variant="outline" 
+                                      size="icon" 
+                                      onClick={(e) => handleMarkPickedUp(order.id, e)}
+                                      data-testid={`button-mark-picked-up-${order.id}`}
+                                      title="Mark as Picked Up"
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  <Link href={`/?duplicate=${order.id}`} asChild>
+                                    <Button variant="outline" size="icon" data-testid={`button-duplicate-${order.id}`} title="Duplicate Order">
+                                      <Copy className="h-4 w-4" />
+                                    </Button>
+                                  </Link>
+                                  <Link href={`/order/${order.id}`} asChild>
+                                    <Button variant="ghost" size="icon" data-testid={`button-view-${order.id}`}>
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                  </Link>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -269,12 +351,31 @@ export default function OrderList() {
                               </div>
                             )}
                           </div>
-                          <Link href={`/order/${order.id}`} asChild>
-                            <Button variant="outline" size="sm" data-testid={`button-view-mobile-${order.id}`}>
-                              <Eye className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
-                          </Link>
+                          <div className="flex flex-wrap gap-2">
+                            {order.deliveryMethod === 'pickup' && order.pickupStatus !== 'picked_up' && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={(e) => handleMarkPickedUp(order.id, e)}
+                                data-testid={`button-mark-picked-up-mobile-${order.id}`}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Picked Up
+                              </Button>
+                            )}
+                            <Link href={`/?duplicate=${order.id}`} asChild>
+                              <Button variant="outline" size="sm" data-testid={`button-duplicate-mobile-${order.id}`}>
+                                <Copy className="h-4 w-4 mr-1" />
+                                Duplicate
+                              </Button>
+                            </Link>
+                            <Link href={`/order/${order.id}`} asChild>
+                              <Button variant="outline" size="sm" data-testid={`button-view-mobile-${order.id}`}>
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>

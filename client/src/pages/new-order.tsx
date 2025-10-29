@@ -262,6 +262,7 @@ export default function NewOrder() {
   const [heightText, setHeightText] = useState("16");
   const [pendingItems, setPendingItems] = useState<InsertOrder[]>([]);
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("0.00");
   const [skipPayment, setSkipPayment] = useState(false);
   const [activePaymentMethod, setActivePaymentMethod] = useState<string | undefined>(undefined);
@@ -460,6 +461,89 @@ export default function NewOrder() {
   useEffect(() => {
     setPaymentAmount(calculatedPricing.total.toFixed(2));
   }, [calculatedPricing.total]);
+
+  // Handle order duplication from URL parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const duplicateOrderId = urlParams.get('duplicate');
+    
+    if (duplicateOrderId && !isDuplicating) {
+      setIsDuplicating(true);
+      
+      const fetchAndDuplicateOrder = async () => {
+        try {
+          const response = await fetch(`/api/orders/${duplicateOrderId}`);
+          if (!response.ok) {
+            throw new Error('Order not found');
+          }
+          
+          const orderData = await response.json();
+          
+          // Check if it's a multi-item order
+          if (orderData.items && Array.isArray(orderData.items)) {
+            // Multi-item order - populate pendingItems and form with first item
+            const items = orderData.items.map((item: any) => ({
+              ...item,
+              syncToShipstation: false, // Don't copy this
+            }));
+            
+            // Set all items except the first as pending
+            if (items.length > 1) {
+              setPendingItems(items.slice(1));
+            }
+            
+            // Load first item into form
+            if (items.length > 0) {
+              form.reset({
+                ...items[0],
+                customerName: orderData.customerName,
+                address1: orderData.address1,
+                address2: orderData.address2,
+                cityStateZip: orderData.cityStateZip,
+                phone: orderData.phone,
+                email: orderData.email,
+                deliveryMethod: orderData.deliveryMethod,
+                description: orderData.description,
+                specialRequests: orderData.specialRequests,
+                discount: orderData.discount || "",
+                deposit: orderData.deposit || "",
+                syncToShipstation: false,
+              });
+            }
+          } else {
+            // Single-item order - populate form directly
+            form.reset({
+              ...orderData,
+              syncToShipstation: false, // Don't copy this
+              discount: orderData.discount || "",
+              deposit: orderData.deposit || "",
+            });
+          }
+          
+          toast({
+            title: "Order Duplicated",
+            description: "Form has been pre-filled with the order details. Review and create when ready.",
+          });
+          
+          // Clear the URL parameter
+          window.history.replaceState({}, '', '/');
+        } catch (error: any) {
+          console.error('Error duplicating order:', error);
+          toast({
+            title: "Duplication Failed",
+            description: error.message || "Failed to load order for duplication.",
+            variant: "destructive",
+          });
+          // Clear the URL parameter even on error
+          window.history.replaceState({}, '', '/');
+        } finally {
+          setIsDuplicating(false);
+        }
+      };
+      
+      fetchAndDuplicateOrder();
+    }
+  }, [form, toast, isDuplicating]);
 
   // Create Stripe payment intent when credit card accordion opens and amount is entered
   useEffect(() => {

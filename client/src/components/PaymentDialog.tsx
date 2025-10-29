@@ -1,12 +1,17 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { CreditCard, Loader2, AlertCircle } from "lucide-react";
+import { CreditCard, Loader2, AlertCircle, DollarSign, Receipt, Banknote, FileText } from "lucide-react";
 import { StripePaymentForm } from "./StripePaymentForm";
 import { Elements, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { queryClient } from "@/lib/queryClient";
 
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
 const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
@@ -19,7 +24,9 @@ interface PaymentDialogProps {
   onPaymentSuccess: () => void;
 }
 
-function PaymentDialogContent({
+type PaymentMethod = 'credit_card' | 'cash' | 'check' | 'paypal' | null;
+
+function CreditCardPaymentContent({
   orderId,
   balance,
   onOpenChange,
@@ -35,10 +42,8 @@ function PaymentDialogContent({
 
   useEffect(() => {
     if (orderId && balance) {
-      // Reset amount to current balance
       setAmount(balance);
       
-      // Create payment intent when dialog opens
       const createPaymentIntent = async () => {
         setLoadingIntent(true);
         try {
@@ -74,7 +79,6 @@ function PaymentDialogContent({
     }
   }, [orderId, balance, toast]);
 
-  // Update payment intent when amount changes
   useEffect(() => {
     if (clientSecret && amount && parseFloat(amount) > 0 && amount !== balance) {
       const updatePaymentIntent = async () => {
@@ -130,7 +134,6 @@ function PaymentDialogContent({
     setProcessing(true);
 
     try {
-      // Confirm the payment using Stripe
       const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -144,7 +147,6 @@ function PaymentDialogContent({
       }
 
       if (paymentIntent && paymentIntent.id) {
-        // Send payment confirmation to backend
         const response = await fetch('/api/confirm-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -181,64 +183,58 @@ function PaymentDialogContent({
     }
   };
 
-  return (
-    <>
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <CreditCard className="h-5 w-5" />
-          Payment
-        </DialogTitle>
-        <DialogDescription>
-          Order #{orderId.slice(0, 8).toUpperCase()} · Balance due: ${balance}
-        </DialogDescription>
-      </DialogHeader>
-
-      <div className="space-y-6 py-4">
-        {loadingIntent ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-3 text-muted-foreground">Initializing payment...</span>
-          </div>
-        ) : clientSecret ? (
-          <StripePaymentForm
-            amount={amount}
-            onAmountChange={setAmount}
-            maxAmount={balance}
-            showAmountInput={true}
-            clientSecret={clientSecret}
-          />
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            Unable to initialize payment. Please close and try again.
-          </div>
-        )}
-
-        <div className="flex justify-end gap-2 pt-4">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={processing}
-            data-testid="button-cancel-payment"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handlePayment}
-            disabled={processing || loadingIntent || !clientSecret || !amount || parseFloat(amount) <= 0}
-            data-testid="button-process-payment"
-          >
-            {processing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              `Charge $${amount || '0.00'}`
-            )}
-          </Button>
-        </div>
+  if (loadingIntent) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Initializing payment...</span>
       </div>
-    </>
+    );
+  }
+
+  if (!clientSecret) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        Unable to initialize payment. Please close and try again.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <StripePaymentForm
+        amount={amount}
+        onAmountChange={setAmount}
+        maxAmount={balance}
+        showAmountInput={true}
+        clientSecret={clientSecret}
+      />
+
+      <div className="flex justify-end gap-2 pt-4">
+        <Button
+          variant="outline"
+          onClick={() => onOpenChange(false)}
+          disabled={processing}
+          data-testid="button-cancel-payment"
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handlePayment}
+          disabled={processing || loadingIntent || !clientSecret || !amount || parseFloat(amount) <= 0}
+          data-testid="button-process-payment"
+        >
+          {processing ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            `Charge $${amount || '0.00'}`
+          )}
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -249,11 +245,29 @@ export function PaymentDialog({
   balance,
   onPaymentSuccess,
 }: PaymentDialogProps) {
+  const { toast } = useToast();
+  const [selectedMethod, setSelectedMethod] = useState<string>("");
+  const [cashAmount, setCashAmount] = useState(balance);
+  const [checkAmount, setCheckAmount] = useState(balance);
+  const [checkNumber, setCheckNumber] = useState("");
+  const [processingCash, setProcessingCash] = useState(false);
+  const [processingCheck, setProcessingCheck] = useState(false);
+  const [processingPayPal, setProcessingPayPal] = useState(false);
   const [clientSecret, setClientSecret] = useState<string>("");
 
+  // Reset state when dialog opens
   useEffect(() => {
-    if (open && orderId && balance) {
-      // Create payment intent when dialog opens
+    if (open) {
+      setCashAmount(balance);
+      setCheckAmount(balance);
+      setCheckNumber("");
+      setSelectedMethod("");
+    }
+  }, [open, balance]);
+
+  // Create payment intent when credit card is selected
+  useEffect(() => {
+    if (open && selectedMethod === 'credit_card' && orderId && balance) {
       const createPaymentIntent = async () => {
         try {
           const response = await fetch('/api/create-payment-intent', {
@@ -279,7 +293,139 @@ export function PaymentDialog({
     } else {
       setClientSecret("");
     }
-  }, [open, orderId, balance]);
+  }, [open, selectedMethod, orderId, balance]);
+
+  const handleCashPayment = async () => {
+    if (!cashAmount || parseFloat(cashAmount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid cash amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setProcessingCash(true);
+    try {
+      const response = await fetch('/api/record-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          amount: parseFloat(cashAmount).toFixed(2),
+          paymentMethod: 'cash',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to record cash payment');
+      }
+
+      toast({
+        title: "Cash Payment Recorded",
+        description: `$${cashAmount} cash payment recorded. New balance: $${data.newBalance}`,
+      });
+
+      onOpenChange(false);
+      onPaymentSuccess();
+    } catch (error: any) {
+      console.error('Cash payment error:', error);
+      toast({
+        title: "Payment Failed",
+        description: error.message || "Failed to record cash payment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingCash(false);
+    }
+  };
+
+  const handleCheckPayment = async () => {
+    if (!checkAmount || parseFloat(checkAmount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid check amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setProcessingCheck(true);
+    try {
+      const response = await fetch('/api/record-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          amount: parseFloat(checkAmount).toFixed(2),
+          paymentMethod: 'check',
+          checkNumber,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to record check payment');
+      }
+
+      toast({
+        title: "Check Payment Recorded",
+        description: `$${checkAmount} check payment recorded${checkNumber ? ` (Check #${checkNumber})` : ''}. New balance: $${data.newBalance}`,
+      });
+
+      onOpenChange(false);
+      onPaymentSuccess();
+    } catch (error: any) {
+      console.error('Check payment error:', error);
+      toast({
+        title: "Payment Failed",
+        description: error.message || "Failed to record check payment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingCheck(false);
+    }
+  };
+
+  const handlePayPalInvoice = async () => {
+    setProcessingPayPal(true);
+    try {
+      const response = await fetch('/api/create-paypal-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          orderId,
+          isMultiItem: false
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create PayPal invoice');
+      }
+
+      toast({
+        title: "PayPal Invoice Sent",
+        description: `Invoice has been sent to the customer's email.`,
+      });
+
+      onOpenChange(false);
+      onPaymentSuccess();
+    } catch (error: any) {
+      console.error('PayPal invoice error:', error);
+      toast({
+        title: "Invoice Failed",
+        description: error.message || "Failed to create PayPal invoice. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingPayPal(false);
+    }
+  };
 
   const elementsOptions = clientSecret ? {
     clientSecret,
@@ -288,65 +434,215 @@ export function PaymentDialog({
     },
   } : undefined;
 
-  if (!stripePromise) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Payment
-            </DialogTitle>
-            <DialogDescription>
-              Order #{orderId.slice(0, 8).toUpperCase()} · Balance due: ${balance}
-            </DialogDescription>
-          </DialogHeader>
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Stripe payment processing is not configured. Please contact support or use an alternative payment method.
-            </AlertDescription>
-          </Alert>
-          <div className="flex justify-end pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="button-close-payment">
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        {clientSecret && elementsOptions ? (
-          <Elements stripe={stripePromise} options={elementsOptions}>
-            <PaymentDialogContent
-              open={open}
-              onOpenChange={onOpenChange}
-              orderId={orderId}
-              balance={balance}
-              onPaymentSuccess={onPaymentSuccess}
-            />
-          </Elements>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Payment
-              </DialogTitle>
-              <DialogDescription>
-                Order #{orderId.slice(0, 8).toUpperCase()} · Balance due: ${balance}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="ml-3 text-muted-foreground">Initializing payment...</span>
-            </div>
-          </>
-        )}
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Collect Payment
+          </DialogTitle>
+          <DialogDescription>
+            Order #{orderId.slice(0, 8).toUpperCase()} · Balance due: ${balance}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <Accordion type="single" collapsible value={selectedMethod} onValueChange={setSelectedMethod}>
+            {/* Credit Card */}
+            <AccordionItem value="credit_card">
+              <AccordionTrigger data-testid="accordion-credit-card">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Credit Card
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                {!stripePromise ? (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Stripe payment processing is not configured. Please contact support or use an alternative payment method.
+                    </AlertDescription>
+                  </Alert>
+                ) : clientSecret && elementsOptions ? (
+                  <Elements stripe={stripePromise} options={elementsOptions}>
+                    <CreditCardPaymentContent
+                      open={open}
+                      onOpenChange={onOpenChange}
+                      orderId={orderId}
+                      balance={balance}
+                      onPaymentSuccess={onPaymentSuccess}
+                    />
+                  </Elements>
+                ) : (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <span className="ml-3 text-sm text-muted-foreground">Loading payment form...</span>
+                  </div>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Cash Payment */}
+            <AccordionItem value="cash">
+              <AccordionTrigger data-testid="accordion-cash">
+                <div className="flex items-center gap-2">
+                  <Banknote className="h-4 w-4" />
+                  Cash Payment
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cash-amount">Cash Amount Received</Label>
+                    <Input
+                      id="cash-amount"
+                      type="number"
+                      step="0.01"
+                      value={cashAmount}
+                      onChange={(e) => setCashAmount(e.target.value)}
+                      placeholder="0.00"
+                      data-testid="input-cash-amount"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => onOpenChange(false)}
+                      disabled={processingCash}
+                      data-testid="button-cancel-cash"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleCashPayment}
+                      disabled={processingCash || !cashAmount || parseFloat(cashAmount) <= 0}
+                      data-testid="button-record-cash"
+                    >
+                      {processingCash ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Recording...
+                        </>
+                      ) : (
+                        `Record $${cashAmount || '0.00'}`
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Check Payment */}
+            <AccordionItem value="check">
+              <AccordionTrigger data-testid="accordion-check">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Check Payment
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="check-amount">Check Amount</Label>
+                    <Input
+                      id="check-amount"
+                      type="number"
+                      step="0.01"
+                      value={checkAmount}
+                      onChange={(e) => setCheckAmount(e.target.value)}
+                      placeholder="0.00"
+                      data-testid="input-check-amount"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="check-number">Check Number (Optional)</Label>
+                    <Input
+                      id="check-number"
+                      type="text"
+                      value={checkNumber}
+                      onChange={(e) => setCheckNumber(e.target.value)}
+                      placeholder="1234"
+                      data-testid="input-check-number"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => onOpenChange(false)}
+                      disabled={processingCheck}
+                      data-testid="button-cancel-check"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleCheckPayment}
+                      disabled={processingCheck || !checkAmount || parseFloat(checkAmount) <= 0}
+                      data-testid="button-record-check"
+                    >
+                      {processingCheck ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Recording...
+                        </>
+                      ) : (
+                        `Record $${checkAmount || '0.00'}`
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* PayPal Invoice */}
+            <AccordionItem value="paypal">
+              <AccordionTrigger data-testid="accordion-paypal">
+                <div className="flex items-center gap-2">
+                  <Receipt className="h-4 w-4" />
+                  PayPal Invoice
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Send a PayPal invoice to the customer's email for the full balance amount.
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => onOpenChange(false)}
+                      disabled={processingPayPal}
+                      data-testid="button-cancel-paypal"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handlePayPalInvoice}
+                      disabled={processingPayPal}
+                      data-testid="button-send-paypal"
+                    >
+                      {processingPayPal ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        `Send Invoice for $${balance}`
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+
+          {!selectedMethod && (
+            <p className="text-sm text-muted-foreground text-center">
+              Select a payment method above to continue
+            </p>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

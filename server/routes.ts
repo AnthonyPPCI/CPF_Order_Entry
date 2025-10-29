@@ -726,6 +726,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Record cash or check payment
+  app.post("/api/record-payment", async (req, res) => {
+    try {
+      const { orderId, amount, paymentMethod, checkNumber } = req.body;
+
+      // Validate required fields
+      if (!orderId || !amount || !paymentMethod) {
+        return res.status(400).json({ error: "Missing required fields: orderId, amount, or paymentMethod" });
+      }
+
+      if (!['cash', 'check'].includes(paymentMethod)) {
+        return res.status(400).json({ error: "Invalid payment method. Must be 'cash' or 'check'" });
+      }
+
+      const paymentAmount = parseFloat(amount);
+      if (isNaN(paymentAmount) || paymentAmount <= 0) {
+        return res.status(400).json({ error: "Invalid payment amount" });
+      }
+
+      // Try to find the order (single-item or multi-item)
+      let order = await storage.getOrderById(orderId);
+      let isMultiItem = false;
+
+      if (!order) {
+        const multiOrder = await storage.getMultiItemOrderById(orderId);
+        if (multiOrder) {
+          order = multiOrder as any;
+          isMultiItem = true;
+        }
+      }
+
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      // Calculate new balance
+      const currentPaidToDate = parseFloat(order.paidToDate || "0");
+      const newPaidToDate = currentPaidToDate + paymentAmount;
+      const total = parseFloat(order.total);
+      const newBalance = Math.max(0, total - newPaidToDate);
+
+      // Update order
+      const updateData: any = {
+        paidToDate: newPaidToDate.toFixed(2),
+        balance: newBalance.toFixed(2),
+        paymentMethod: paymentMethod,
+      };
+
+      if (isMultiItem) {
+        await storage.updateMultiItemOrder(orderId, updateData);
+      } else {
+        await storage.updateOrder(orderId, updateData);
+      }
+
+      console.log(`[Payment] Recorded ${paymentMethod} payment for order ${orderId} - Amount: $${paymentAmount}, New balance: $${newBalance.toFixed(2)}`);
+
+      res.json({
+        success: true,
+        newBalance: newBalance.toFixed(2),
+        newPaidToDate: newPaidToDate.toFixed(2),
+        paymentMethod,
+      });
+    } catch (error: any) {
+      console.error('[Payment] Error recording payment:', error);
+      res.status(500).json({ error: "Failed to record payment", details: error.message });
+    }
+  });
+
+  // Mark order as picked up
+  app.post("/api/orders/:id/mark-picked-up", async (req, res) => {
+    try {
+      const orderId = req.params.id;
+
+      // Try to find the order (single-item or multi-item)
+      let order = await storage.getOrderById(orderId);
+      let isMultiItem = false;
+
+      if (!order) {
+        const multiOrder = await storage.getMultiItemOrderById(orderId);
+        if (multiOrder) {
+          order = multiOrder as any;
+          isMultiItem = true;
+        }
+      }
+
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      // Check if order is a pickup order
+      if (order.deliveryMethod !== 'pickup') {
+        return res.status(400).json({ error: "This is not a pickup order" });
+      }
+
+      // Update pickup status
+      const updateData = {
+        pickupStatus: 'picked_up' as const,
+      };
+
+      if (isMultiItem) {
+        await storage.updateMultiItemOrder(orderId, updateData);
+      } else {
+        await storage.updateOrder(orderId, updateData);
+      }
+
+      console.log(`[Pickup] Marked order ${orderId} as picked up`);
+
+      res.json({
+        success: true,
+        message: "Order marked as picked up",
+      });
+    } catch (error: any) {
+      console.error('[Pickup] Error marking order as picked up:', error);
+      res.status(500).json({ error: "Failed to mark order as picked up", details: error.message });
+    }
+  });
+
   // Get all orders (both single-item and multi-item)
   app.get("/api/orders", async (req, res) => {
     try {
