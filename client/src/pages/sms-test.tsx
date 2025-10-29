@@ -26,20 +26,15 @@ export default function SMSTest() {
     setIsLoading(true);
 
     try {
-      const response = await apiRequest("/api/test-sms", {
-        method: "POST",
-        body: JSON.stringify({ phone, message }),
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
+      const response = await apiRequest("POST", "/api/test-sms", { phone, message });
+      const data = await response.json();
 
       toast({
         title: "✅ SMS Sent Successfully",
         description: `Test message sent to ${phone}`,
       });
 
-      console.log("SMS test response:", response);
+      console.log("SMS test response:", data);
     } catch (error: any) {
       console.error("SMS test error:", error);
       toast({
