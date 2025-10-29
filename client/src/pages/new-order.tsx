@@ -121,6 +121,15 @@ function CreditCardPaymentContent({
       return;
     }
 
+    if (isCreatingPaymentIntent) {
+      toast({
+        title: "Payment Amount Updating",
+        description: "Please wait for the payment amount to finish updating before processing.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsProcessing(true);
     toast({
       title: "Processing Payment...",
@@ -128,6 +137,28 @@ function CreditCardPaymentContent({
     });
 
     try {
+      // CRITICAL: Validate PaymentIntent amount BEFORE charging
+      const retrievedIntent = await stripe.retrievePaymentIntent(clientSecret);
+      
+      if (retrievedIntent.error) {
+        throw new Error(retrievedIntent.error.message || 'Failed to retrieve payment information');
+      }
+
+      if (!retrievedIntent.paymentIntent) {
+        throw new Error('Payment information not found');
+      }
+
+      // Validate amount matches BEFORE charging
+      const paymentIntentAmount = (retrievedIntent.paymentIntent.amount / 100).toFixed(2);
+      const enteredAmount = parseFloat(paymentAmount).toFixed(2);
+      
+      if (paymentIntentAmount !== enteredAmount) {
+        throw new Error(
+          `Payment amount mismatch: You entered $${enteredAmount} but the payment session is for $${paymentIntentAmount}. Please wait a moment for the amount to update, then try again.`
+        );
+      }
+
+      // Amount is correct - proceed with charging
       const { error, paymentIntent } = await stripe.confirmCardPayment(
         clientSecret,
         {
@@ -561,10 +592,48 @@ export default function NewOrder() {
     }
   }, [form, toast, isDuplicating]);
 
-  // Create Stripe payment intent when credit card accordion opens and amount is entered
+  // Create/Update Stripe payment intent when amount changes
   useEffect(() => {
-    const createPaymentIntent = async () => {
-      if (activePaymentMethod === 'credit-card' && parseFloat(paymentAmount) > 0 && !clientSecret) {
+    const createOrUpdatePaymentIntent = async () => {
+      if (activePaymentMethod === 'credit-card' && parseFloat(paymentAmount) > 0) {
+        // Skip if we already have a clientSecret and haven't processed payment yet
+        // (will be handled by the debounced update below)
+        if (!clientSecret && !processedPayment) {
+          setIsCreatingPaymentIntent(true);
+          try {
+            const response = await fetch('/api/create-payment-intent', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ amount: paymentAmount }),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              setClientSecret(data.clientSecret);
+            } else {
+              throw new Error('Failed to create payment intent');
+            }
+          } catch (error: any) {
+            console.error('Payment intent error:', error);
+            toast({
+              title: "Payment Setup Error",
+              description: error.message || "Failed to initialize payment. Please try again.",
+              variant: "destructive"
+            });
+          } finally {
+            setIsCreatingPaymentIntent(false);
+          }
+        }
+      }
+    };
+
+    createOrUpdatePaymentIntent();
+  }, [activePaymentMethod, paymentAmount, clientSecret, processedPayment]);
+
+  // Update PaymentIntent when amount changes (debounced)
+  useEffect(() => {
+    if (activePaymentMethod === 'credit-card' && clientSecret && !processedPayment && parseFloat(paymentAmount) > 0) {
+      const timer = setTimeout(async () => {
         setIsCreatingPaymentIntent(true);
         try {
           const response = await fetch('/api/create-payment-intent', {
@@ -576,24 +645,17 @@ export default function NewOrder() {
           if (response.ok) {
             const data = await response.json();
             setClientSecret(data.clientSecret);
-          } else {
-            throw new Error('Failed to create payment intent');
           }
         } catch (error: any) {
-          console.error('Payment intent error:', error);
-          toast({
-            title: "Payment Setup Error",
-            description: error.message || "Failed to initialize payment. Please try again.",
-            variant: "destructive"
-          });
+          console.error('Payment intent update error:', error);
         } finally {
           setIsCreatingPaymentIntent(false);
         }
-      }
-    };
+      }, 1000);
 
-    createPaymentIntent();
-  }, [activePaymentMethod, paymentAmount, clientSecret]);
+      return () => clearTimeout(timer);
+    }
+  }, [paymentAmount, activePaymentMethod, clientSecret, processedPayment]);
 
   // Clear processed payment if amounts change (prevents stale payment data)
   useEffect(() => {
