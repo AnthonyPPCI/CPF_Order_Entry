@@ -25,7 +25,116 @@ app.use(express.urlencoded({ extended: false }));
 // CRITICAL: Setup authentication BEFORE registering routes
 setupAuth(app);
 
-// Protect all API routes with authentication
+// Register webhook routes BEFORE global authentication middleware
+// (webhooks must be publicly accessible for external services)
+app.post("/api/webhooks/paypal", async (req, res) => {
+  try {
+    const { verifyWebhookSignature } = await import("./paypal.js");
+    
+    // Verify webhook signature for security
+    const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+    if (!webhookId) {
+      console.error("[PayPal Webhook] PAYPAL_WEBHOOK_ID not configured");
+      return res.status(500).json({ error: "Webhook not configured" });
+    }
+    
+    const headers = {
+      'paypal-transmission-id': req.headers['paypal-transmission-id'] as string,
+      'paypal-transmission-time': req.headers['paypal-transmission-time'] as string,
+      'paypal-transmission-sig': req.headers['paypal-transmission-sig'] as string,
+      'paypal-cert-url': req.headers['paypal-cert-url'] as string,
+      'paypal-auth-algo': req.headers['paypal-auth-algo'] as string,
+    };
+    
+    // Verify the webhook signature
+    const isValid = await verifyWebhookSignature(webhookId, headers, req.body);
+    if (!isValid) {
+      console.error("[PayPal Webhook] SECURITY ALERT: Invalid webhook signature detected");
+      console.error(`[PayPal Webhook] Transmission ID:`, headers['paypal-transmission-id']);
+      return res.status(401).json({ error: "Invalid signature" });
+    }
+    
+    const { event_type, resource } = req.body;
+    
+    console.log(`[PayPal Webhook] Verified event: ${event_type}`);
+    
+    // Handle invoice paid event
+    if (event_type === "INVOICING.INVOICE.PAID") {
+      const invoiceId = resource.id;
+      const paidAmount = resource.amount?.value || resource.payments?.paid_amount?.value || "0";
+      
+      // Find order with this invoice ID
+      const { storage } = await import("./storage.js");
+      const { syncOrderToShipStation, syncMultiItemOrderToShipStation } = await import("./shipstation.js");
+      
+      const allOrders = await storage.getAllOrders();
+      const order = allOrders.find((o: any) => o.paypalInvoiceId === invoiceId);
+      
+      if (order) {
+        // Update order payment status
+        const newPaidToDate = parseFloat(order.paidToDate || "0") + parseFloat(paidAmount);
+        const newBalance = parseFloat(order.total) - newPaidToDate;
+        
+        await storage.updateOrder(order.id, {
+          paypalInvoiceStatus: "PAID",
+          paidToDate: newPaidToDate.toFixed(2),
+          balance: Math.max(0, newBalance).toFixed(2),
+        });
+        
+        console.log(`[PayPal Webhook] Updated order ${order.id} - Paid: $${paidAmount}`);
+        
+        // Now sync to ShipStation if it was deferred during order creation
+        if (order.syncToShipstation) {
+          try {
+            console.log(`[ShipStation] PayPal payment confirmed, syncing order ${order.id} to ShipStation...`);
+            await syncOrderToShipStation(order);
+            console.log(`[ShipStation] Successfully synced PayPal order ${order.id} to ShipStation`);
+          } catch (shipStationError: any) {
+            console.error(`[ShipStation] Failed to sync PayPal order ${order.id}:`, shipStationError.message);
+            // Don't fail the webhook processing if ShipStation sync fails
+          }
+        }
+      }
+      
+      // Check multi-item orders
+      const allMultiOrders = await storage.getAllMultiItemOrders();
+      const multiOrder = allMultiOrders.find((o: any) => o.paypalInvoiceId === invoiceId);
+      
+      if (multiOrder) {
+        const newPaidToDate = parseFloat(multiOrder.paidToDate || "0") + parseFloat(paidAmount);
+        const newBalance = parseFloat(multiOrder.total) - newPaidToDate;
+        
+        await storage.updateMultiItemOrder(multiOrder.id, {
+          paypalInvoiceStatus: "PAID",
+          paidToDate: newPaidToDate.toFixed(2),
+          balance: Math.max(0, newBalance).toFixed(2),
+        });
+        
+        console.log(`[PayPal Webhook] Updated multi-order ${multiOrder.id} - Paid: $${paidAmount}`);
+        
+        // Now sync to ShipStation if it was deferred during order creation
+        if (multiOrder.syncToShipstation) {
+          try {
+            console.log(`[ShipStation] PayPal payment confirmed, syncing multi-order ${multiOrder.id} to ShipStation...`);
+            await syncMultiItemOrderToShipStation(multiOrder, multiOrder.items);
+            console.log(`[ShipStation] Successfully synced PayPal multi-order ${multiOrder.id} to ShipStation`);
+          } catch (shipStationError: any) {
+            console.error(`[ShipStation] Failed to sync PayPal multi-order ${multiOrder.id}:`, shipStationError.message);
+            // Don't fail the webhook processing if ShipStation sync fails
+          }
+        }
+      }
+    }
+    
+    // Acknowledge webhook
+    res.status(200).send();
+  } catch (error: any) {
+    console.error("[PayPal Webhook] Error processing webhook:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Protect all API routes with authentication (except webhooks registered above)
 app.use('/api', requireAuth);
 
 app.use((req, res, next) => {
