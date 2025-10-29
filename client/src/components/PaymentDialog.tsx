@@ -80,9 +80,13 @@ function CreditCardPaymentContent({
   }, [orderId, balance, toast]);
 
   useEffect(() => {
+    console.log('[PaymentDialog] Amount changed:', { amount, balance, clientSecret: !!clientSecret, willUpdate: amount !== balance });
+    
     if (clientSecret && amount && parseFloat(amount) > 0 && amount !== balance) {
+      console.log('[PaymentDialog] Scheduling PaymentIntent update in 1 second...');
       const updatePaymentIntent = async () => {
         setLoadingIntent(true);
+        console.log('[PaymentDialog] Creating NEW PaymentIntent for amount:', amount);
         try {
           const response = await fetch('/api/create-payment-intent', {
             method: 'POST',
@@ -99,9 +103,10 @@ function CreditCardPaymentContent({
             throw new Error(data.error || 'Failed to update payment amount');
           }
 
+          console.log('[PaymentDialog] NEW PaymentIntent created:', data.paymentIntentId);
           setClientSecret(data.clientSecret);
         } catch (error: any) {
-          console.error('Payment intent update error:', error);
+          console.error('[PaymentDialog] Payment intent update error:', error);
         } finally {
           setLoadingIntent(false);
         }
@@ -110,7 +115,7 @@ function CreditCardPaymentContent({
       const timer = setTimeout(updatePaymentIntent, 1000);
       return () => clearTimeout(timer);
     }
-  }, [amount, orderId]);
+  }, [amount, balance, clientSecret, orderId]);
 
   const handlePayment = async () => {
     if (!amount || parseFloat(amount) <= 0) {
