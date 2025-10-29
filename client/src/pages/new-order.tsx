@@ -275,7 +275,8 @@ function CreditCardPaymentContent({
                 },
               },
               hidePostalCode: true,
-            }}
+              disableLinkAutofill: true,
+            } as any}
           />
         </div>
       </div>
