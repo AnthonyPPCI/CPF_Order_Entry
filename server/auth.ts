@@ -6,10 +6,13 @@ import { db } from './db';
 import { users, type SelectUser } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
+// Session user type (excludes password for security)
+export type SessionUser = Omit<SelectUser, 'password'>;
+
 // Extend Express User type
 declare global {
   namespace Express {
-    interface User extends SelectUser {}
+    interface User extends SessionUser {}
   }
 }
 
@@ -48,8 +51,18 @@ export function setupAuth(app: Express) {
   // Deserialize user from shared session
   passport.deserializeUser(async (id: string, done) => {
     try {
+      // Explicitly select only the columns we need (exclude password for security)
       const [user] = await db
-        .select()
+        .select({
+          id: users.id,
+          email: users.email,
+          role: users.role,
+          accessibleApps: users.accessibleApps,
+          active: users.active,
+          requirePasswordChange: users.requirePasswordChange,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+        })
         .from(users)
         .where(eq(users.id, id))
         .limit(1);
