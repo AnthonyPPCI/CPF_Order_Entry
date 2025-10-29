@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -43,23 +43,33 @@ function StripeCardForm({
     }
   };
 
+  const cardElementOptions = {
+    style: {
+      base: {
+        fontSize: '16px',
+        color: '#424770',
+        '::placeholder': {
+          color: '#aab7c4',
+        },
+      },
+      invalid: {
+        color: '#9e2146',
+      },
+    },
+    hidePostalCode: true,
+  };
+
   return (
     <div className="space-y-2">
       <Label>Card Information</Label>
-      <div data-testid="stripe-card-container">
-        <PaymentElement
+      <div 
+        data-testid="stripe-card-container"
+        className="p-3 border rounded-md bg-background"
+      >
+        <CardElement
           onReady={handleReady}
           onChange={handleChange}
-          options={{
-            layout: 'tabs',
-            fields: {
-              billingDetails: 'never'
-            },
-            wallets: {
-              applePay: 'never',
-              googlePay: 'never'
-            }
-          }}
+          options={cardElementOptions}
         />
       </div>
       {!isReady && (

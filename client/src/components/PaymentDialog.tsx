@@ -131,19 +131,29 @@ function CreditCardPaymentContent({
       return;
     }
 
+    if (!clientSecret) {
+      toast({
+        title: "Payment Not Ready",
+        description: "Payment session not initialized. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setProcessing(true);
 
     try {
-      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: window.location.origin,
-        },
-        redirect: 'if_required',
-      });
+      const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        {
+          payment_method: {
+            card: elements.getElement('card')!,
+          },
+        }
+      );
 
-      if (stripeError) {
-        throw new Error(stripeError.message || 'Payment confirmation failed');
+      if (confirmError) {
+        throw new Error(confirmError.message || 'Payment confirmation failed');
       }
 
       if (paymentIntent && paymentIntent.id) {
